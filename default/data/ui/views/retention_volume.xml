@@ -1,0 +1,133 @@
+<form class="formsearch">
+  <label>Volume-Based Retention</label>
+
+  <searchTemplate>earliest=-30d@d
+[| rest /services/data/indexes splunk_server=$host$*
+| search coldPath=$volume_title$* OR homePath=$volume_title$*
+| rename title AS orig_index | fields orig_index | dedup orig_index ]
+`_fb_summary_recs(*)`
+| bucket span=1d _time
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
+| eval bookkeeping="$volume_title$"
+| join type=left bookkeeping
+[ | rest /services/configs/conf-indexes/$volume_title$ | rename title AS bookkeeping]
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB,
+    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
+    first(rotatePeriodInSecs) AS rotatePeriodInSecs
+    by _time, state, index
+| eventstats sum(sizeOnDiskMB) AS daily_usage by _time
+| eventstats dc(index) AS idx_count, max(_time) AS latest
+  </searchTemplate>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+    </input>
+    <input type="dropdown" token="volume_title" searchWhenChanged="true">
+      <label>Volume</label>
+      <populatingSearch fieldForValue="title" fieldForLabel="title">| `_fb_rest_file_config("indexes")` | search title=volume:* | fields title | dedup title | sort title</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+A <i>volume</i> definition in Splunk is used to set a cap on the total
+amount of disk space used by several distinct indexes. Rather than
+being a per-index cutoff, it represents a restriction which spans
+several indexes at once. Think of it as a "per-partition" limit.
+<p/>
+The dashboard presented here aims to demonstrate how much of a
+volume's defined space is being used. In order to determine whether an
+index lives within a volume, the <code>indexes.conf</code> <em>on the system
+running the search</em> is examined for <code>volume:</code> tags. If
+any are found, the list of indexes is examined for any which are using
+the same disk path. The usage of the indexes found are then totted up
+and displayed in the table below.
+<p/>
+<b>Note:</b> Because it is the <code>indexes.conf</code> of the local
+system which is examined for any <code>volume:</code> space limit
+specifications, this might result in a blank value for the
+"Volume-Wide Retention Limit" panel.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <single>
+      <title>Volume-Wide Retention Limit</title>
+      <option name="field">maxVolumeDataSizeMB</option>
+      <searchPostProcess>`_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
+    </single>
+
+    <single>
+      <title>Volume-Wide Rotation Interval</title>
+      <option name="afterLabel">seconds</option>
+      <option name="field">rotatePeriodInSecs</option>
+    </single>
+  </row>
+
+  <row>
+    <single>
+      <title>Count of Monitored Indexes Using This Volume</title>
+      <option name="field">idx_count</option>
+    </single>
+    <single>
+      <title>Total Monitored Space on This Volume</title>
+      <option name="field">daily_usage</option>
+      <searchPostProcess>`_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
+    </single>
+  </row>
+
+  <row>
+    <table>
+      <title>Indexes Utilizing This Volume, by Data State</title>
+      <option name="entityName">results</option>
+      <!-- Lame; have to repeat the search to get an accurate pager -->
+      <searchPostProcess>where _time>=relative_time(now(), "@d")
+| rename index AS Index, state AS "Bucket State", sizeOnDiskMB AS "Index Usage" | table Index, "Bucket State", "Index Usage"</searchPostProcess>
+    </table>
+  </row>
+
+  <row>
+    <chart>
+      <title>Combined Volume Usage by Index Over Time</title>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+
+      <searchPostProcess>
+timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchPostProcess>
+    </chart>
+
+    <chart>
+      <title>Combined Data Usage vs. Limit Over Time</title>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+
+      <option name="charting.data1">view</option>
+      <option name="charting.data1.table">@data</option>
+      <option name="charting.data1.columns">[0,1]</option>
+      <option name="charting.chart.data">@data1</option>
+
+      <option name="charting.chart2">area</option>
+      <option name="charting.axixTitleY.text">Usage</option>
+
+      <option name="charting.data2">view</option>
+      <option name="charting.data2.table">@data</option>
+      <option name="charting.data2.columns">[0,2]</option>
+      <option name="charting.chart2.data">@data2</option>
+
+      <option name="charting.layout.charts">[@chart,@chart2]</option>
+      <option name="charting.layout.axisTitles">[@axisTitleX,@axisTitleY]</option>
+
+      <searchPostProcess>
+timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS "Index Usage"</searchPostProcess>
+    </chart>
+  </row>
+</form>

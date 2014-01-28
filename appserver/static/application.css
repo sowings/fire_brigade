@@ -1,0 +1,31 @@
+/* Don't show the "last refreshed" information in the results panels */
+.splLastRefreshed {
+  display: none;
+}
+
+/* Disable the Edit button on the views which are <dashboard> forms */
+.DashboardTitleBar .modecontrols {
+  display: none;
+}
+
+/* Set the color for the headings over each panel */
+.splHeader-dashboard h2 {
+  color: rgb(84, 121, 175);
+}
+
+/* Don't show the "View results" footer */
+.ViewRedirectorLink {
+  display: none !important;
+}
+
+/* Keep a consistent view of SingleValue panels across versions */
+.SingleValue .singleResult,
+.SingleValueHolder .singleLabel {
+  font-size: 20px;
+}
+
+.SingleValueHolder {
+  background-image: none;
+  background-color: #fff;
+  box-shadow: none;
+}

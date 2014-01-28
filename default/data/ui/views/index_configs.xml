@@ -1,0 +1,82 @@
+<form>
+  <label>Troubleshooting Index Configuration</label>
+
+  <searchTemplate>
+| rest /services/data/indexes count=0 | search disabled=0
+| stats values(maxTotalDataSizeMB) AS maxTotalDataSizeMB, mode(maxTotalDataSizeMB) AS pop_max,
+   values(homePath.maxDataSizeMB) AS home_max, mode(homePath.maxDataSizeMB) AS pop_home,
+   values(coldPath.maxDataSizeMB) AS cold_max, mode(coldPath.maxDataSizeMB) AS pop_cold,
+   values(coldPath_expanded) AS cold_paths, values(homePath_expanded) AS home_paths,
+   values(repFactor) AS repFactor,
+   values(splunk_server) AS indexers, dc(splunk_server) AS idx_count
+ by title
+  </searchTemplate>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+Occasionally, when managing multiple indexers (particularly if doing
+so manually) it's possible for transcription errors to creep in
+when setting up indexes. This dashboard attempts to highlight those
+misconfiguration issues.
+<p/>
+The values for a each of a collection of configuration knobs are
+collected, and compared to one another. When there are discrepancies,
+the values of each are shown in the table. Typically, there should be
+only one value for each of the size-based configuration options. The
+list of "Indexers w/ This Index" should include the search head, and
+all of the search peers.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <single>
+      <title>Count of Indexers</title>
+      <option name="field">indexers</option>
+      <searchPostProcess>stats dc(indexers) AS indexers</searchPostProcess>
+    </single>
+    <single>
+      <title>Count of Indexes</title>
+      <option name="field">indexes</option>
+      <searchPostProcess>stats dc(title) AS indexes</searchPostProcess>
+    </single>
+  </row>
+
+  <row>
+    <single>
+      <title>Number of "Missing" Indexes</title>
+      <option name="field">missing</option>
+      <searchPostProcess>eventstats max(idx_count) AS all_idx_all_server
+| where idx_count &lt; all_idx_all_server
+| stats dc(title) AS missing
+| rangemap field=missing foo=0-0 default=severe
+      </searchPostProcess>
+      <option name="classField">range</option>
+    </single>
+    <single>
+      <title>Number of Indexes with Mis-Matched Size</title>
+      <option name="field">mismatch</option>
+      <searchPostProcess>where mvcount(maxTotalDataSizeMB) &gt; 1
+| stats dc(title) AS mismatch
+| rangemap field=mismatch foo=0-0 default=severe
+      </searchPostProcess>
+      <option name="classField">range</option>
+    </single>
+  </row>
+
+  <row>
+    <table>
+      <title>Index Configuration Summary</title>
+      <searchPostProcess>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths
+| rename title AS Index, maxTotalDataSizeMB AS "Max Total Size(s)", pop_max AS "Common Max Size(s)"
+    repFactor AS "Rep. Factor",
+    home_max AS "Home Path Max Size(s)", pop_home AS "Common Home Size(s)",
+    cold_max AS "Cold Path Max Size(s)", pop_cold AS "Common Cold Size(s)",
+    cold_paths AS "Cold Path Directory", home_paths AS "Home Path Directory",
+    indexers AS "Indexers w/ this Index"
+      </searchPostProcess>
+    </table>
+  </row>
+
+</form>

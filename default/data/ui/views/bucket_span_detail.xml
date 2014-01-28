@@ -1,0 +1,110 @@
+<form>
+  <label>Bucket Span Detail</label>
+
+  <fieldset>
+    <input type="dropdown" token="host">
+      <label>Host</label>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+The purpose of this view is to provide a high-level estimate of the
+average span (read as the difference between the <i>earliest</i> and
+<i>latest</i> events) of the bucket. Taken in combination with data
+about the span of searches (i.e., what is the default time range for
+most searches?), this information can help tune bucket sizing for
+search performance. Generally speaking, searching lots of small
+buckets is slower than searching a few large ones.
+<p/>
+All of the buckets searched for purposes of this dashboard are
+<em>locally</em> indexed buckets--buckets replicated to this host from
+another clustered indexer are not included. The purpose of this
+restriction is to provide insight to the data <i>as it is
+indexed</i>.
+<p/>
+The "Configured Hot Span Limit" and "Configured Hot Idle Limit"
+reflect the current values of the respective settings for the
+index. Tuning these can change the behavior of Splunk with respect to
+creating index buckets. Please be careful when changing these
+parameters.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <single>
+      <title>Local Bucket Count</title>
+      <option name="field">count</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)` | extract auto=f fb_extract_bucket_type_time_source | search NOT bucket_type="rb" | dedup path | stats count</searchString>
+    </single>
+    <single>
+      <title>Average Local Bucket Span</title>
+      <option name="field">average</option>
+      <option name="afterLabel">seconds</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)`
+| extract auto=f fb_extract_bucket_type_time_source
+| search NOT bucket_type="rb"
+| dedup path
+| eval bucket_span=bucket_lt - bucket_et
+| stats avg(bucket_span) AS average | eval average=round(average, 0)
+      </searchString>
+    </single>
+    <single>
+      <title>Average Local Bucket Span (Human-Readable)</title>
+      <option name="field">average</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)`
+| extract auto=f fb_extract_bucket_type_time_source
+| search NOT bucket_type="rb"
+| dedup path
+| eval bucket_span=bucket_lt - bucket_et
+| stats avg(bucket_span) AS average
+| eval average=tostring(round(average, 0), "duration")
+      </searchString>
+    </single>
+  </row>
+
+  <row>
+    <single>
+      <title>Configured Hot Span Limit</title>
+      <option name="field">maxHotSpanSecs</option>
+      <option name="afterLabel">seconds</option>
+      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+    </single>
+    <single>
+      <title>Configured Hot Idle Limit</title>
+      <option name="field">maxHotIdleSecs</option>
+      <option name="afterLabel">seconds</option>
+      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+    </single>
+  </row>
+
+  <row>
+    <chart>
+      <title>Local Bucket Span In Hours</title>
+      <option name="charting.chart">column</option>
+      <option name="charting.axisTitleX.text">Bucket ID</option>
+      <option name="charting.axisTitleY.text">Hours</option>
+      <option name="charting.legend.placement">none</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)`
+| extract auto=f fb_extract_bucket_type_time_source
+| search NOT bucket_type="rb"
+| dedup path
+| sort 0 id
+| eval bucket_span=round((bucket_lt - bucket_et) / 3600, 1)
+| chart max(bucket_span) by id
+      </searchString>
+    </chart>
+  </row>
+
+</form>

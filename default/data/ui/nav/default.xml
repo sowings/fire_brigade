@@ -1,0 +1,29 @@
+<nav>
+  <collection label="Overview">
+    <view name="cumulative_overview" />
+    <view name="host_overview" />
+    <view name="index_overview" />
+    <view name="cluster_overview" />
+  </collection>
+  <collection label="Detail">
+    <view name="index_detail" />
+    <view name="cluster_detail" />
+    <divider />
+    <view name="bucket_size_detail" />
+    <view name="bucket_span_detail" />
+  </collection>
+  <collection label="Retention Planning">
+    <view name="retention_size" />
+    <view name="retention_count" />
+    <view name="retention_age" />
+    <divider />
+    <view name="retention_volume" />
+  </collection>
+  <collection label="Log Activity">
+    <view name="bucket_lifecycle" />
+  </collection>
+  <collection label="Troubleshooting">
+    <view name="index_configs" />
+    <view name="qtine_overview" />
+  </collection>
+</nav>

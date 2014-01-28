@@ -1,0 +1,109 @@
+<form class="formsearch">
+  <label>Where is my Bucket?</label>
+
+  <fieldset>
+    <input type="dropdown" token="host">
+      <label>Host</label>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+    </input>
+    <input type="dropdown" token="index">
+      <label>Index</label>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+    </input>
+    <input type="text" token="bucket_id" searchWhenChanged="true">
+      <label>Bucket ID</label>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+<p/>
+This view shows the history of a specific index bucket. The bucket ID
+is a required input.
+<p/>
+The chart displays information about the size of the bucket, and is
+color coded to represent the state of the bucket. This representation
+is drawn from the <code>dbinspect</code> data. The first data
+collection from that source may have caught the bucket "in flight"
+rather than showing the nascent bucket, so the "hot" or "warm" states
+might not be represented.
+<p/>
+The panels titled <em>Bucket State Transitions</em> and <em>Bucket
+Transition Events</em> display log events from the
+<code>splunkd.log</code> about the bucket. Note that the default
+retention period for the <code>_internal</code> index (where these
+events are stored) is only 30 days, so these panels may be empty for
+old buckets.
+</div>
+    </html>
+  </row>
+
+<!-- Do a time chart with the state and size of the bucket -->
+  <row>
+    <chart>
+      <title>Bucket State and Size Over Time</title>
+      <option name="charting.chart">column</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">Size (MB)</option>
+      <searchString>
+id=$bucket_id$ `_fb_summary_recs($host$, $index$)`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| search bucket_type!="rb"
+| bucket _time span=1d
+| stats max(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot,
+    max(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm,
+    max(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold,
+    max(eval(if(state="thawed", sizeOnDiskMB, 0))) AS thawed,
+    by _time
+      </searchString>
+
+<!-- Do some finagling to give colors, in order -->
+      <option name="charting.seriesColors">[0xA04558,0xE0A93B,0x5479AF,0x6B8930]</option>
+<!-- What if I only capture a bucket in-flight, already warm? look up
+     series order -->
+
+    </chart>
+  </row>
+
+
+  <!-- This will drive the table and the event set -->
+<!--
+  <searchTemplate>
+`fb_bucket_transitions($host$, *)`
+| search idx=$index$ bucket_id=$bucket_id$
+| `fb_bucket_transition_pp`
+| sort - time
+  </searchTemplate>
+-->
+<!-- Table with bucket log event summary -->
+  <row>
+    <table>
+      <title>Bucket State Transitions</title>
+      <searchString>
+`fb_bucket_transitions($host$, *)`
+| `_fb_figure_idx_name_from_home_or_cold_path`
+| search idx=$index$ bucket_id=$bucket_id$
+| `fb_bucket_transition_pp`
+| sort _time
+      </searchString>
+    </table>
+  </row>
+
+<!-- Log events -->
+  <row>
+    <event>
+      <title>Bucket Transition Events</title>
+      <searchString>
+`fb_bucket_transitions($host$, *)`
+| `_fb_figure_idx_name_from_home_or_cold_path`
+| search idx=$index$ bucket_id=$bucket_id$
+| `fb_bucket_transition_pp`
+| sort _time
+      </searchString>
+    </event>
+  </row>
+
+</form>

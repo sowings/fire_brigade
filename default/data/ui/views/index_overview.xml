@@ -1,0 +1,183 @@
+<form class="formsearch">
+  <label>Cross-Host Index Overview</label>
+
+  <searchTemplate>
+earliest=@d `_fb_summary_recs($index$)`
+| bucket _time span=1d
+| `_fb_dbi_strptime(earliestTime)`
+| `_fb_dbi_strptime(latestTime)`
+| eventstats avg(sizeOnDiskMB) AS global_avgBucket
+| stats min(earliestTime) AS earliestTime,
+  max(latestTime) AS latestTime
+  sum(sizeOnDiskMB) AS sizeOnDiskMB
+  sum(rawSize) AS rawSize
+  sum(eventCount) AS eventCount
+  dc(path) AS buckets
+  first(global_avgBucket) AS global_avgBucket
+  by host, state, index
+| join type=left host, index [ `_fb_rest_index_config($index$)`|
+rename splunk_server AS host | fields host, index, maxTotalDataSizeMB,
+frozenTimePeriodInSecs, maxDataSize, maxHotBuckets, maxWarmDBCount ]
+</searchTemplate>
+  <fieldset>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This dashboard focuses on a single index, but displays values across the entire deployment. Cumulative values across all hosts are shown as single values, while tables contain per-host summaries.
+<p/>
+The top two rows show
+cumulative totals for the various bucket states
+across <b>all</b> of the indexers. As in other views, the "Home Usage"
+value represents the combination of space consumed by both "hot" and
+"warm" buckets, taken together. Remember also that thawed buckets do
+not factor into retention policies.
+<p/>
+The top table, titled <em>Index Size and Capacity by Host</em>
+presents several quantities per index, in a single-line summary. The
+columns of data from left to right is intended to flow naturally.
+First, 
+the raw usage is shown, followed by two ways of calculating the
+compression. The compression factors (both as a ratio, and as a
+percentage of the total raw size) necessarily link the total raw size
+with the on-disk usage for the index. The limit of the raw usage is in
+the final column, with the percentage of capacity as a bridge between
+current usage and the configured limit.
+<p/>
+Below the first table are a series of single value panels again
+showing cumulative values over all hosts. Shown here are the <em>Total
+Bucket Count</em>, the <em>Median Bucket Size</em> and the <em>Total
+Event Count</em>. Note that the event count is given as a snapshot,
+from the accumulated buckets. A more up-to-date value for this can be
+obtained from the REST endpoint.
+<p/>
+Shown on the lower table is information about the bucket totals, as
+well as the time span of available events. The line for each host
+shows the absolute min and max span of events in the index on that
+host. Note that this doesn't indicate whether or not the index is
+sparse; it merely shows the <i>earliest</i> and <i>latest</i> events
+in the index on that host.
+The column titled "Earliest Common Time" represents the earliest time
+that <b>all</b> of the hosts can provide.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <single>
+      <option name="field">home</option>
+      <title>Home Usage</title>
+      <searchPostProcess>search state="hot" OR state="warm"
+| stats count, sum(sizeOnDiskMB) AS home | fillnull value=0 home
+| `_fb_mbytes_pretty(home)`
+      </searchPostProcess>
+    </single>
+    <single>
+      <option name="field">cold</option>
+      <title>Cold Usage</title>
+      <searchPostProcess>search state="cold"
+| stats count, sum(sizeOnDiskMB) AS cold | fillnull value=0 cold
+| `_fb_mbytes_pretty(cold)`
+      </searchPostProcess>
+    </single>
+  </row>
+  <row>
+    <single>
+      <option name="field">thawed</option>
+      <title>Thawed Usage</title>
+      <searchPostProcess>search state="thawed"
+| stats count, sum(sizeOnDiskMB) AS thawed | fillnull value=0 thawed
+| `_fb_mbytes_pretty(thawed)`
+      </searchPostProcess>
+    </single>
+    <single>
+      <option name="field">total</option>
+      <title>Total Usage</title>
+      <searchPostProcess>
+stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
+| `_fb_mbytes_pretty(total)`
+      </searchPostProcess>
+    </single>
+  </row>
+
+  <row>
+    <table>
+      <title>Index Size and Capacity by Host</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess>stats sum(sizeOnDiskMB) AS sizeOnDiskMB
+  sum(rawSize) AS rawSize
+  sum(eval(if(state!="thawed", sizeOnDiskMB, 0))) AS ratedUsage
+  first(maxTotalDataSizeMB) AS maxTotalDataSizeMB
+  by host
+| eval rawTotalinMB=rawSize / 1024 / 1024
+| eval percentage=round(ratedUsage * 100 / maxTotalDataSizeMB, 1)
+| eval diskTotalinMB=sizeOnDiskMB
+| `_fb_get_comp_ratio`
+| `_fb_get_comp_percent`
+| `_fb_mbytes_pretty(sizeOnDiskMB)`
+| `_fb_bytes_pretty(rawSize)`
+| `_fb_mbytes_pretty(maxTotalDataSizeMB)`
+| table host, rawSize, comp_ratio, comp_percent, sizeOnDiskMB, percentage, maxTotalDataSizeMB
+| rename
+  host AS Host
+  sizeOnDiskMB AS "Total Usage"
+  rawSize AS "Total Raw Usage"
+  maxTotalDataSizeMB AS "Disk Usage Limit"
+  comp_ratio AS "Compression Ratio"
+  comp_percent AS "Comp. (% of Raw)"
+  percentage AS "% of Capacity"
+      </searchPostProcess>
+    </table>
+  </row>
+
+  <row>
+    <single>
+      <title>Total Bucket Count</title>
+      <option name="field">buckets</option>
+      <searchPostProcess>stats sum(buckets) AS buckets</searchPostProcess>
+    </single>
+    <single>
+      <title>Median Bucket Size</title>
+      <option name="field">global_avgBucket</option>
+      <searchPostProcess>head 1 | `_fb_mbytes_pretty(global_avgBucket)`</searchPostProcess>
+    </single>
+    <single>
+      <title>Total Event Count</title>
+      <option name="field">events</option>
+      <searchPostProcess>stats sum(eventCount) AS events</searchPostProcess>
+    </single>
+  </row>
+
+  <row>
+    <table>
+      <title>Index Span By Earliest, Latest</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess>stats min(earliestTime) AS earliestTime
+  max(latestTime) AS latestTime
+  sum(eventCount) AS eventCount
+  sum(buckets) AS buckets
+  first(frozenTimePeriodInSecs) AS frozenTimePeriodInSecs
+  by host
+| eventstats max(earliestTime) AS cumulativeTime
+| eval cutoff_time=now()-frozenTimePeriodInSecs | convert ctime(cutoff_time)
+| convert ctime(*Time)
+| table host, eventCount, buckets, earliestTime, cumulativeTime, latestTime, frozenTimePeriodInSecs, cutoff_time
+| rename
+  host AS Host
+  eventCount AS "Total Events"
+  buckets AS buckets
+  earliestTime AS "Earliest Event Time"
+  cumulativeTime AS "Earliest Common Time"
+  latestTime AS "Latest Event Time"
+  frozenTimePeriodInSecs AS "Freeze Time Limit"
+  cutoff_time AS "Cutoff Time"
+      </searchPostProcess>
+    </table>
+  </row>
+
+</form>

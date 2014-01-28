@@ -1,0 +1,21 @@
+[]
+access = read : [ * ], write : [ admin ]
+
+[views]
+
+# This default matches default roles in accessing _internal, upon
+# which these views depend.
+[views/bucket_lifecycle]
+access = read : [ admin ], write : [ admin ]
+
+[views/lolrus]
+access = read : [ admin ], write : [ admin ]
+
+[views/qtine_overview]
+access = read : [ admin ], write : [ admin ]
+
+[props]
+export = none
+
+[transforms]
+export = none

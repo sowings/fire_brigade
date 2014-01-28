@@ -1,0 +1,93 @@
+<dashboard>
+  <label>Matrix Overview (REST)</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+<p/>
+This dashboard is intended to show the overall status of the
+indexers in the Splunk environment.
+<p/>
+Instead of using the <code>dbinspect</code> mechanism like the other
+dashboards within Fire Brigade, this view expressly uses <i>only</i>
+the REST API. As such, the information on this dashboard is current
+from the time the search is run, not subject to any delay. Also,
+because it relies upon the REST API, it spans all of the hosts which
+are distributed search peers, not only those which have been
+instrumented with the <em>Technology Add-on for Fire Brigade</em>.
+<p/>
+The top table focuses on the disk space constraints on all of the
+indexes, on all of the search peers. The first value in each cell is
+the current usage, given in megabytes. After the slash is shown the
+<code>maxTotalDataSizeMB</code> setting for the index. The percentage
+value shown is the ratio of these tow values. If a cell is empty, the
+corresponding index on the host (row header) is also
+empty. <strong>Note:</strong> If tired storage usage based on
+<code>homePath</code> (<em>homePath.maxDataSizeMB</em>) and
+<code>coldPath</code> (<em>coldPath.maxDataSizeMB</em>) is used, the
+maximum value shown (on the right hand side of the slash) is the
+<em>lesser</em> of the sum of the two path maximums vs. the combined
+maximum. If <i>volume-based</i> retention is used, the limits for
+those settings may override what is shown here.
+<p/>
+The bottom table helps to illustrate the <em>span</em> of events in
+the index.  The first value in each cell shows the amount of time
+between the earliest event and the latest event in the index
+(elsewhere called "Maximal Span"), in a human readable format. The
+second string is the human-readable form of the
+<code>frozenTimePeriodInSecs</code> setting for the index. The default
+value is approximately six years (2184 days), but many sites will set
+this to a specific value to target a specific
+SLA. <strong>Note:</strong> The format for the values in these cells
+is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <table>
+      <title>Matrix View - Index Capacity</title>
+      <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <searchString>
+| rest /services/data/indexes | search totalEventCount!=0
+| eval roof=min((coalesce(homePath.maxDataSizeMB, 4294967295) +
+                 coalesce(coldPath.maxDataSizeMB, 4294967295)),
+                maxTotalDataSizeMB)
+| eval span=tostring(currentDBSizeMB) + " / " +
+    tostring(roof) + " MB (" +
+    tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
+| chart first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+      </searchString>
+
+      <drilldown>
+        <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+        <link><![CDATA[/app/fire_brigade/retention_size?form.host=$row.Indexer$&form.index=$click.name2$]]></link>
+      </drilldown>
+    </table>
+  </row>
+
+  <row>
+    <table>
+      <title>Matrix View - Index Retention</title>
+      <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <searchString>
+| rest /services/data/indexes | search totalEventCount!=0
+| eval minTime=round(strptime(minTime, "%Y-%m-%dT%H:%M:%S%z"))
+| eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
+| eval span=tostring(maxTime-minTime, "duration") + " / " +
+    tostring(frozenTimePeriodInSecs, "duration")
+| chart first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+      </searchString>
+
+      <drilldown>
+        <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+        <link><![CDATA[/app/fire_brigade/retention_age?form.host=$row.Indexer$&form.index=$click.name2$]]></link>
+      </drilldown>
+    </table>
+  </row>
+
+</dashboard>

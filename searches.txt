@@ -1,0 +1,69 @@
+ /opt/splunk/bin/splunk search '| dbinspect index=os
+| fields + earliestTime,latestTime,state,rawSize,sizeOnDiskMB
+| eval earliest_epoch=round(strptime(earliestTime, "%m/%d/%Y:%H:%M:%S"), 0)
+| eval latest_epoch=round(strptime(latestTime, "%m/%d/%Y:%H:%M:%S"), 0)
+| stats count, min(earliest_epoch) AS earliest, max(latest_epoch) as latest, sum(rawSize) AS rawTotal, sum(sizeOnDiskMB) AS diskTotalinMB by state
+| eval rawTotalinMB=(rawTotal / 1024 / 1024) | fields - rawTotal
+| eval comp_ratio=tostring(round(rawTotalinMB / diskTotalinMB, 2)) + "::1"
+| eval comp_percent=tostring(round(diskTotalinMB / rawTotalinMB * 100, 2)) + "%"
+| convert ctime(earliest), ctime(latest)
+| table state, count, earliest, latest, rawTotalinMB, diskTotalinMB, comp_ratio, comp_percent' -preview f
+
+
+| rex field=path
+  "(?<bucket_parent>.+)[\\/](?<bucket_type>.+?)_(?<bucket_lt>\d+)_(?<bucket_et>\d+)_(?<bucket_id>\d+)_(?<bucket_primary_guid>.+)$"
+
+
+| inputlookup cluster-dbinspect-sample.csv
+| extract fb_extract_bucket_type_time_source | extract fb_extract_hot_bucket
+| stats sum(eval(if(bucket_type=="rb", sizeOnDiskMB, 0))) AS replicated,
+     sum(eval(if(bucket_type!="rb", sizeOnDiskMB, 0))) AS indexed
+  sum(sizeOnDiskMB) AS Total
+| eval replicated=round(replicated, 0) | eval indexed=round(indexed, 0) | eval Total=round(Total, 0)
+
+eventtype=bucket_cool | rex field=from "_(?<bucket_id>\d+)$"
+| eval Reason=case(isinit="true", "Restart", count > maxHotBuckets, "Too Many Hot Buckets", diff > maxHotIdleSecs, "Bucket Idle Too Long") | rename idx AS Index, from AS "Bucket Name", bucket_id AS "Bucket ID" | table _time, Index, "Bucket ID", "Bucket Name", Reason
+
+eventtype=bucket_chill| rex field=bucket "_(?<bucket_id>\d+)'?$" | rex "(?<transition>warm_to_cold|AsyncFreezer)"
+| eval Reason=case(transition="warm_to_cold", "Unknown", bucket_age > frozenTimePeriodInSecs, "Bucket Past Age Cutoff")
+| rename bucket AS "Bucket Name", idx AS Index, bucket_id AS "Bucket ID"
+| table _time, Index, "Bucket ID", "Bucket Name", "Reason"
+
+
+| eval src_idx=case(idx==coldPath_expanded, title,
+  idx=homePath_expanded, title, 1==1, "unknown")
+
+
+eventtype=bucket_freeze | rex field=candidate "^(?<idx>.*)[\\/](?<bucket>[^\\/]+_(?<bucket_id>\d+))$"
+| eval Reason=case(transition="warm_to_cold", "Unknown", bucket_age > frozenTimePeriodInSecs, "Bucket Past Age Cutoff")
+| join type=left idx [ | rest /services/data/indexes | fields coldPath_expanded, title | rename coldPath_expanded AS idx ]
+
+
+| rename bucket AS "Bucket Name", idx AS Index, bucket_id AS "Bucket ID"
+| table _time, "Bucket ID", "Bucket Name", idx, Index, title, Reason
+
+| eval Reason=case(isinit="true", "Restart", count > maxHotBuckets,
+  "Too Many Hot Buckets", diff > maxHotIdleSecs, "Bucket Idle Too
+  Long")
+| eval Reason=case(transition="warm_to_cold", "Unknown", bucket_age > frozenTimePeriodInSecs, "Bucket Past Age Cutoff")
+| eval Reason=case(transition="warm_to_cold", "Unknown", bucket_age > frozenTimePeriodInSecs, "Bucket Past Age Cutoff")
+
+| inputlookup monitored_indexes.csv | append [ search index=_internal | head 1 | eval index="sep_test" ] | table index | outputlookup monitored_indexes.csv
+
+
+[_fb_large_seconds_pp]
+definition = eval days=frozenTimePeriodInSecs / 86400 | eval
+dayparts=frozenTimePeriodInSecs % 86400 | eval hours=floor(dayparts /
+3600) | eval hourparts=dayparts % 3600 | eval minutes=floor(hourparts
+/ 60) | eval secs=hourparts % 60 | eval strf=if(isnull(days), hours +
+":" + minutes + ":" + secs, days + "d+" + hours + ":" + minutes + ":"
++ secs) | fields - days, hours, dayparts, hourparts
+
+index=summary search_name="DB inspection" host=contrarian.local| bucket _time span=1d | stats count, count(eval(state="hot")) AS hot, count(eval(state="warm")) AS warm, count(eval(state="cold")) AS cold, count(eval(state="thawed")) AS thawed  by _time
+
+
+index=_internal source=*splunkd.log eventtype=bucket_* index=_internal
+| rename tag::eventtype AS mytag
+| bucket _time span=1d
+| stats count(eval(mytag="new_hotness")) AS new_hot, count(eval(mytag="hot_to_warm")) AS hot_to_warm, count(eval(mytag="bucket_freeze")) AS freeze by _time, index
+| join type=left _time [ search index=summary search_name="DB inspection" host=contrarian.local| bucket _time span=1d | stats count(eval(state="hot")) AS hot, count(eval(state="warm")) AS warm, count(eval(state="cold")) AS cold, count(eval(state="thawed")) AS thawed  by _time ]

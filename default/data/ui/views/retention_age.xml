@@ -1,0 +1,174 @@
+<form class="formsearch">
+  <label>Bucket Age vs. Age Limit</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+The family of views in the Retention menu is aimed at helping
+administrators visualize and thereby tune various retention parameters
+for their indexed data. General information about retention settings
+can be found in the Splunk documentation for <a
+href="http://docs.splunk.com/Documentation/Splunk/4.3.6/Admin/Setaretirementandarchivingpolicy">version
+4.3.x here</a> or <a
+href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Setaretirementandarchivingpolicy">version
+5.0.x here</a>.
+<p />
+The time limit settings to force archival for Splunk data are values
+given in seconds. Human readable forms of the current archival limit
+(known as <code>frozenTimePeriodInSecs</code>) are provided. If the
+value is shown with a plus sign (+), the number to the left of the plus
+sign indicates a number of days.
+<p />
+For the "oldest bucket in this group" panels, the date stamp shown on
+the left is the human-readable form of the highest epoch time value in
+the bucket (sometimes known as the "latest time"). This serves as the
+endpoint of the bucket boundary, and dictates when this bucket would
+be eligible for freezing (archival) with a time-based retention
+policy. The right hand side gives the "distance" to this value in
+seconds, for easy comparison with
+<code>frozenTimePeriodInSecs</code>. <strong>For the "Oldest Bucket"
+group, thawed buckets are expressly excluded, as they are not governed
+by any retention policy.</strong>
+<p />
+The maximal span panels indicate the span of days between the earliest
+event in the index to the latest event in the index. If there are
+thawed buckets in this index, the maximal span <em>includes</em> the
+thawed buckets.
+<p />
+To give administrators an indication of which buckets are the oldest
+in the index, a table of the ten oldest buckets is shown. These
+represent the candidates for archival, when an archival policy
+(whether <em>time-based</em> or <em>size-based</em>) is enacted.
+<p />
+</div>
+    </html>
+  </row>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <default>All Indexes</default>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All Indexes</choice>
+    </input>
+  </fieldset>
+
+  <row>
+    <single>
+      <title>Frozen Time Limit (Human Readable)</title>
+      <option name="field">strf</option>
+      <searchString>| `_fb_rest_index_config($host$, $index$)`
+| eval strf=tostring(frozenTimePeriodInSecs, "duration")</searchString>
+    </single>
+    <single>
+      <title>Frozen Time Limit Setting (Raw)</title>
+      <option name="afterLabel">seconds</option>
+      <option name="field">frozenTimePeriodInSecs</option>
+      <searchString>| `_fb_rest_index_config($host$, $index$)`
+| eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "commas")
+      </searchString>
+    </single>
+  </row>
+
+  <row>
+    <single>
+      <title>Oldest Bucket in This Group</title>
+      <option name="field">bucket_lt</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>state!=thawed `_fb_summary_recs($host$, $index$)`
+| extract fb_extract_bucket_type_time_source
+| stats min(bucket_lt) AS bucket_lt | convert ctime(bucket_lt)
+      </searchString>
+    </single>
+    <single>
+      <title>Oldest Bucket's Age in Seconds</title>
+      <option name="field">age</option>
+      <option name="afterLabel">seconds</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>state!=thawed `_fb_summary_recs($host$, $index$)`
+| extract fb_extract_bucket_type_time_source
+| stats min(bucket_lt) AS bucket_lt
+| eval age=tostring(now() - bucket_lt, "commas")
+      </searchString>
+    </single>
+  </row>
+
+  <row>
+    <single>
+      <title>Maximal Span in This Group</title>
+      <option name="field">maximal_span</option>
+      <option name="afterLabel">seconds</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)`
+| extract fb_extract_bucket_type_time_source
+| stats max(bucket_lt) AS bucket_lt, min(bucket_et) AS bucket_et
+| eval maximal_span=bucket_lt - bucket_et
+      </searchString>
+    </single>
+    <single>
+      <title>Current Maximal Span (Human-Readable)</title>
+      <option name="field">maximal_span_pp</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)`
+| extract fb_extract_bucket_type_time_source
+| stats max(bucket_lt) AS bucket_lt, min(bucket_et) AS bucket_et
+| eval maximal_span_pp=tostring(bucket_lt - bucket_et, "duration")
+      </searchString>
+    </single>
+  </row>
+
+  <row>
+    <table>
+      <title>Ten Oldest (Non-Thawed) Monitored Buckets in This Group</title>
+      <earliestTime>@d</earliestTime>
+      <searchString>state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| fillnull bucket_primary_guid value="Locally Indexed"
+| stats values(bucket_lt) AS bucket_lt,
+    first(eventCount) AS eventCount,
+    max(sizeOnDiskMB) AS sizeOnDiskMB by index, bucket_primary_guid, id
+| sort 10 bucket_lt
+| eval bucket_age=tostring(now() - bucket_lt, "duration")
+| convert ctime(bucket_lt)
+| `_fb_mbytes_pretty(sizeOnDiskMB)`
+| rename bucket_lt AS "Oldest Time",
+    index AS Index,
+    id AS "Bucket ID",
+    eventCount AS "Event Count",
+    sizeOnDiskMB AS "Bucket Size",
+    bucket_primary_guid AS "Source Server"
+    bucket_age AS "Bucket Age"
+| table "Oldest Time", "Source Server", Index, "Bucket ID", "Event Count", "Bucket Size", "Bucket Age"
+      </searchString>
+    </table>
+  </row>
+
+  <row>
+    <chart>
+      <title>Maximal Span (in Days) in This Group</title>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <earliestTime>-30d@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, $index$)`
+| `_fb_dbi_strptime(earliestTime)` | `_fb_dbi_strptime(latestTime)`
+| bucket _time span=1d
+| eval state=if(state="thawed", "Thawed", "Normal")
+| stats min(earliestTime) AS earliestTime,
+        max(latestTime) AS latestTime
+        by _time, state
+| eventstats max(latestTime) AS abs_latest, min(earliestTime) AS abs_earliest by _time
+| eval bucket_days=round((latestTime - earliestTime) / 86400, 2)
+| eval outside_days=round((abs_latest - abs_earliest) / 86400, 2)
+| eval bucket_span=if(state="Thawed", outside_days, bucket_days)
+| timechart span=1d first(bucket_span) AS "Bucket Days" by state
+      </searchString>
+    </chart>
+  </row>
+
+</form>

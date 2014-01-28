@@ -1,0 +1,180 @@
+<form class="formsearch">
+  <label>Indexer Host Overview</label>
+
+  <fieldset>
+    <input type="dropdown" token="host">
+      <label>Host</label>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This dashboard is aimed at providing a single, holistic view of the
+indexes on a single host, all at once. While the <a
+href="/app/fire_brigade/cumulative_overview">Quick Overview</a> page
+provides a view of the whole distributed search environment, this
+dashboard focuses instead on a single host.
+<p/>
+The top three panels reflect the total disk usage found in each of the
+three index subpaths (<code>homePath</code>, <code>coldPath</code> and
+<code>thawedPath</code>), across all indexes.
+<p/>
+The left-hand table below, titled <em>Indexes by Size and
+Capacity</em>, shows the list of all indexes on the host, with the
+amount of disk space they are using. The "Retention Usage" column
+reflects the amount of disk space in the combination of
+<code>homePath</code> and <code>coldPath</code>. Buckets that are
+"thawed" are not subject to any retention policies, but are included
+in the "Total Usage" column of this table. The "% of Capacity" column
+reflects the usage of that index with respect to its own maximum size
+limit (<code>maxTotalDataSizeMB</code>). See the <a
+href="/app/fire_brigade/retention_size">Usage vs. Size Limit(s)</a>
+view for more detail. Each row of the table is clickable, and will
+redirect to the <em>Index Detail</em> view for the appropriate
+index. The size values are all given in megabytes; while suffering a
+bit in readability for large indexes, it provides a clean sorting
+category.
+<p/>
+If disk usage information is available from the "df" sourcetype, it
+will be displayed in the panel on the middle right, below. Note that
+if a non-standard index (read as: "not the one titled <code>os</code>")
+is used to store "df" information, the <code>macros.conf</code> of the
+Fire Brigade application will have to be updated to name the
+appropriate index.
+<p/>
+The charts on the bottom of the view are similar to the cumulative
+versions seen elsewhere, but are restricted to the selected host.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <single>
+      <title>Home Path Usage</title>
+      <option name="field">homeUsage</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>state="hot" OR state="warm" `_fb_summary_recs($host$, *)`
+| dedup path | stats sum(sizeOnDiskMB) AS homeUsage
+| `_fb_mbytes_pretty(homeUsage)`
+      </searchString>
+    </single>
+    <single>
+      <title>Cold Path Usage</title>
+      <option name="field">coldUsage</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>state="cold" `_fb_summary_recs($host$, *)`
+| dedup path
+| stats sum(sizeOnDiskMB) AS coldUsage
+| `_fb_mbytes_pretty(coldUsage)`
+      </searchString>
+    </single>
+    <single>
+      <title>Thawed Path Usage</title>
+      <option name="field">thawedUsage</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>state="thawed" `_fb_summary_recs($host$, *)`
+| dedup path
+| stats sum(sizeOnDiskMB) AS thawedUsage
+| `_fb_mbytes_pretty(thawedUsage)`
+      </searchString>
+    </single>
+  </row>
+
+  <row>
+    <table>
+      <title>Indexes by Size and Capacity</title>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, *)`
+| dedup path
+| join type=left index
+[ | rest /services/data/indexes splunk_server=$host$* count=0
+  | rename title AS index ]
+  | stats
+    first(maxTotalDataSizeMB) AS limit,
+    sum(sizeOnDiskMB) AS diskTotalinMB
+    by index, state
+| stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(diskTotalinMB) AS totalUsage
+    first(limit) AS limit
+    by index
+| eval percentage=round(ratedUsage * 100 / limit, 1)
+| sort - ratedUsage
+| rename ratedUsage AS "\"Retention\" Usage"
+    totalUsage AS "Total Usage" 
+    percentage AS "% of Capacity"
+    index AS Index
+| table Index, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+      </searchString>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+
+    </table>
+
+    <table>
+      <title>Disk Usage Information From 'df'</title>
+      <earliestTime>@d</earliestTime>
+      <searchString>index=`os_index` sourcetype="df" host=$host$ | head 1
+| multikv fields Filesystem, Size, Avail, UsePct, MountedOn
+| table Filesystem, Size, Avail, UsePct, MountedOn
+      </searchString>
+    </table>
+
+  </row>
+
+  <row>
+    <chart>
+      <title>Local vs. Replicated Data Over Time (last 30 days)</title>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+<!--
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+-->
+      <earliestTime>-30d@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, "*")`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| bucket _time span=1d
+| dedup _time, path
+| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
+| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
+      </searchString>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$click.name2$]]></link>
+      </drilldown>
+    </chart>
+
+    <chart>
+      <title>Monitored Indexing Space Over Time (last 30 days)</title>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.legend.placement">none</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+<!--
+      <option name="charting.seriesColors">[0x70A65C]</option>
+-->     
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+
+      <earliestTime>-30d@d</earliestTime>
+      <searchString>`_fb_summary_recs($host$, "*")`
+| bucket span=1d _time
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, index, path
+| timechart sum(sizeOnDiskMB) AS MBytes by index
+</searchString>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/cluster_detail?form.host=$form.host$]]></link>
+      </drilldown>
+    </chart>
+  </row>
+
+</form>

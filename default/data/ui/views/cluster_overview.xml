@@ -1,0 +1,95 @@
+<dashboard>
+  <label>Replication Overview</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+<p />
+This dashboard shows the overall status of an environment utilizing
+the clustering feature of Splunk versions 5.x and higher. It indicates
+the amount of data which is indexed directly by the receiving indexer,
+and the amount of disk space taken up by replication copies of that
+data.
+<p />
+<strong>Note: Environments not making use of clustering will simply not have any
+replicated data shown on the graphs.</strong>
+<p />
+The panel titled <em>Proportion of Replicated Data</em> breaks out its
+display by indexer. This can highlight indexers which are
+disproportionately loaded.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <single>
+      <title>Locally Indexed Data</title>
+      <option name="field">indexed</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs(*)`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| search bucket_type!="rb"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
+| stats sum(sizeOnDiskMB) AS indexed
+| `_fb_mbytes_pretty(indexed)`
+      </searchString>
+    </single>
+    <single>
+      <title>Replicated Data</title>
+      <option name="field">replicated</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs(*)`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| search bucket_type="rb"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
+| stats sum(sizeOnDiskMB) AS replicated
+| `_fb_mbytes_pretty(replicated)`
+      </searchString>
+    </single>
+    <single>
+      <title>Total (Local + Replicated)</title>
+      <option name="field">Total</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs(*)`
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
+| stats sum(sizeOnDiskMB) AS Total
+| `_fb_mbytes_pretty(Total)`
+      </searchString>
+    </single>
+  </row>
+
+  <row>
+    <chart>
+      <title>Proportion of Replicated Data</title>
+      <option name="charting.chart">column</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>`_fb_summary_recs(*)`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by host, path, bucket_type, 
+| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB by host, bucket_type
+| chart sum(sizeOnDiskMB) AS "Disk Usage" OVER host by bucket_type
+      </searchString>
+    </chart>
+    <chart>
+      <title>Local vs. Replicated Data Over Time (last 30 days)</title>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+      <earliestTime>-30d@d</earliestTime>
+      <searchString>`_fb_summary_recs(*)`
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| bucket _time span=1d
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type
+| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
+| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
+      </searchString>
+    </chart>
+  </row>
+</dashboard>

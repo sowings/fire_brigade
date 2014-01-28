@@ -1,0 +1,98 @@
+<form>
+  <label>Troubleshooting Quarantined Events</label>
+
+  <fieldset>
+    <input type="dropdown" token="host">
+      <label>Host</label>
+      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This view is focused on identifying buckets which are <i>quarantine</i>
+buckets. The quarantine mechanism attempts to keep events which are "too
+far" out of alignment with the event times in the rest of the bucket
+separate. The parameters which govern this behavior live within
+<code>indexes.conf</code>.
+<p/>
+The names of the parameters help illustrate the principle further:
+quarantineFutureSecs specifies how far in the future an event must be for it
+to be quarantined. It is always calculated relative to the events already in
+the bucket. <b>Example:</b> If an event contains buckets up to Mar 12 2013
+09:23:18, and an event arrives dated May 8 2013 13:55:07, this new event
+would be quarantined (placed in a separate bucket) given the default value
+of quarantineFutureSecs which translates to 30 days.
+<p/>
+The two top panels in this view provide inspection of these quarantine
+parameters. Note that it's rare for these to be customized; they are
+provided primarily for informational purposes, and to make sense of the
+other data on this page.
+<p/>
+<p/>
+The panel titled <em>Quarantine Bucket Creation Events</em> shows log events
+(if any) from the <code>splunkd.log</code> which are emitted when these
+types of buckets are created. The <code>timestamped</code> field is in epoch
+time format, and can be made easier to read with <code>convert</code> or 
+</div>
+    </html>
+  </row>
+
+  <!-- Quarantine settings -->
+  <row>
+    <single>
+      <title>Quarantine Past Seconds</title>
+      <option name="field">quarantinePastSecs</option>
+      <searchString>| `_fb_rest_index_config($host$, $index$)`
+      </searchString>
+    </single>
+    <single>
+      <title>Quarantine Future Seconds</title>
+      <option name="field">quarantineFutureSecs</option>
+      <searchString>| `_fb_rest_index_config($host$, $index$)`
+      </searchString>
+    </single>
+  </row>
+
+  <!-- Buckets that were quarantine buckets -->
+  <!-- Show span, number of events, etc -->
+  <row>
+    <table>
+      <title>Buckets Originally Created As Quarantine</title>
+      <earliestTime>@d</earliestTime>
+      <searchString>
+[ search earliest=0 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
+    | fields host, idx, bucket_id
+    | rename idx AS orig_index, bucket_id AS id
+    | table host, orig_index, id ]
+index=summary search_name="DB inspection"
+| rename orig_index AS index
+| rename id AS "Bucket ID",
+   index AS Index
+   state AS "Bucket State",
+   earliestTime AS "Earliest Time",
+   latestTime AS "Latest Time",
+   eventCount AS "Event Count"
+| table host Index "Bucket ID" "Bucket State" "Event Count" "Earliest Time" "Latest Time" rawSize sourceCount sourceTypeCount hostCount sizeOnDiskMB 
+      </searchString>
+    </table>
+  </row>
+
+  <!-- Quarantine events generating new hot buckets -->
+  <!-- Highlight sourcetypes with bad time stamp parsing? -->
+  <row>
+    <event>
+      <title>Quarantine Bucket Creation Events</title>
+      <searchString>
+eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
+      </searchString>
+    </event>
+  </row>
+
+
+</form>
