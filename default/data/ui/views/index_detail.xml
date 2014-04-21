@@ -1,17 +1,26 @@
-<form class="formsearch">
+<form class="formsearch" script="index_detail.js">
   <label>Index Detail</label>
 
+  <searchTemplate>
+earliest=-30d@d `_fb_summary_recs($host$, $index$)`
+| bucket _time span=d
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB, max(rawSize) AS rawSize by _time, path
+| stats sum(sizeOnDiskMB) AS diskTotalinMB, sum(rawSize) AS rawSize by _time
+| eval rawTotalinMB=rawSize / 1024 / 1024
+| `_fb_get_comp_percent`
+  </searchTemplate>
+
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
     </input>
   </fieldset>
-
+ 
   <row>
     <html>
 <div id="fire_brigade_help">
@@ -66,38 +75,33 @@ shown over a thirty-day trend.
   <row>
     <single>
       <title>Total On-Disk Size</title>
-      <option name="field">currentDBSizeMB</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
-| stats sum(sizeOnDiskMB) AS currentDBSizeMB
-| `_fb_mbytes_pretty(currentDBSizeMB)`
-      </searchString>
+      <option name="field">diskTotalinMB</option>
+      <searchPostProcess>where _time>=relative_time(now(), "@d")
+| `_fb_mbytes_pretty(diskTotalinMB)`
+      </searchPostProcess>
     </single>
     <single>
       <title>Total Raw Size</title>
-      <option name="field">rawBytes</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| stats max(rawSize) AS rawSize by path
-| stats sum(rawSize) AS rawBytes
-| `_fb_bytes_pretty(rawBytes)`
-      </searchString>
+      <option name="field">rawSize</option>
+      <searchPostProcess>where _time>=relative_time(now(), "@d")
+| `_fb_bytes_pretty(rawSize)`
+      </searchPostProcess>
     </single>
     <single>
       <title>Compression Percentage</title>
       <option name="field">comp_percent</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)` | dedup path
-| stats sum(rawSize) AS rawBytes, sum(sizeOnDiskMB) AS diskTotalinMB
-| eval rawTotalinMB=round(rawBytes / 1024 / 1024, 0)
-| `_fb_get_comp_percent`</searchString>
+      <option name="underLabel">of raw size</option>
+      <searchPostProcess>
+| rename sizeOnDiskMB AS diskTotalinMB
+| eval rawTotalinMB=round(rawSize / 1024 / 1024, 0)
+| `_fb_get_comp_percent`</searchPostProcess>
     </single>
   </row>
 
   <row>
-    <chart>
+    <chart id="index_detail_capacity_gauge">
       <title>Index Capacity</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">fillerGauge</option>
       <option name="charting.axisTitleY.text">Percentage</option>
       <option name="charting.chart.showLabels">false</option>
@@ -107,7 +111,7 @@ shown over a thirty-day trend.
 [ | `_fb_rest_index_config($host$, $index$)` ]
   | stats
     first(maxTotalDataSizeMB) AS limit,
-    sum(sizeOnDiskMB) AS diskTotalinMB
+    max(sizeOnDiskMB) AS diskTotalinMB
     by path, state
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage, first(limit) AS limit
 | eval percentage=round(ratedUsage * 100 / limit, 1)
@@ -121,13 +125,15 @@ shown over a thirty-day trend.
     </chart>
     <chart>
       <title>Sourcetype Proportions</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
       <searchString>| metadata type=sourcetypes index=$index$ splunk_server=$host$*
 | table sourcetype totalCount
 </searchString>
     </chart>
-    <chart>
+    <chart id="index_detail_bucket_sizes">
       <title>Sizes of Buckets by ID</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">column</option>
       <option name="charting.legend.placement">none</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
@@ -150,6 +156,7 @@ shown over a thirty-day trend.
   <row>
     <chart>
       <title>Compressed Usage vs. Raw Volume (last 30 days)</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">area</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>

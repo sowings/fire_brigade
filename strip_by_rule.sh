@@ -7,7 +7,7 @@ output_filename=$3
 RULE_MARKER=PACKAGING_RULE
 
 if [ x"$mode" = "x" ]; then
-    echo "Must give command mode, use [strip|remove]"
+    echo "Must give command mode, use [strip|remove|above]"
     exit 1
 fi
 
@@ -31,6 +31,8 @@ fi
 
 if [ x"$mode" = "xstrip" ]; then
     sed -e "$line_no,\$d" ${input_filename} > ${output_filename}
+elif [ x"$mode" = "xabove" ]; then
+    sed -e "1,${line_no}d" ${input_filename} > ${output_filename}
 elif [ x"$mode" = "xremove" ]; then
     sed -e "${line_no}d" ${input_filename} > ${output_filename}
 else

@@ -5,7 +5,7 @@
 [| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
-`_fb_summary_recs(*)`
+state!="thawed" `_fb_summary_recs_host($host$)`
 | bucket span=1d _time
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
 | eval bookkeeping="$volume_title$"
@@ -13,7 +13,6 @@
 [ | rest /services/configs/conf-indexes/$volume_title$ | rename title AS bookkeeping]
 | stats sum(sizeOnDiskMB) AS sizeOnDiskMB,
     first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
-    first(rotatePeriodInSecs) AS rotatePeriodInSecs
     by _time, state, index
 | eventstats sum(sizeOnDiskMB) AS daily_usage by _time
 | eventstats dc(index) AS idx_count, max(_time) AS latest
@@ -22,7 +21,7 @@
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="volume_title" searchWhenChanged="true">
       <label>Volume</label>
@@ -58,46 +57,41 @@ specifications, this might result in a blank value for the
     <single>
       <title>Volume-Wide Retention Limit</title>
       <option name="field">maxVolumeDataSizeMB</option>
-      <searchPostProcess>`_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
+      <searchPostProcess>head 1 | `_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
     </single>
-
     <single>
-      <title>Volume-Wide Rotation Interval</title>
-      <option name="afterLabel">seconds</option>
-      <option name="field">rotatePeriodInSecs</option>
-    </single>
-  </row>
-
-  <row>
-    <single>
-      <title>Count of Monitored Indexes Using This Volume</title>
+      <title>Monitored Indexes Using This Volume</title>
       <option name="field">idx_count</option>
     </single>
     <single>
       <title>Total Monitored Space on This Volume</title>
       <option name="field">daily_usage</option>
-      <searchPostProcess>`_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
+      <searchPostProcess>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
     </single>
   </row>
 
   <row>
     <table>
       <title>Indexes Utilizing This Volume, by Data State</title>
+      <option name="link.visible">false</option>
       <option name="entityName">results</option>
-      <!-- Lame; have to repeat the search to get an accurate pager -->
-      <searchPostProcess>where _time>=relative_time(now(), "@d")
-| rename index AS Index, state AS "Bucket State", sizeOnDiskMB AS "Index Usage" | table Index, "Bucket State", "Index Usage"</searchPostProcess>
+      <searchPostProcess>`_fb_where_today`
+| rename index AS Index, state as "Bucket State", sizeOnDiskMB AS "Index Usage"
+| table Index, "Bucket State", "Index Usage"
+      </searchPostProcess>
     </table>
   </row>
 
   <row>
     <chart>
       <title>Combined Volume Usage by Index Over Time</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">area</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.chart.stackMode">stacked</option>
-      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleX.text">Date</option>
       <option name="charting.axisTitleY.text">MBytes</option>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 
       <searchPostProcess>
 timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchPostProcess>
@@ -105,29 +99,14 @@ timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchPostProcess
 
     <chart>
       <title>Combined Data Usage vs. Limit Over Time</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
 
-      <option name="charting.data1">view</option>
-      <option name="charting.data1.table">@data</option>
-      <option name="charting.data1.columns">[0,1]</option>
-      <option name="charting.chart.data">@data1</option>
-
-      <option name="charting.chart2">area</option>
-      <option name="charting.axixTitleY.text">Usage</option>
-
-      <option name="charting.data2">view</option>
-      <option name="charting.data2.table">@data</option>
-      <option name="charting.data2.columns">[0,2]</option>
-      <option name="charting.chart2.data">@data2</option>
-
-      <option name="charting.layout.charts">[@chart,@chart2]</option>
-      <option name="charting.layout.axisTitles">[@axisTitleX,@axisTitleY]</option>
-
       <searchPostProcess>
-timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS "Index Usage"</searchPostProcess>
+timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</searchPostProcess>
     </chart>
   </row>
 </form>

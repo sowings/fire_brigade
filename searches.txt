@@ -67,3 +67,29 @@ index=_internal source=*splunkd.log eventtype=bucket_* index=_internal
 | bucket _time span=1d
 | stats count(eval(mytag="new_hotness")) AS new_hot, count(eval(mytag="hot_to_warm")) AS hot_to_warm, count(eval(mytag="bucket_freeze")) AS freeze by _time, index
 | join type=left _time [ search index=summary search_name="DB inspection" host=contrarian.local| bucket _time span=1d | stats count(eval(state="hot")) AS hot, count(eval(state="warm")) AS warm, count(eval(state="cold")) AS cold, count(eval(state="thawed")) AS thawed  by _time ]
+
+11-25-2013 22:28:32.413 -0600 INFO databasePartitionPolicy -
+idx=psaas-cig Moving from='hot_v1_11' to warm='size exceeded:
+_maxHotBucketSize=10737418240 (10240MB,10GB), bucketSize=10810650624
+(10309MB,10GB)'
+
+
++[_fb_where_bucket_id(3)]
++args = server, idx, bname
++definition = appendcols [ | rest /services/server/info splunk_server=$server$ | fields guid ] | eval bucket_dir="$bname$" | rex field=bucket_dir "_(?<bucket_id>\d+)$" | eval bucket=$idx$ + "~" + bucket_id + "~" + guid | where _bkt=bucket
++
++[_fb_search_bucket(3)]
++args = server, idx, bname
++definition = [ | stats count | eval index="$idx$" | eval bucket_dir="$bname$" | eval splunk_server="$server$" | rex field=bucket_dir "db_(?<latest>\d+)_(?<earliest>\d+)_(?<bucket_id>\d+)" | return index, earliest, latest, splunk_server ] | `_fb_where_bucket_id($server$, $idx$, $bname$)`
++
++
++[fb_search_bucket_bounded(6)]
++args = idx, et, lt, srv, bid, guid
++definition = index=$idx$ earliest=$et$ latest=$lt$ splunk_server=$srv$ | where _bkt="$idx$~$bid$~$guid$"
++
++# | `_fb_where_bucket_id(3)`
++
++
++# | eval _bkt=index + "~" + bucket_id + "~" + guid | rename server AS splunk_server
++# | return index, earliest, latest, splunk_server, _bkt ]
+\ No newline at end of file

@@ -68,6 +68,7 @@ all of the search peers.
   <row>
     <table>
       <title>Index Configuration Summary</title>
+      <option name="link.visible">false</option>
       <searchPostProcess>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths
 | rename title AS Index, maxTotalDataSizeMB AS "Max Total Size(s)", pop_max AS "Common Max Size(s)"
     repFactor AS "Rep. Factor",

@@ -1,5 +1,11 @@
-<form>
+<form script="bucket_size_detail.js">
   <label>Bucket Size Detail</label>
+
+  <searchTemplate>
+earliest=@d
+`_fb_summary_recs($host$, $index$)`
+| fields id, sizeOnDiskMB, path, index
+  </searchTemplate>
 
   <row>
     <html>
@@ -7,56 +13,57 @@
 This dashboard shows the size of buckets within an index. More
 information about indexes and buckets in general can be found <a
 href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>.
-<p /> The field called <em>Configured Max Bucket Size</em> reflects
+<p/>
+Within the panel titled <em>Maximum Bucket Size</em>, two values are shown.
+The first, labeled "Setting" is the value that appears as
 the configuration setting <code>maxDataSize</code> within indexes.conf
 for this index. It is quite common to use a value of either
 <code>auto</code> or <code>auto_high_volume</code> for this
 parameter. These values scale depending upon the number of bits in the
 host's underlying operating system. To understand the actual
-<i>applied</i> value of the setting for this system, look to the
-<em>Applied Max Bucket Size</em> field.  <p />
+applied value of the setting for this system, look to the
+value labeled "Applied".
+<p/>
 </div>
     </html>
   </row>
 
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
     </input>
   </fieldset>
 
-  <row>
+  <row grouping="1,1,2">
     <single>
       <title>Bucket Count for This Index</title>
       <option name="field">count</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)` | stats count</searchString>
+      <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path | stats count</searchPostProcess>
     </single>
     <single>
       <title>Average Bucket Size</title>
       <option name="field">average</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
 | stats avg(sizeOnDiskMB) AS average
 | `_fb_mbytes_pretty(average)`
-      </searchString>
+      </searchPostProcess>
     </single>
-  </row>
 
-  <row>
-    <single>
-      <title>Configured Max Bucket Size</title>
+    <single id="bucket_size_detail_max_size_label">
+<!--      <title>Configured Max Bucket Size</title> -->
       <option name="field">maxDataSize</option>
+      <option name="underLabel">Setting</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
     </single>
     <single>
-      <title>Applied Max Bucket Size</title>
+<!--      <title>Applied Max Bucket Size</title> -->
       <option name="field">bucket_max</option>
+      <option name="underLabel">Applied</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
 | join type=left splunk_server
    [ | rest /services/server/info splunk_server=$host$ ]
@@ -71,36 +78,15 @@ host's underlying operating system. To understand the actual
   <row>
     <chart>
       <title>Bucket Sizes with Overlay, Local Buckets Only</title>
-      <option name="charting.chart">column</option>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">line</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">MBytes</option>
 
-      <option name="charting.data1">view</option>
-      <option name="charting.data1.table">@data</option>
-      <option name="charting.data1.columns">[0,1]</option>
-      <option name="charting.chart.data">@data1</option>
+      <option name="charting.seriesColors">[0x6BB7C8,0x999999,0xD85E3D]</option>
 
-      <option name="charting.chart2">line</option>
-
-      <option name="charting.data2">view</option>
-      <option name="charting.data2.table">@data</option>
-      <option name="charting.data2.columns">[0,2]</option>
-      <option name="charting.chart2.data">@data2</option>
-
-
-      <option name="charting.chart3">line</option>
-
-      <option name="charting.data3">view</option>
-      <option name="charting.data3.table">@data</option>
-      <option name="charting.data3.columns">[0,3]</option>
-      <option name="charting.chart3.data">@data3</option>
-
-      <option name="charting.layout.charts">[@chart,@chart2,@chart3]</option>
-      <option name="charting.layout.axisTitles">[@axisTitleX,@axisTitleY]</option>
-
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
+      <searchPostProcess>
+extract auto=f fb_extract_bucket_type_time_source
 | search NOT bucket_type="rb"
 | eventstats avg(sizeOnDiskMB) AS average
 | sort 0 id
@@ -112,7 +98,7 @@ host's underlying operating system. To understand the actual
 | table id, sizeOnDiskMB, average, bucket_max
 | rename sizeOnDiskMB AS "Bucket Size", average AS "Average Size",
 bucket_max AS "Size Limit"
-      </searchString>
+      </searchPostProcess>
     </chart>
   </row>
 

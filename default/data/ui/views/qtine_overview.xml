@@ -2,13 +2,13 @@
   <label>Troubleshooting Quarantined Events</label>
 
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
     </input>
   </fieldset>
 
@@ -64,6 +64,7 @@ time format, and can be made easier to read with <code>convert</code> or
   <row>
     <table>
       <title>Buckets Originally Created As Quarantine</title>
+      <option name="link.visible">false</option>
       <earliestTime>@d</earliestTime>
       <searchString>
 [ search earliest=0 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
@@ -88,6 +89,7 @@ index=summary search_name="DB inspection"
   <row>
     <event>
       <title>Quarantine Bucket Creation Events</title>
+      <option name="link.visible">false</option>
       <searchString>
 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
       </searchString>

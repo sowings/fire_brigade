@@ -50,9 +50,9 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
       <searchString>
-| rest /services/data/indexes | search totalEventCount!=0
-| eval roof=min((coalesce(homePath.maxDataSizeMB, 4294967295) +
-                 coalesce(coldPath.maxDataSizeMB, 4294967295)),
+| rest /services/data/indexes search="totalEventCount!=0"
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
                 maxTotalDataSizeMB)
 | eval span=tostring(currentDBSizeMB) + " / " +
     tostring(roof) + " MB (" +
@@ -74,7 +74,7 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
       <searchString>
-| rest /services/data/indexes | search totalEventCount!=0
+| rest /services/data/indexes search="totalEventCount!=0"
 | eval minTime=round(strptime(minTime, "%Y-%m-%dT%H:%M:%S%z"))
 | eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
 | eval span=tostring(maxTime-minTime, "duration") + " / " +

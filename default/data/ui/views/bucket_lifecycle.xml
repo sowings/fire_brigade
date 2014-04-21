@@ -3,9 +3,9 @@
 
   <searchTemplate>`fb_bucket_transitions($host$, $stage$)` | `fb_bucket_transition_pp`</searchTemplate>
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="stage" searchWhenChanged="true">
       <label>State Transition</label>
@@ -104,6 +104,7 @@ for more info.
   <row>
     <table>
       <title>Summary of Bucket Events</title>
+      <option name="link.visible">false</option>
     </table>
   </row>
 

@@ -2,13 +2,13 @@
   <label>Where is my Bucket?</label>
 
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
     </input>
-    <input type="dropdown" token="index">
+    <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
     </input>
     <input type="text" token="bucket_id" searchWhenChanged="true">
       <label>Bucket ID</label>
@@ -39,16 +39,16 @@ old buckets.
     </html>
   </row>
 
-<!-- Do a time chart with the state and size of the bucket -->
   <row>
     <chart>
       <title>Bucket State and Size Over Time</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">column</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">Size (MB)</option>
       <searchString>
-id=$bucket_id$ `_fb_summary_recs($host$, $index$)`
+`_fb_summary_recs($host$, $index$, $bucket_id$)`
 | extract auto=f fb_extract_bucket_type_time_source
 | extract auto=f fb_extract_hot_bucket
 | search bucket_type!="rb"
@@ -60,49 +60,33 @@ id=$bucket_id$ `_fb_summary_recs($host$, $index$)`
     by _time
       </searchString>
 
-<!-- Do some finagling to give colors, in order -->
       <option name="charting.seriesColors">[0xA04558,0xE0A93B,0x5479AF,0x6B8930]</option>
-<!-- What if I only capture a bucket in-flight, already warm? look up
-     series order -->
 
     </chart>
   </row>
 
 
   <!-- This will drive the table and the event set -->
-<!--
   <searchTemplate>
 `fb_bucket_transitions($host$, *)`
+| fields + timestamped, bucket_parent, bucket, bucket_id, idx, from, isinit, tag::eventtype
+| `_fb_figure_idx_name_from_home_or_cold_path`
 | search idx=$index$ bucket_id=$bucket_id$
 | `fb_bucket_transition_pp`
-| sort - time
+| sort _time
   </searchTemplate>
--->
-<!-- Table with bucket log event summary -->
+
   <row>
     <table>
       <title>Bucket State Transitions</title>
-      <searchString>
-`fb_bucket_transitions($host$, *)`
-| `_fb_figure_idx_name_from_home_or_cold_path`
-| search idx=$index$ bucket_id=$bucket_id$
-| `fb_bucket_transition_pp`
-| sort _time
-      </searchString>
+      <option name="link.visible">false</option>
     </table>
   </row>
 
-<!-- Log events -->
   <row>
     <event>
       <title>Bucket Transition Events</title>
-      <searchString>
-`fb_bucket_transitions($host$, *)`
-| `_fb_figure_idx_name_from_home_or_cold_path`
-| search idx=$index$ bucket_id=$bucket_id$
-| `fb_bucket_transition_pp`
-| sort _time
-      </searchString>
+      <option name="link.visible">false</option>
     </event>
   </row>
 
