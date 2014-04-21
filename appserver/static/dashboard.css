@@ -1,0 +1,20 @@
+/* This class has changed from v5. */
+.refresh-time-indicator {
+  display: none !important;
+}
+
+/* This is lifted from dashboard-simple-bootstrap.min.css and adapted
+   for the case where a new "group title" is shimmed in as a child of
+   the panel-element-row div. */
+.dashboard-row .dashboard-panel .panel-element-row h3 {
+  line-height: 1;
+  margin: 0;
+  padding: 12px 15px 10px 15px;
+  text-shadow: 0 1px 0 white;
+  color: #333333;
+}
+
+/* Don't be so greedy */
+.dashboard-row .dashboard-panel .panel-element-row div.single {
+  min-width: 100px;
+}

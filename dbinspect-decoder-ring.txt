@@ -1,0 +1,31 @@
+Version 5x:
+
+index(eval), search_name, search_now, info_max_time, info_search_time,
+earliestTime, eventCount, hostCount, id, orig_index (remapped by
+collect), latestTime, modTime, path, rawSize, sizeOnDiskMB,
+sourceCount, sourceTypeCount, state
+
+Version 6:
+
+search_name, search_now, info_search_time, bucketId, endEpoch,
+eventCount, guId, hostCount, id, orig_index (remapped by collect),
+modTime, path, rawSize, sizeOnDiskMB, sourceCount, sourceTypeCount,
+splunk_server (should be rempped to orig_host), startEpoch, state
+
+
+common:
+search_name, search_now, info_max_time, info_search_time
+modTime,
+
+common and relevant:
+
+eventCount, hostCount, id, path, rawSize, sizeOnDiskMB, sourceCount,
+sourceTypeCount, state
+
+gone:
+earliestTime, latestTime
+
+new:
+
+startEpoch, endEpoch, bucketId, guId
+
