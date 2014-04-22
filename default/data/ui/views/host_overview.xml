@@ -1,4 +1,4 @@
-<form class="formsearch" script="host_overview.js">
+<form class="formsearch" script="host_overview.js,host_overview_table_bars.js" stylesheet="host_overview_table_bars.css">
   <label>Indexer Host Overview</label>
 
   <searchTemplate>
@@ -138,11 +138,16 @@ versions seen elsewhere, but are restricted to the selected host.
 | eval limit=min(home_limit + cold_limit, max_limit)
 | eval percentage=round(ratedUsage * 100 / limit, 1)
 | sort - ratedUsage
+| eventstats max(totalUsage) AS top_total
+| eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval cap=percentage
 | rename ratedUsage AS "\"Retention\" Usage"
     totalUsage AS "Total Usage" 
+    rel_size AS "Relative Size"
+    cap AS Percent
     percentage AS "% of Capacity"
     index AS Index
-| table Index, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+| table "Relative Size", Index, "\"Retention\" Usage", "Total Usage", "% of Capacity", Percent
       </searchPostProcess>
       <drilldown>
         <link><![CDATA[
