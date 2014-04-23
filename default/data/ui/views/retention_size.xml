@@ -87,7 +87,7 @@ This corresponds to the <code>maxTotalDataSizeMB</code> parameter in
   <row>
     <single>
       <title>Configured Home Space Limit</title>
-      <option name="field">homePath_maxDataSizeMB</option>
+      <option name="field">homeMax</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
 | rename homePath.maxDataSizeMB AS homeMax
 | `_fb_mbytes_pretty(homeMax)`
