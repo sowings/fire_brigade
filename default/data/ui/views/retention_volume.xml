@@ -89,6 +89,7 @@ specifications, this might result in a blank value for the
       </searchPostProcess>
 -->
       <searchPostProcess>`_fb_where_today`
+| sort 0 - sizeOnDiskMB
 | rename index AS Index,
     hot_usage AS "Hot Usage",
     warm_usage AS "Warm Usage",
