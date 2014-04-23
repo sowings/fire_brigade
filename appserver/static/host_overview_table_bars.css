@@ -1,5 +1,6 @@
 td.data-bar-cell {
     padding: 4px 8px;
+    text-align: center !important;
 }
 
 td.data-bar-cell .data-bar-wrapper {
@@ -17,7 +18,7 @@ td.data-bar-cell .data-bar-wrapper .data-bar-left {
 td.data-bar-cell .data-bar-wrapper .data-bar-right {
     height: 16px;
     min-width: 1px;
-    background-color: #823825;
+    background-color: #838383;
     position: absolute;
     left: 0px;
 }

@@ -140,14 +140,12 @@ versions seen elsewhere, but are restricted to the selected host.
 | sort - ratedUsage
 | eventstats max(totalUsage) AS top_total
 | eval rel_size=round(totalUsage * 100 / top_total, 1)
-| eval cap=percentage
 | rename ratedUsage AS "\"Retention\" Usage"
     totalUsage AS "Total Usage" 
     rel_size AS "Relative Size"
-    cap AS Percent
     percentage AS "% of Capacity"
     index AS Index
-| table "Relative Size", Index, "\"Retention\" Usage", "Total Usage", "% of Capacity", Percent
+| table "Relative Size", Index, "\"Retention\" Usage", "Total Usage", "% of Capacity"
       </searchPostProcess>
       <drilldown>
         <link><![CDATA[
