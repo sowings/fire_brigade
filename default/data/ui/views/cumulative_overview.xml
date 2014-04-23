@@ -4,8 +4,8 @@
   <searchTemplate>
 earliest=-30d@d `_fb_summary_recs(*)`
 | bucket _time span=1d
-| fields _time, orig_host, index, path, sizeOnDiskMB, rawSize
-| stats max(*) AS * by _time, orig_host, index, path
+| fields _time, orig_host, index, sizeOnDiskMB, rawSize
+| stats sum(*) AS * by _time, orig_host, index
   </searchTemplate>
 
   <row>
