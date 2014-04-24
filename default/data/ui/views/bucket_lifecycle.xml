@@ -111,6 +111,7 @@ for more info.
   <row>
     <event>
       <title>Matching Raw Events</title>
+      <option name="link.visible">false</option>
     </event>
   </row>
 
