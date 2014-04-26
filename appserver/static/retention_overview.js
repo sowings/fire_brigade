@@ -43,27 +43,39 @@ require([
     bucketTable.on('click', function(e) {
         e.preventDefault();
         var newValue = e.data['row.Host'];
+        var oldValue = submittedTokens.get('bucket_host');
 
-        bucketDetail.$el.parents('.dashboard-panel').show();
-
-        unsubmittedTokens.set('form.bucket_host', newValue);
-        submittedTokens.set(unsubmittedTokens.toJSON());
-        urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(), {
+        if (oldValue === newValue) {
+            // Clear the value.
+            // This works, but only just--it's lucky there's no host called null
+            unsubmittedTokens.set('form.bucket_host', null);
+            submittedTokens.set(unsubmittedTokens.toJSON());
+        } else {
+            unsubmittedTokens.set('form.disk_host', newValue);
+            submittedTokens.set(unsubmittedTokens.toJSON());
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
             replaceState: false
-        });
+            });
+        }
     });
 
     diskTable.on('click', function(e) {
         e.preventDefault();
         var newValue = e.data['row.Host'];
+        var oldValue = submittedTokens.get('disk_host');
 
-        diskDetail.$el.parents('.dashboard-panel').show();
-
-        unsubmittedTokens.set('form.disk_host', newValue);
-        submittedTokens.set(unsubmittedTokens.toJSON());
-        urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(), {
+        if (oldValue === newValue) {
+            // Clear the value.
+            // This works, but only just--it's lucky there's no host called null
+            unsubmittedTokens.set('form.disk_host', null);
+            submittedTokens.set(unsubmittedTokens.toJSON());
+        } else {
+            unsubmittedTokens.set('form.disk_host', newValue);
+            submittedTokens.set(unsubmittedTokens.toJSON());
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
             replaceState: false
-        });
+            });
+        }
     });
 
 });
