@@ -1,43 +1,69 @@
-require(['splunkjs/mvc/simplexml/ready!'], function(){
+require([
+    'underscore',
+    'jquery',
+    'splunkjs/mvc',
+    'util/console',
+    'splunkjs/mvc/simplexml/ready!'
+], function(_, $, mvc, console) {
 
-    var group_header = $('#retention_overview_hot_counts').parent();
+    var bucketTable  = mvc.Components.get('retention_overview_bucket_states');
+    var bucketDetail = mvc.Components.get('retention_overview_bucket_detail');
+    var diskTable    = mvc.Components.get('retention_overview_disk_states');
+    var diskDetail   = mvc.Components.get('retention_overview_disk_detail');
 
-    // First hide any existing (usually empty) h3's.
-    $('h3', group_header).hide();
+    var unsubmittedTokens = mvc.Components.get('default');
+    var submittedTokens = mvc.Components.get('submitted');
+    var urlTokens = mvc.Components.get('url');
 
-    // Now add in the desired group title. Styled in dashboard.css.
-    group_header.prepend('<h3>Hot Bucket Counts</h3>');
 
-    group_header = $('#retention_overview_warm_counts').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>Warm Bucket Counts</h3>');
+    if(!submittedTokens.has('form.bucket_host')) {
+        bucketDetail.$el.parents('.dashboard-panel').hide();
+    }
 
-    group_header = $('#retention_overview_homePath').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>homePath (Hot + Warm) Sizes</h3>');
+    if(!submittedTokens.has('form.disk_host')) {
+        diskDetail.$el.parents('.dashboard-panel').hide();
+    }
 
-    group_header = $('#retention_overview_coldPath').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>coldPath Sizes</h3>');
+    submittedTokens.on('change:form.bucket_host', function() {
+        if(!submittedTokens.get('bucket_host')) {
+            bucketDetail.$el.parents('.dashboard-panel').hide();
+      } else {
+          bucketDetail.$el.parents('.dashboard-panel').show();
+      }
+    });
 
-    group_header = $('#retention_overview_total_usage').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>Total Usage</h3>');
+    submittedTokens.on('change:form.disk_host', function() {
+        if(!submittedTokens.get('disk_host')) {
+            diskDetail.$el.parents('.dashboard-panel').hide();
+      } else {
+          diskDetail.$el.parents('.dashboard-panel').show();
+      }
+    });
 
-    group_header = $('#retention_overview_home_volume').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>Volume: homePath</h3>');
+    bucketTable.on('click', function(e) {
+        e.preventDefault();
+        var newValue = e.data['row.Host'];
 
-    group_header = $('#retention_overview_cold_volume').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>Volume: coldPath</h3>');
+        bucketDetail.$el.parents('.dashboard-panel').show();
 
-    group_header = $('#retention_overview_freeze_label').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>Retention Settings (Freeze Limit)</h3>');
+        unsubmittedTokens.set('form.bucket_host', newValue);
+        submittedTokens.set(unsubmittedTokens.toJSON());
+        urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(), {
+            replaceState: false
+        });
+    });
 
-    group_header = $('#retention_overview_oldest_label').parent();
-    $('h3', group_header).hide();
-    group_header.prepend('<h3>Oldest Bucket\'s Age</h3>');
+    diskTable.on('click', function(e) {
+        e.preventDefault();
+        var newValue = e.data['row.Host'];
+
+        diskDetail.$el.parents('.dashboard-panel').show();
+
+        unsubmittedTokens.set('form.disk_host', newValue);
+        submittedTokens.set(unsubmittedTokens.toJSON());
+        urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(), {
+            replaceState: false
+        });
+    });
 
 });
