@@ -3,6 +3,7 @@
     <view name="cumulative_overview" />
     <view name="host_overview" />
     <view name="index_overview" />
+    <view name="matrix_overview" />
     <view name="cluster_overview" />
   </collection>
   <collection label="Detail">
@@ -26,4 +27,5 @@
     <view name="index_configs" />
     <view name="qtine_overview" />
   </collection>
+  <view name="search" />
 </nav>
