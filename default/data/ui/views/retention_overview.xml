@@ -127,7 +127,7 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
 | rename command AS "Yes, this is a redundant rename, but we want to pretty print"
 | rename homePath.maxDataSizeMB AS homelimit, coldPath.maxDataSizeMB AS coldlimit, maxTotalDataSizeMB AS totallimit
 | table index, homedisk, homelimit, homewarn, colddisk, coldlimit, coldwarn, totaldisk, totallimit, totalwarn
-| foreach *disk [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| foreach *disk *limit [ `_fb_mbytes_pretty(<<FIELD>>)` ]
 | rename
   index AS Index
   homedisk AS "homePath Space"
