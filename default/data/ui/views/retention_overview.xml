@@ -22,10 +22,15 @@ earliest=@d `_fb_summary_recs("*")`
   count(eval(if(state="cold", state, null()))) AS cold, 
   sum(sizeOnDiskMB) AS totaldisk
   by orig_host, index
-| eval title=index
-| join type=left title, splunk_server [| rest /services/data/indexes | fields title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount ]
-| eval homewarn=case(isnull('homePath.maxDataSizeMB'), null(), homedisk > .9 * 'homePath.maxDataSizeMB', "homewarn", 1=1, null())
-| eval coldwarn=case(isnull('coldPath.maxDataSizeMB'), null(), colddisk > .9 * 'coldPath.maxDataSizeMB', "coldwarn", 1=1, null())
+| join type=left orig_host, index
+  [ | rest /services/data/indexes
+    | fields splunk_server title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount
+    | rename homePath.maxDataSizeMB AS homelimit
+        coldPath.maxDataSizeMB AS coldlimit
+        splunk_server AS orig_host
+        title AS index ]
+| eval homewarn=case(isnull(homelimit), null(), homedisk > .9 * homelimit, "homewarn", 1=1, null())
+| eval coldwarn=case(isnull(coldlimit), null(), colddisk > .9 * coldlimit, "coldwarn", 1=1, null())
 | eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
 | eval hotbkt=case(hot > maxHotBuckets, "quar", hot > .9 * maxHotBuckets, "hotwarn", 1=1, null())
 | eval warmbkt=if(warm > .9 * maxWarmDBCount, "warmwarn", null())
