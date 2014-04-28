@@ -23,7 +23,7 @@ earliest=@d `_fb_summary_recs("*")`
   sum(sizeOnDiskMB) AS totaldisk
   by orig_host, index
 | eval title=index
-| join type=left [| rest /services/data/indexes | fields title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount ]
+| join type=left title, splunk_server [| rest /services/data/indexes | fields title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount ]
 | eval homewarn=case(isnull('homePath.maxDataSizeMB'), null(), homedisk > .9 * 'homePath.maxDataSizeMB', "homewarn", 1=1, null())
 | eval coldwarn=case(isnull('coldPath.maxDataSizeMB'), null(), colddisk > .9 * 'coldPath.maxDataSizeMB', "coldwarn", 1=1, null())
 | eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
@@ -72,12 +72,14 @@ earliest=@d `_fb_summary_recs($bucket_host$, "*")`
 | join type=left [| rest /services/data/indexes splunk_server=$bucket_host$ | fields title, maxHotBuckets maxWarmDBCount ]
 | eval hotbkt=case(hot > maxHotBuckets, "quar", hot > .9 * maxHotBuckets, "hotwarn", 1=1, null())
 | eval warmbkt=if(warm > .9 * maxWarmDBCount, "warmwarn", null())
-| table index, hot, hotbkt, warm, warmbkt, cold
+| table index, hot, maxHotBuckets, hotbkt, warm, warmbkt, maxWarmDBCount, cold
 | rename 
   index AS Index
   hot AS "Hot Buckets"
+  maxHotBuckets AS "Hot Limit"
   hotbkt AS "Hot Status"
   warm AS "Warm Buckets"
+  maxWarmDBCount AS "Warm Limit"
   warmbkt AS "Warm Status"
   cold AS "Cold Buckets"]]>
       </searchString>
@@ -122,15 +124,20 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
 | eval homewarn=case(isnull('homePath.maxDataSizeMB'), null(), homedisk > .9 * 'homePath.maxDataSizeMB', "homewarn", 1=1, null())
 | eval coldwarn=case(isnull('coldPath.maxDataSizeMB'), null(), colddisk > .9 * 'coldPath.maxDataSizeMB', "coldwarn", 1=1, null())
 | eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
-| table index, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn
+| rename command AS "Yes, this is a redundant rename, but we want to pretty print"
+| rename homePath.maxDataSizeMB AS homelimit, coldPath.maxDataSizeMB AS coldlimit, maxTotalDataSizeMB AS totallimit
+| table index, homedisk, homelimit, homewarn, colddisk, coldlimit, coldwarn, totaldisk, totallimit, totalwarn
 | foreach *disk [ `_fb_mbytes_pretty(<<FIELD>>)` ]
 | rename
   index AS Index
   homedisk AS "homePath Space"
+  homelimit AS "homePath Limit"
   homewarn AS "Home Status"
   colddisk AS "coldPath Space"
+  coldlimit AS "coldPath Limit"
   coldwarn AS "Cold Status"
   totaldisk AS "Total Space"
+  totallimit AS "Total Space Limit"
   totalwarn AS "Total Space Status"
 ]]>
       </searchString>
