@@ -1,4 +1,4 @@
-<form class="formsearch" script="retention_overview.js,retention_overview_iconography.js" stylesheet="retention_overview.css">
+<form class="formsearch" script="retention_overview.js,retention_overview_iconography.js,retention_overview_table_bars.js" stylesheet="retention_overview.css">
   <label>Retention Overview</label>
 
   <row>
@@ -144,4 +144,29 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
     </table>
   </row>
 
+  <row>
+    <table id="retention_overview_volume_table">
+      <title>Volume Usage - homePath</title>
+      <searchString><![CDATA[
+earliest=@d `_fb_summary_recs("*")`
+| rex field=path "(?<bucket_parent>/mnt/(?:hot|cold))"
+| stats count
+  sum(sizeOnDiskMB) AS totaldisk
+  by orig_host, bucket_parent
+| eval path=bucket_parent
+| join splunk_server, path [| rest /services/configs/conf-indexes | search title="volume:*" | fields title, maxVolumeDataSizeMB, path ]
+| eval vol_pct=round(totaldisk / maxVolumeDataSizeMB * 100, 1)
+| table orig_host, title, totaldisk, maxVolumeDataSizeMB, vol_pct
+| foreach totaldisk maxVolumeDataSizeMB [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| rename
+  orig_host AS Host
+  title AS Volume
+  totaldisk AS "Disk Usage"
+  maxVolumeDataSizeMB AS "Volume Limit"
+  vol_pct AS "% of Capacity"
+]]>
+      </searchString>
+    </table>
+
+  </row>
 </form>
