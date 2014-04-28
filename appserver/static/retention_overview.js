@@ -51,7 +51,7 @@ require([
             unsubmittedTokens.set('form.bucket_host', null);
             submittedTokens.set(unsubmittedTokens.toJSON());
         } else {
-            unsubmittedTokens.set('form.disk_host', newValue);
+            unsubmittedTokens.set('form.bucket_host', newValue);
             submittedTokens.set(unsubmittedTokens.toJSON());
 	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
             replaceState: false
