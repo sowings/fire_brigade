@@ -161,6 +161,7 @@ earliest=@d `_fb_summary_recs("*")`
 | eval path=bucket_parent
 | join splunk_server, path [| rest /services/configs/conf-indexes | search title="volume:*" | fields title, maxVolumeDataSizeMB, path ]
 | eval vol_pct=round(totaldisk / maxVolumeDataSizeMB * 100, 1)
+| sort orig_host - title
 | table orig_host, title, totaldisk, maxVolumeDataSizeMB, vol_pct
 | foreach totaldisk maxVolumeDataSizeMB [ `_fb_mbytes_pretty(<<FIELD>>)` ]
 | rename
