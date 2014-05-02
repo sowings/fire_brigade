@@ -151,7 +151,7 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
 
   <row>
     <table id="retention_overview_volume_table">
-      <title>Volume Usage - homePath</title>
+      <title>Volume Usage</title>
       <searchString><![CDATA[
 earliest=@d `_fb_summary_recs("*")`
 | rex field=path "(?<bucket_parent>/mnt/(?:hot|cold))"
