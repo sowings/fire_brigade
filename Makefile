@@ -7,7 +7,7 @@ TA_PACKAGE_ID=TA-${APP_ID}
 TA_PACKAGE_NAME=${TA_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.tar.gz
 APP_PACKAGE_BASE=splunk_app_${APP_NAME}
 APP_PACKAGE_NAME=${APP_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.spl
-APP_VERSION=2.0.2
+APP_VERSION=2.0.3
 
 TA_FILES = default/macros.conf default/savedsearches.conf default/app.conf default/transforms.conf
 
@@ -16,7 +16,7 @@ REPO_URI=file:///Users/sowings/work/svn-repository/splunk/${APP_ID}
 all:	ta_package app_package
 
 build_number:
-	$(eval BUILD := $(shell svn info ${REPO_URI} | grep 'Last Changed Rev' | cut -d' ' -f 4))
+	$(eval BUILD := $(shell git rev-list --count --first-parent HEAD))
 
 ta_package: build_number
 	@rm -rf ${BUILD_ROOT}/${TA_PACKAGE_BASE}
@@ -29,7 +29,7 @@ ta_package: build_number
 app_package: build_number
 	@rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}
 	mkdir -p ${BUILD_ROOT}/${APP_PACKAGE_BASE}
-	cp -pr ../${APP_ID} ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}
+	cp -pr ../${APP_NAME} ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}
 	for f in savedsearches.conf macros.conf transforms.conf ; do sh strip_by_rule.sh above default/$$f ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/$$f ; done
 	sed -e 's/%buildnum%/${BUILD}/g' -e 's/%label%/${APP_LABEL}/g' -e 's/%package_id%/${APP_ID}/g' -e 's/%version%/${APP_VERSION}/g' default/app.conf > ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/app.conf
 	@rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README*.txt
