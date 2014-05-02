@@ -123,7 +123,7 @@ shown over a thirty-day trend.
 	</link>
       </drilldown>
     </chart>
-    <chart>
+    <chart id="index_detail_sourcetype_proportions">
       <title>Sourcetype Proportions</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
