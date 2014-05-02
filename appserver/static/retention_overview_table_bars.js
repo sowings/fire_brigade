@@ -20,7 +20,7 @@ require([
         }
     });
 
-    mvc.Components.get('host_overview_index_table').getVisualization(function(tableView) {
+    mvc.Components.get('retention_overview_volume_states').getVisualization(function(tableView) {
         tableView.table.addCellRenderer(new PercentBarCellRenderer());
         tableView.table.render();
     });
