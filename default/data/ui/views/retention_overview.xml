@@ -17,9 +17,9 @@
 earliest=@d `_fb_summary_recs("*")`
 | stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
-  count(eval(if(state="hot", state, null()))) AS hot, 
-  count(eval(if(state="warm", state, null()))) AS warm, 
-  count(eval(if(state="cold", state, null()))) AS cold, 
+  dc(eval(if(state="hot", path, null()))) AS hot, 
+  dc(eval(if(state="warm", path, null()))) AS warm, 
+  dc(eval(if(state="cold", path, null()))) AS cold, 
   sum(sizeOnDiskMB) AS totaldisk
   by orig_host, index
 | join type=left orig_host, index
@@ -69,9 +69,9 @@ earliest=@d `_fb_summary_recs("*")`
       <searchString><![CDATA[
 earliest=@d `_fb_summary_recs($bucket_host$, "*")`
 | stats 
-  count(eval(if(state="hot", state, null()))) AS hot
-  count(eval(if(state="warm", state, null()))) AS warm
-  count(eval(if(state="cold", state, null()))) AS cold
+  dc(eval(if(state="hot", path, null()))) AS hot
+  dc(eval(if(state="warm", path, null()))) AS warm
+  dc(eval(if(state="cold", path, null()))) AS cold
   by orig_host, index
 | eval title=index
 | join type=left [| rest /services/data/indexes splunk_server=$bucket_host$ | fields title, maxHotBuckets maxWarmDBCount ]
