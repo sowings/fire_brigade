@@ -47,9 +47,12 @@ require([
 
         if (oldValue === newValue) {
             // Clear the value.
-            // This works, but only just--it's lucky there's no host called null
-            unsubmittedTokens.set('form.bucket_host', null);
+            unsubmittedTokens.unset('form.bucket_host');
             submittedTokens.set(unsubmittedTokens.toJSON());
+            urlTokens.unset('form.bucket_host');
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
+            replaceState: true
+            });
         } else {
             unsubmittedTokens.set('form.bucket_host', newValue);
             submittedTokens.set(unsubmittedTokens.toJSON());
@@ -66,9 +69,12 @@ require([
 
         if (oldValue === newValue) {
             // Clear the value.
-            // This works, but only just--it's lucky there's no host called null
-            unsubmittedTokens.set('form.disk_host', null);
+            unsubmittedTokens.unset('form.disk_host');
             submittedTokens.set(unsubmittedTokens.toJSON());
+            urlTokens.unset('form.disk_host');
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
+            replaceState: true
+            });
         } else {
             unsubmittedTokens.set('form.disk_host', newValue);
             submittedTokens.set(unsubmittedTokens.toJSON());
