@@ -11,6 +11,8 @@
   <fieldset submitButton="false">
     <input type="text" token="bucket_host" searchWhenChanged="true" />
     <input type="text" token="disk_host" searchWhenChanged="true" />
+    <input type="text" token="volume_host" searchWhenChanged="true" />
+    <input type="text" token="volume_volume" searchWhenChanged="true" />
   </fieldset>
 
   <searchTemplate>
@@ -174,5 +176,38 @@ earliest=@d `_fb_summary_recs("*")`
       </searchString>
     </table>
 
+  </row>
+  <row>
+    <chart id="retention_overview_volume_index_detail">
+      <title>Combined Volume Usage by Index Over Time</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.axisTitleX.text">Date</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>`_fb_summary_recs($volume_host$, "*")`
+|
+timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchString>
+    </chart>
+
+    <chart id="retention_overview_volume_limit_detail">
+      <title>Combined Data Usage vs. Limit Over Time</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>`_fb_summary_recs($volume_host$, "*")`
+|
+timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</searchString>
+    </chart>
   </row>
 </form>
