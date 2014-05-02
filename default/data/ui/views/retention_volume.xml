@@ -10,7 +10,11 @@ state!="thawed" `_fb_summary_recs_host($host$)`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
 | eval bookkeeping="$volume_title$"
 | join type=left bookkeeping
-[ | rest /services/configs/conf-indexes/$volume_title$ | rename title AS bookkeeping]
+[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$
+  | fields title, path, maxVolumeDataSizeMB
+  | rename title AS bookkeeping, path AS wanted_path]
+| rename comment AS "Set state to null for rows we don't want, stats will ignore."
+| eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
 | stats sum(sizeOnDiskMB) AS sizeOnDiskMB,
     first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
     by _time, state, index
