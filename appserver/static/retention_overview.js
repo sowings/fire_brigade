@@ -10,6 +10,9 @@ require([
     var bucketDetail = mvc.Components.get('retention_overview_bucket_detail');
     var diskTable    = mvc.Components.get('retention_overview_disk_states');
     var diskDetail   = mvc.Components.get('retention_overview_disk_detail');
+    var volumeTable  = mvc.Components.get('retention_overview_volume_states');
+    var volumeUsage  = mvc.Components.get('retention_overview_volume_index_detail');
+    var volumeLimit  = mvc.Components.get('retention_overview_volume_limit_detail');
 
     var unsubmittedTokens = mvc.Components.get('default');
     var submittedTokens = mvc.Components.get('submitted');
@@ -22,6 +25,12 @@ require([
 
     if(!submittedTokens.has('form.disk_host')) {
         diskDetail.$el.parents('.dashboard-panel').hide();
+    }
+
+    if(!submittedTokens.has('form.volume_host') ||
+       !submittedTokens.has('form.volume_title')) {
+        volumeUsage.$el.parents('.dashboard-panel').hide();
+        volumeLimit.$el.parents('.dashboard-panel').hide();
     }
 
     submittedTokens.on('change:form.bucket_host', function() {
@@ -37,6 +46,28 @@ require([
             diskDetail.$el.parents('.dashboard-panel').hide();
       } else {
           diskDetail.$el.parents('.dashboard-panel').show();
+      }
+    });
+
+    submittedTokens.on('change:form.volume_host', function() {
+        if(!submittedTokens.get('volume_host') ||
+           !submittedTokens.get('volume_title')) {
+            volumeUsage.$el.parents('.dashboard-panel').hide();
+            volumeLimit.$el.parents('.dashboard-panel').hide();
+        } else {
+            volumeUsage.$el.parents('.dashboard-panel').show();
+            volumeLimit.$el.parents('.dashboard-panel').show();
+      }
+    });
+
+    submittedTokens.on('change:form.volume_title', function() {
+        if(!submittedTokens.get('volume_host') ||
+           !submittedTokens.get('volume_title')) {
+            volumeUsage.$el.parents('.dashboard-panel').hide();
+            volumeLimit.$el.parents('.dashboard-panel').hide();
+        } else {
+            volumeUsage.$el.parents('.dashboard-panel').show();
+            volumeLimit.$el.parents('.dashboard-panel').show();
       }
     });
 
@@ -77,6 +108,32 @@ require([
             });
         } else {
             unsubmittedTokens.set('form.disk_host', newValue);
+            submittedTokens.set(unsubmittedTokens.toJSON());
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
+            replaceState: false
+            });
+        }
+    });
+
+    volumeTable.on('click', function(e) {
+        e.preventDefault();
+        var volHost = e.data['row.Host'];
+        var volume  = e.data['row.Volume']
+        var oldHost = submittedTokens.get('volume_host');
+        var oldVol  = submittedTokens.get('volume_title');
+
+        if (oldHost === volHost && oldVol === volume) {
+            // Clear the value.
+            unsubmittedTokens.unset('form.volume_host');
+            unsubmittedTokens.unset('form.volume_title');
+            submittedTokens.set(unsubmittedTokens.toJSON());
+            urlTokens.unset('form.disk_host');
+ 	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
+            replaceState: true
+            });
+        } else {
+            unsubmittedTokens.set('form.volume_host', volHost);
+            unsubmittedTokens.set('form.volume_title', volume);
             submittedTokens.set(unsubmittedTokens.toJSON());
 	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
             replaceState: false
