@@ -7,7 +7,7 @@ TA_PACKAGE_ID=TA-${APP_ID}
 TA_PACKAGE_NAME=${TA_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.tar.gz
 APP_PACKAGE_BASE=splunk_app_${APP_NAME}
 APP_PACKAGE_NAME=${APP_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.spl
-APP_VERSION=2.0.3
+APP_VERSION=2.0.2
 
 TA_FILES = default/macros.conf default/savedsearches.conf default/app.conf default/transforms.conf
 
