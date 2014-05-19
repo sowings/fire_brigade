@@ -7,7 +7,7 @@ earliest=-30d@d
 | bucket _time span=1d
 | extract auto=f fb_extract_bucket_type_time_source
 | extract auto=f fb_extract_hot_bucket
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, host, path, bucket_type
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, orig_host, path, bucket_type
   </searchTemplate>
 
   <row>
