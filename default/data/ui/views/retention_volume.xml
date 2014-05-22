@@ -1,4 +1,4 @@
-<form class="formsearch">
+<form class="formsearch" script="retention_volume.js">
   <label>Volume-Based Retention</label>
 
   <searchTemplate>earliest=-30d@d
@@ -78,16 +78,10 @@ specifications, this might result in a blank value for the
   </row>
 
   <row>
-    <table>
+    <table id="retention_volume_index_table">
       <title>Indexes Utilizing This Volume, by Data State</title>
       <option name="link.visible">false</option>
       <option name="entityName">results</option>
-<!--
-      <searchPostProcess>`_fb_where_today`
-| rename index AS Index, state as "Bucket State", sizeOnDiskMB AS "Index Usage"
-| table Index, "Bucket State", "Index Usage"
-      </searchPostProcess>
--->
       <searchPostProcess>`_fb_where_today`
 | sort 0 - sizeOnDiskMB
 | rename index AS Index,
@@ -98,6 +92,19 @@ specifications, this might result in a blank value for the
 | table Index, "Hot Usage", "Warm Usage", "Cold Usage", "Index Usage"
       </searchPostProcess>
     </table>
+
+    <chart id="retention_volume_fullness_pie">
+      <title>Utilization of Indexes</title>
+      <option name="charting.chart">pie</option>
+      <option name="charting.fieldColors">{"AVAILABLE": 0x666666}</option>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+      <searchPostProcess>`_fb_where_today`
+| append [| stats count | eval index="AVAILABLE" | fields index]
+| filldown daily_usage, maxVolumeDataSizeMB
+| eval sizeOnDiskMB=if(index=="AVAILABLE", maxVolumeDataSizeMB-daily_usage, sizeOnDiskMB)
+| fields index, sizeOnDiskMB
+      </searchPostProcess>  
+    </chart>
   </row>
 
   <row>
