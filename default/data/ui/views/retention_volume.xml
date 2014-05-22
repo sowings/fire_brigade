@@ -10,7 +10,7 @@ state!="thawed" `_fb_summary_recs_host($host$)`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
 | eval bookkeeping="$volume_title$"
 | join type=left bookkeeping
-[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$
+[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$host$*
   | fields title, path, maxVolumeDataSizeMB
   | rename title AS bookkeeping, path AS wanted_path]
 | rename comment AS "Set state to null for rows we don't want, stats will ignore."
@@ -32,7 +32,7 @@ state!="thawed" `_fb_summary_recs_host($host$)`
     </input>
     <input type="dropdown" token="volume_title" searchWhenChanged="true">
       <label>Volume</label>
-      <populatingSearch fieldForValue="title" fieldForLabel="title">| `_fb_rest_file_config("indexes")` | search title=volume:* | fields title | dedup title | sort title</populatingSearch>
+      <populatingSearch fieldForValue="title" fieldForLabel="title">| `_fb_rest_file_config("indexes")` splunk_server=$host$* | search title=volume:* | fields title | dedup title | sort title</populatingSearch>
     </input>
   </fieldset>
 
