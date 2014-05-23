@@ -1,6 +1,14 @@
 <form class="formsearch" script="retention_volume.js">
   <label>Volume-Based Retention</label>
 
+<!--
+| appendpipe [ stats sum(sizeOnDiskMB) AS MB, max(maxVolumeDataSizeMB) AS mvs by orig_host
+| eval maxVolumeDataSizeMB=if(isnull(maxVolumeDataSizeMB), mvs, maxVolumeDataSizeMB)
+| eval sizeOnDiskMB=if(isnull(sizeOnDiskMB), maxVolumeDataSizeMB - MB, sizeOnDiskMB)
+| eval index="AVAILABLE" | fields - MB mvs ]
+| chart limit=50 sum(sizeOnDiskMB) over orig_host by index
+-->
+
   <searchTemplate>earliest=-30d@d
 [| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
@@ -95,6 +103,7 @@ specifications, this might result in a blank value for the
 
     <chart id="retention_volume_fullness_pie">
       <title>Utilization of Indexes</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
       <option name="charting.fieldColors">{"AVAILABLE": 0x666666}</option>
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
