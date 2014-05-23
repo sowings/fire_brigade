@@ -9,11 +9,13 @@ require([
     // Translations from rangemap results to CSS class
     var ICONS = {
         coldwarn:  'alert',
+        extreme:   'alert',
         homewarn:  'alert',
         hotwarn:   'alert',
         quar:      'clock',
         totalwarn: 'alert',
-        warmwarn:  'alert'
+        warmwarn:  'alert',
+        warn:      'alert'
     };
 
     var RangeMapIconRenderer = TableView.BaseCellRenderer.extend({
@@ -23,6 +25,7 @@ require([
                    cell.field === 'Warm Status' ||
                    cell.field === 'Home Status' ||
                    cell.field === 'Cold Status' ||
+                   cell.field === 'Time-Based Status' ||
                    cell.field === 'Total Space Status';
         },
 
@@ -63,6 +66,20 @@ require([
     });
 
     mvc.Components.get('retention_overview_disk_detail').getVisualization(function(tableView){
+        // Register custom cell renderer
+        tableView.table.addCellRenderer(new RangeMapIconRenderer());
+        // Force the table to re-render
+        tableView.table.render();
+    });
+
+    mvc.Components.get('retention_overview_time_states').getVisualization(function(tableView){
+        // Register custom cell renderer
+        tableView.table.addCellRenderer(new RangeMapIconRenderer());
+        // Force the table to re-render
+        tableView.table.render();
+    });
+
+    mvc.Components.get('retention_overview_time_detail').getVisualization(function(tableView){
         // Register custom cell renderer
         tableView.table.addCellRenderer(new RangeMapIconRenderer());
         // Force the table to re-render

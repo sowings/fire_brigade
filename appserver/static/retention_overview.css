@@ -13,6 +13,7 @@ td.icon i {
     text-shadow: 1px 1px #aaa;
 }
 
+td.icon .extreme,
 td.icon .severe {
     color: red;
 }
@@ -26,6 +27,7 @@ td.icon .coldwarn,
 td.icon .homewarn,
 td.icon .hotwarn,
 td.icon .totalwarn,
+td.icon .warn,
 td.icon .warmwarn {
     color: orangered;
 }
