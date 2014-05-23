@@ -192,6 +192,17 @@ earliest=@d `_fb_summary_recs("*")`
       </searchString>
     </table>
 
+    <table id="retention_overview_time_states">
+      <title>Time-Based Retention State</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess>table orig_host, count, timewarn
+| rename
+    orig_host AS Host
+    count AS Indexes
+    timewarn AS "Time-Based Status" 
+      </searchPostProcess>
+    </table>
+
   </row>
   <row>
     <chart id="retention_overview_volume_index_detail">
@@ -265,19 +276,6 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 | eventstats dc(index) AS idx_count, max(_time) AS latest
 | timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</searchString>
     </chart>
-  </row>
-
-  <row>
-    <table id="retention_overview_time_states">
-      <title>Time-Based Retention State</title>
-      <option name="link.visible">false</option>
-      <searchPostProcess>table orig_host, count, timewarn
-| rename
-    orig_host AS Host
-    count AS Indexes
-    timewarn AS "Time-Based Status" 
-      </searchPostProcess>
-    </table>
   </row>
 
   <row>
