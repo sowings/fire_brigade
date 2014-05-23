@@ -307,13 +307,21 @@ earliest=@d `_fb_summary_recs("*")`
 | eval span_back=tostring(span_back, "duration")
 | eval cutoff=now()-frozenTimePeriodInSecs
 | eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "duration")
+| eval disk_pct=round(totaldisk / maxTotalDataSizeMB * 100, 2) . "%"
+| eval timewarn=case(timewarn=3, "extreme",
+                     timewarn=2, "warn",
+                     timewarn=1, "quar",
+                     1=1, null())
 | convert ctime(cutoff), ctime(*Epoch)
-| table index, startEpoch, endEpoch, span_back, frozenTimePeriodInSecs, cutoff
+| rename comment AS "The disk space part helps make sense of the icons"
+| table index, disk_pct, startEpoch, endEpoch, span_back, frozenTimePeriodInSecs, cutoff, timewarn
 | rename index AS Index
+  disk_pct AS "Index Capacity"
   startEpoch AS "Earliest Event"
   endEpoch AS "Latest Event"
   frozenTimePeriodInSecs AS "Retention Limit"
   cutoff AS "Retention Cutoff"
+  timewarn AS "Time-Based Status"
   span_back AS "Available Data Span"]]>
       </searchString>
     </table>
