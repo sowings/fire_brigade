@@ -13,20 +13,23 @@
     <input type="text" token="disk_host" searchWhenChanged="true" />
     <input type="text" token="volume_host" searchWhenChanged="true" />
     <input type="text" token="volume_title" searchWhenChanged="true" />
+    <input type="text" token="time_host" searchWhenChanged="true" />
   </fieldset>
 
   <searchTemplate>
-earliest=@d `_fb_summary_recs("*")`
+<![CDATA[earliest=@d `_fb_summary_recs("*")`
 | stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
   dc(eval(if(state="hot", path, null()))) AS hot, 
   dc(eval(if(state="warm", path, null()))) AS warm, 
   dc(eval(if(state="cold", path, null()))) AS cold, 
   sum(sizeOnDiskMB) AS totaldisk
+  max(endEpoch) AS endEpoch,
+  min(startEpoch) AS startEpoch
   by orig_host, index
 | join type=left orig_host, index
   [ | rest /services/data/indexes
-    | fields splunk_server title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount
+    | fields splunk_server title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount, frozenTimePeriodInSecs
     | rename homePath.maxDataSizeMB AS homelimit
         coldPath.maxDataSizeMB AS coldlimit
         splunk_server AS orig_host
@@ -36,14 +39,26 @@ earliest=@d `_fb_summary_recs("*")`
 | eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
 | eval hotbkt=case(hot > maxHotBuckets, "quar", hot > .9 * maxHotBuckets, "hotwarn", 1=1, null())
 | eval warmbkt=if(warm > .9 * maxWarmDBCount, "warmwarn", null())
+| eval span_back=round(relative_time(now(), "@d+1h")) - startEpoch
+| eval span_pct=round(span_back / frozenTimePeriodInSecs * 100)
+| rename comment AS "1 - quar, 2 - warn, 3 - extreme"
+| eval timewarn=case(totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 50, 3,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 90, 2,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_back > frozenTimePeriodInSecs, 3,
+                     span_back > frozenTimePeriodInSecs, 1)
 | stats count
   sum(hot) AS hot, sum(warm) AS warm, sum(cold) AS cold
   values(warmbkt) AS warmbkt, values(hotbkt) AS hotbkt
   values(totalwarn) AS totalwarn, values(homewarn) AS homewarn, values(coldwarn) AS coldwarn
+  max(timewarn) AS timewarn
   sum(*disk) AS *disk
   by orig_host
 | fillnull value=0 colddisk
-| table orig_host, count, hot, warm, cold, hotbkt, warmbkt, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn
+| eval timewarn=case(timewarn=3, "extreme",
+                     timewarn=2, "warn",
+                     timewarn=1, "quar",
+                     1=1, null())
+| table orig_host, count, hot, warm, cold, hotbkt, warmbkt, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn, timewarn]]>
   </searchTemplate>
 
   <row>
@@ -251,4 +266,57 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 | timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</searchString>
     </chart>
   </row>
+
+  <row>
+    <table id="retention_overview_time_states">
+      <title>Time-Based Retention State</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess>table orig_host, count, timewarn
+| rename
+    orig_host AS Host
+    count AS Indexes
+    timewarn AS "Time-Based Status" 
+      </searchPostProcess>
+    </table>
+  </row>
+
+  <row>
+    <table id="retention_overview_time_detail">
+      <title>Time-Based Retention Status for $time_host$</title>
+      <option name="link.visible">false</option>
+      <searchString><![CDATA[
+earliest=@d `_fb_summary_recs("*")`
+| stats 
+  sum(sizeOnDiskMB) AS totaldisk
+  max(endEpoch) AS endEpoch,
+  min(startEpoch) AS startEpoch
+  by orig_host, index
+| join type=left orig_host, index
+  [ | rest /services/data/indexes
+    | fields splunk_server title, maxTotalDataSizeMB, frozenTimePeriodInSecs
+    | rename 
+        splunk_server AS orig_host
+        title AS index ]
+| eval span_back=round(relative_time(now(), "@d+1h")) - startEpoch
+| eval span_pct=round(span_back / frozenTimePeriodInSecs * 100)
+| rename comment AS "1 - quar, 2 - warn, 3 - extreme"
+| eval timewarn=case(totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 50, 3,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 90, 2,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_back > frozenTimePeriodInSecs, 3,
+                     span_back > frozenTimePeriodInSecs, 1)
+| eval span_back=tostring(span_back, "duration")
+| eval cutoff=now()-frozenTimePeriodInSecs
+| eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "duration")
+| convert ctime(cutoff), ctime(*Epoch)
+| table index, startEpoch, endEpoch, span_back, frozenTimePeriodInSecs, cutoff
+| rename index AS Index
+  startEpoch AS "Earliest Event"
+  endEpoch AS "Latest Event"
+  frozenTimePeriodInSecs AS "Retention Limit"
+  cutoff AS "Retention Cutoff"
+  span_back AS "Available Data Span"]]>
+      </searchString>
+    </table>
+  </row>
+
 </form>

@@ -14,6 +14,9 @@ require([
     var volumeUsage  = mvc.Components.get('retention_overview_volume_index_detail');
     var volumeLimit  = mvc.Components.get('retention_overview_volume_limit_detail');
 
+    var timeTable    = mvc.Components.get('retention_overview_time_states');
+    var timeDetail   = mvc.Components.get('retention_overview_time_detail');
+
     var unsubmittedTokens = mvc.Components.get('default');
     var submittedTokens = mvc.Components.get('submitted');
     var urlTokens = mvc.Components.get('url');
@@ -31,6 +34,10 @@ require([
        !submittedTokens.has('form.volume_title')) {
         volumeUsage.$el.parents('.dashboard-panel').hide();
         volumeLimit.$el.parents('.dashboard-panel').hide();
+    }
+
+    if(!submittedTokens.has('form.time_host')) {
+        timeDetail.$el.parents('.dashboard-panel').hide();
     }
 
     submittedTokens.on('change:form.bucket_host', function() {
@@ -68,6 +75,14 @@ require([
         } else {
             volumeUsage.$el.parents('.dashboard-panel').show();
             volumeLimit.$el.parents('.dashboard-panel').show();
+      }
+    });
+
+    submittedTokens.on('change:form.time_host', function() {
+        if(!submittedTokens.get('time_host')) {
+            timeDetail.$el.parents('.dashboard-panel').hide();
+      } else {
+          timeDetail.$el.parents('.dashboard-panel').show();
       }
     });
 
@@ -134,6 +149,28 @@ require([
         } else {
             unsubmittedTokens.set('form.volume_host', volHost);
             unsubmittedTokens.set('form.volume_title', volume);
+            submittedTokens.set(unsubmittedTokens.toJSON());
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
+            replaceState: false
+            });
+        }
+    });
+
+    timeTable.on('click', function(e) {
+        e.preventDefault();
+        var newValue = e.data['row.Host'];
+        var oldValue = submittedTokens.get('time_host');
+
+        if (oldValue === newValue) {
+            // Clear the value.
+            unsubmittedTokens.unset('form.time_host');
+            submittedTokens.set(unsubmittedTokens.toJSON());
+            urlTokens.unset('form.time_host');
+	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
+            replaceState: true
+            });
+        } else {
+            unsubmittedTokens.set('form.time_host', newValue);
             submittedTokens.set(unsubmittedTokens.toJSON());
 	    urlTokens.saveOnlyWithPrefix('form\\.', unsubmittedTokens.toJSON(),  {
             replaceState: false
