@@ -171,20 +171,35 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
       <title>Volume Usage</title>
       <option name="link.visible">false</option>
       <searchString><![CDATA[
-earliest=@d `_fb_summary_recs("*")`
-| rex field=path "(?<bucket_parent>/mnt/(?:hot|cold))"
-| stats count
-  sum(sizeOnDiskMB) AS totaldisk
-  by orig_host, bucket_parent
-| eval path=bucket_parent
-| join splunk_server, path [| rest /services/configs/conf-indexes | search title="volume:*" | fields title, maxVolumeDataSizeMB, path ]
+earliest=@d 
+[| rest /services/data/indexes search="totalEventCount!=0"
+   | search homePath="volume:*" OR coldPath="volume:*"
+   | fields title | rename title AS orig_index ]
+state!="thawed" `_fb_summary_recs("*")`
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, index, state
+| eval state=if(state="cold", state, "home")
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB
+  by orig_host, state
+| join type=left orig_host, index
+  [| rest /services/data/indexes
+   | fields homePath, title, splunk_server
+   | rename title AS index, splunk_server AS orig_host
+| rex field=homePath "^(?<home_vol>volume:\w+)"
+| join type=left home_vol, orig_host
+  [ | rest /services/configs/conf-indexes
+    | search title="volume:*"
+    | fields title, maxVolumeDataSizeMB, splunk_server
+    | rename title AS home_vol, splunk_server AS orig_host ]
+| stats sum(sizeOnDiskMB) AS totaldisk
+  first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB
+  by orig_host, home_vol
 | eval vol_pct=round(totaldisk / maxVolumeDataSizeMB * 100, 1)
-| sort orig_host - title
-| table orig_host, title, totaldisk, maxVolumeDataSizeMB, vol_pct
+| sort orig_host - home_vol
+| table orig_host, home_vol, totaldisk, maxVolumeDataSizeMB, vol_pct
 | foreach totaldisk maxVolumeDataSizeMB [ `_fb_mbytes_pretty(<<FIELD>>)` ]
 | rename
   orig_host AS Host
-  title AS Volume
+  home_vol AS Volume
   totaldisk AS "Disk Usage"
   maxVolumeDataSizeMB AS "Volume Limit"
   vol_pct AS "% of Capacity"
