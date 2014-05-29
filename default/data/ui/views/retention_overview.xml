@@ -183,7 +183,7 @@ state!="thawed" `_fb_summary_recs("*")`
 | join type=left orig_host, index
   [| rest /services/data/indexes
    | fields homePath, title, splunk_server
-   | rename title AS index, splunk_server AS orig_host
+   | rename title AS index, splunk_server AS orig_host ]
 | rex field=homePath "^(?<home_vol>volume:\w+)"
 | join type=left home_vol, orig_host
   [ | rest /services/configs/conf-indexes
@@ -298,14 +298,14 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
       <title>Time-Based Retention Status for $time_host$</title>
       <option name="link.visible">false</option>
       <searchString><![CDATA[
-earliest=@d `_fb_summary_recs("*")`
+earliest=@d `_fb_summary_recs($time_host$, "*")`
 | stats 
   sum(sizeOnDiskMB) AS totaldisk
   max(endEpoch) AS endEpoch,
   min(startEpoch) AS startEpoch
   by orig_host, index
 | join type=left orig_host, index
-  [ | rest /services/data/indexes
+  [ | rest /services/data/indexes splunk_server=$time_host$*
     | fields splunk_server title, maxTotalDataSizeMB, frozenTimePeriodInSecs
     | rename 
         splunk_server AS orig_host
