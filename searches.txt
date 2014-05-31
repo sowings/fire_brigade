@@ -93,3 +93,8 @@ _maxHotBucketSize=10737418240 (10240MB,10GB), bucketSize=10810650624
 +# | eval _bkt=index + "~" + bucket_id + "~" + guid | rename server AS splunk_server
 +# | return index, earliest, latest, splunk_server, _bkt ]
 \ No newline at end of file
+
+
+WHYTF?
+had to add one to LT to get all events in index (inc. last event). 
+  lt epoch time matched Hosts.data
