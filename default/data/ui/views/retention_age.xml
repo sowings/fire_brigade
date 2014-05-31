@@ -168,8 +168,13 @@ limit.
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
-      <searchPostProcess>
-eval startEpoch=coalesce(startEpoch,
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>
+state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
+| bucket _time span=1d
+| fields _time, startEpoch, earliestTime, endEpoch, latestTime, state
+| eval startEpoch=coalesce(startEpoch,
     round(strptime(earliestTime, "%m/%d/%Y:%H:%M:%S"), 0))
 | eval endEpoch=coalesce(endEpoch,
     round(strptime(latestTime, "%m/%d/%Y:%H:%M:%S"), 0))
@@ -182,7 +187,7 @@ eval startEpoch=coalesce(startEpoch,
 | eval outside_days=round((abs_latest - abs_earliest) / 86400, 2)
 | eval bucket_span=if(state="Thawed", outside_days, bucket_days)
 | timechart span=1d first(bucket_span) AS "Bucket Days" by state
-      </searchPostProcess>
+      </searchString>
     </chart>
   </row>
 

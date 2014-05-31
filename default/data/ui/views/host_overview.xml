@@ -2,7 +2,7 @@
   <label>Indexer Host Overview</label>
 
   <searchTemplate>
-earliest=-30d@d `_fb_summary_recs($host$, "*")`
+earliest=@d `_fb_summary_recs($host$, "*")`
 | bucket _time span=1d
 | extract auto=f fb_extract_bucket_type_time_source
 | extract auto=f fb_extract_hot_bucket
@@ -184,10 +184,17 @@ versions seen elsewhere, but are restricted to the selected host.
 <!--
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 -->
-      <searchPostProcess>eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>`_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, state, index, bucket_type, path
+| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
-      </searchPostProcess>
+      </searchString>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/index_detail?form.host=$form.host$&form.index=$click.name2$]]></link>
@@ -208,9 +215,14 @@ versions seen elsewhere, but are restricted to the selected host.
 -->     
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 
-      <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>
+`_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index
 | timechart sum(sizeOnDiskMB) AS MBytes by index
-</searchPostProcess>
+</searchString>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/cluster_detail?form.host=$form.host$]]></link>

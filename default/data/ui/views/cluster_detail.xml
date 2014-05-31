@@ -2,7 +2,7 @@
   <label>Replicated Index Detail</label>
 
   <searchTemplate>
-earliest=-30d@d
+earliest=@d
 `_fb_summary_recs($host$, $index$)`
 | extract auto=f fb_extract_bucket_type_time_source
 | fields _time, sizeOnDiskMB, path, bucket_type, guId
@@ -134,12 +134,18 @@ other members of the cluster.
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <searchPostProcess>
-extract auto=f fb_extract_hot_bucket
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>
+`_fb_summary_recs($host$, $index$)`
+| extract auto=f fb_extract_bucket_type_time_source
+| fields _time, sizeOnDiskMB, path, bucket_type, guId
+| bucket _time span=1d
+| extract auto=f fb_extract_hot_bucket
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type
 | eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
-      </searchPostProcess>
+      </searchString>
     </chart>
   </row>
 </form>
