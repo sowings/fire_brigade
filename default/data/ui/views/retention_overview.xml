@@ -174,6 +174,12 @@ Note: As always the <i>most restrictive</i> retention policy wins!
       <title>Bucket information for $bucket_host$</title>
       <option name="link.visible">false</option>
       <option name="count">50</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_count?form.host=$form.bucket_host$&form.index=$row.Index$]]>
+	</link>
+      </drilldown>
       <searchString><![CDATA[
 earliest=@d `_fb_summary_recs($bucket_host$, "*")`
 | stats 
@@ -223,6 +229,12 @@ earliest=@d `_fb_summary_recs($bucket_host$, "*")`
       <title>Disk information for $disk_host$</title>
       <option name="link.visible">false</option>
       <option name="count">50</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_size?form.host=$form.disk_host$&form.index=$row.Index$]]>
+	</link>
+      </drilldown>
       <searchString><![CDATA[
 earliest=@d `_fb_summary_recs($disk_host$, "*")`
 | stats 
@@ -261,6 +273,7 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
     <table id="retention_overview_volume_states">
       <title>Volume Usage</title>
       <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
       <searchString><![CDATA[
 earliest=@d 
 [| rest /services/data/indexes search="totalEventCount!=0"
@@ -323,6 +336,11 @@ state!="thawed" `_fb_summary_recs("*")`
 
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
+	</link>
+      </drilldown>
       <searchString>
 [| rest /services/data/indexes splunk_server=$volume_host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
@@ -358,6 +376,11 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
+	</link>
+      </drilldown>
       <searchString>
 [| rest /services/data/indexes splunk_server=$volume_host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
@@ -388,6 +411,12 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
     <table id="retention_overview_time_detail">
       <title>Time-Based Retention Status for $time_host$</title>
       <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_age?form.host=$form.time_host$&form.index=$row.Index$]]>
+	</link>
+      </drilldown>
       <searchString><![CDATA[
 earliest=@d `_fb_summary_recs($time_host$, "*")`
 | stats 
