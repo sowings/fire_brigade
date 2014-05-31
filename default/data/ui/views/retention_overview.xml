@@ -4,6 +4,97 @@
   <row>
     <html>
 <div id="fire_brigade_help">
+<p/>
+This dashboard shows all of the retention dials on an index at the same time.
+<p/>
+<ul>
+<li><b>Count-Based Rules</b> (Bucket States): There are count-based
+limits which apply to constrain the number of hot buckets, as well as
+the number of warm buckets (see <a
+href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>
+for more information about bucket states). When the number of
+<i>hot</i> buckets is at its maximum, buckets may be rolled to the
+<i>warm</i> state before reaching their maximum size. If two types of
+storage medium (e.g. "fast" vs. "slow") are used to differentiate
+<i>hot</i> and <i>warm</i> buckets from <i>cold</i> buckets, then the
+number of <i>warm</i> buckets is significant, as it constrains when
+buckets are sent to the <i>cold</i> partition. Having too many
+<i>warm</i> buckets in this instance would move buckets to the slower
+storage earlier than intended.
+</li>
+<li><b>Size-Based Per-Index Rules</b> (Disk States): The most common
+form of retention rule, limits based on index size reflect constraints
+upon the amount of disk space taken up by the indexed data. By
+contrast to licensing volume, this calculation is based upon the
+compressed size of the data in the index. Limits are available for the
+<code>homePath</code> (hot and warm buckets), the
+<code>coldPath</code> and the total index usage.
+</li>
+<li><b>Sized-Based Volume Rules</b> (Volume Usage): Volume-based rules
+act as an extension of per-index disk-based rules, governing the total
+usage of several indexes in concert. The easiest way to think of a
+volume limit is as the maximum size of a disk partition. The
+<code>maxTotalVolumeSizeMB</code> setting sets the upper bound on how
+large each of the contained indexes can be. See the <a
+href="indexes.conf">indexes.conf</a> documentation for how to set up
+volumes. If volumes are not in use within the installation, this panel
+will report "No results found".
+</li>
+<li><b>Time-Based Rules</b> (Time-Based Retention State): Some sites
+may have restrictions about the length of time that data can persist
+on disk. Others might instead seek to meet a minimum level of service,
+but allow events to expire after that. There is also a default time
+limit for data to persist within Splunk. For all of these cases, the
+<code>frozenTimePeriodInSecs</code> limit is in play. If an index is
+close to full, <i>size-based</i> rules may activate, expiring data
+before the desired time limit is reached. In some rare cases,
+time-parsing issues may cause the index time range to be falsely
+reported as larger than it is. Each of these conditions may require
+administrator intervention; the goal of these time-based panels is to
+alert administrators to the existence of these issues.
+</li>
+</ul>
+<p/>
+Note: As always the <i>most restrictive</i> retention policy wins!
+<p/>
+<b>Legend:</b>
+<table>
+<tr>
+  <td>Icon</td>
+  <td>Table</td>
+  <td>Meaning</td>
+</tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-check"></i></td>
+  <td>Bucket States</td>
+  <td>The count of buckets is under 90% of the available limit(s): <code>maxHotBuckets</code> or <code>maxWarmDBCount</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Disk States</td>
+  <td>The disk usage for that particular bucket state (or total usage, as appropriate) is below 90% of the configured limit.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Volume Usage</td>
+  <td>The combined usage of all indexes in the volume is below 90% of the configured volume size limit.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Time-Based Retention State</td>
+  <td>The disk space usage for <i>none</i> of the indexes on the host is over 90% of its configured maximum AND there are no events older than the time limit (as calculated back from "now")</td>
+</tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-clock quar"></i></td>
+  <td>Bucket States</td>
+  <td>A quarantine bucket was detected; this is marked when there are <i>more</i>hot buckets than the configured max in <code>maxHotBuckets</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Time-Based Retention State</td>
+  <td>A possible time-parsing issue has been found. The earliest event time in the index is substantially longer than the desired retention period. This can arise from events being identified as "in the past" when parsing.</td>
+</tr>
+</table>
 </div>
     </html>
   </row>
