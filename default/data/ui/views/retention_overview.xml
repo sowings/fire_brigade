@@ -283,7 +283,7 @@ state!="thawed" `_fb_summary_recs("*")`
 | stats sum(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, index, state
 | eval state=if(state="cold", state, "home")
 | stats sum(sizeOnDiskMB) AS sizeOnDiskMB
-  by orig_host, state
+  by orig_host, index, state
 | join type=left orig_host, index
   [| rest /services/data/indexes
    | fields homePath, title, splunk_server
