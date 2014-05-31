@@ -1,0 +1,28 @@
+<form class="formsearch" stylesheet="bucket_search.css">
+  <label>Bucket Contents</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+</div>
+    </html>
+  </row>
+
+  <fieldset>
+    <input type="text" token="index" searchWhenChanged="true"/>
+    <input type="text" token="et" searchWhenChanged="true"/>
+    <input type="text" token="lt" searchWhenChanged="true"/>
+    <input type="text" token="bucket_id" searchWhenChanged="true"/>
+  </fieldset>
+
+  <row>
+    <event>
+      <title>Bucket Events</title>
+      <option name="count">50</option>
+      <searchString>index=$index$ earliest=$et$
+[| stats count | eval latest=$lt$+1 | return latest ]
+| where _bkt="$bucket_id$"
+      </searchString>
+    </event>
+  </row>
+</form>
