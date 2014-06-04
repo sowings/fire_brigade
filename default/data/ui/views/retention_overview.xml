@@ -327,7 +327,7 @@ state!="thawed" `_fb_summary_recs("*")`
   </row>
   <row>
     <chart id="retention_overview_volume_index_detail">
-      <title>Combined Volume Usage by Index Over Time</title>
+      <title>Combined Volume Usage by Index Over Time for $volume_host$</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">area</option>
       <option name="charting.chart.nullValueMode">connect</option>
@@ -369,7 +369,7 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
     </chart>
 
     <chart id="retention_overview_volume_limit_detail">
-      <title>Combined Data Usage vs. Limit Over Time</title>
+      <title>Combined Data Usage vs. Limit Over Time for $volume_host$</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
