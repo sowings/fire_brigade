@@ -132,6 +132,7 @@ limit.
     <table>
       <title>Ten Oldest (Neither Thawed nor Hot) Monitored Buckets in This Group</title>
       <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
       <searchPostProcess>`_fb_where_today`
 | fillnull guId value="Locally Indexed"
 | stats values(endEpoch) AS bucket_lt,
@@ -158,6 +159,11 @@ limit.
     bucket_age AS "Bucket Age"
     max_back AS "Furthest Event Back"
       </searchPostProcess>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
+	</link>
+      </drilldown>
     </table>
   </row>
 

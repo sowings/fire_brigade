@@ -105,6 +105,12 @@ for more info.
     <table>
       <title>Summary of Bucket Events</title>
       <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
+	</link>
+      </drilldown>
     </table>
   </row>
 
