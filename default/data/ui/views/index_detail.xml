@@ -59,7 +59,7 @@ sourcetype of the events. The proportions of the graph do not indicate
 the relative size of the events within that index, just the
 <i>count</i> of events.
 <p />
-The panel titled <em>Size of Buckets by ID</em> displays the sizes of
+The panel titled <em>Sizes of Buckets by ID</em> displays the sizes of
 the constituent <em>buckets</em> within the index. For more
 information about index buckets, look <a
 href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>.
