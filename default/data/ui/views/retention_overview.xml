@@ -94,6 +94,16 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   <td>Time-Based Retention State</td>
   <td>A possible time-parsing issue has been found. The earliest event time in the index is substantially longer than the desired retention period. This can arise from events being identified as "in the past" when parsing.</td>
 </tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-warmwarn"></i></td>
+  <td>Bucket States</td>
+  <td>An index on the host is at 90% or higher of one of its configured "maximum bucket count" limits, either <code>maxHotBuckets</code> or <code>maxWarmDBCount</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Disk States</td>
+  <td>An index on the host is at 90% or higher of its configured limit for the given index subdirectory. This could be <code>homePath</code> (combined hot and warm index states), <code>coldPath</code> (cold bucket states), or the total disk usage, <code>maxTotalDataSizeMB</code>.</td>
+</tr>
 </table>
 </div>
     </html>
