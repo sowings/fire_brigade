@@ -65,7 +65,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   <td>Meaning</td>
 </tr>
 <tr>
-  <td class="icon" style="width:10%"><i class="icon-check"></i></td>
+  <td class="icon" style="color:#5379AF;width:10%"><i class="icon-check"></i></td>
   <td>Bucket States</td>
   <td>The count of buckets is under 90% of the available limit(s): <code>maxHotBuckets</code> or <code>maxWarmDBCount</code>.</td>
 </tr>
