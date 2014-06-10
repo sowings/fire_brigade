@@ -29,7 +29,7 @@ td.icon .hotwarn,
 td.icon .totalwarn,
 td.icon .warn,
 td.icon .warmwarn {
-    color: orangered;
+    color: #cc8800;
 }
 
 td.icon .low {
