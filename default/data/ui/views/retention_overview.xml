@@ -95,14 +95,34 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   <td>A possible time-parsing issue has been found. The earliest event time in the index is substantially longer than the desired retention period. This can arise from events being identified as "in the past" when parsing.</td>
 </tr>
 <tr>
-  <td class="icon" style="width:10%"><i class="icon-warmwarn"></i></td>
+  <td class="icon" style="width:10%"><i class="icon-alert warmwarn"></i></td>
   <td>Bucket States</td>
   <td>An index on the host is at 90% or higher of one of its configured "maximum bucket count" limits, either <code>maxHotBuckets</code> or <code>maxWarmDBCount</code>.</td>
 </tr>
 <tr>
   <td></td>
+  <td>Bucket Information ... (detail)</td>
+  <td>The index listed is at 90% or higher of one of its configured limits. <em>Hot Status</em> maps to <code>maxHotBuckets</code>, and <em>Warm Status</em> maps to <code>maxWarmDBCount</code>.</td>
+</tr>
+<tr>
+  <td></td>
   <td>Disk States</td>
   <td>An index on the host is at 90% or higher of its configured limit for the given index subdirectory. This could be <code>homePath</code> (combined hot and warm index states), <code>coldPath</code> (cold bucket states), or the total disk usage, <code>maxTotalDataSizeMB</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Disk Information ... (detail)</td>
+  <td>The named index is at 90% or higher of the given limit (<em>Home Status</em> maps to <code>homePath.maxDataSizeMB</code>, <em>Cold Status</em> maps to <code>coldPath.maxDataSizeMB</code>, <em>Total Space Status</em> maps to <code>maxTotalDataSizeMB</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Time-Based Retention State</td>
+  <td>An index is at risk of failing to reach its SLA for time-based retention--the index is more than 90% full, and the event time range is less than 90% of its desired target.</td>
+</tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-alert extreme"></i></td>
+  <td>Time-Based Retention State</td>
+  <td>An index is at <i>extreme</i> risk of failing to reach its SLA for time-based retention; the index is more than 90% full, and the event time range is less than 50% of the target.</td>
 </tr>
 </table>
 </div>
