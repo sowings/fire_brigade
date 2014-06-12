@@ -127,7 +127,10 @@ versions seen elsewhere, but are restricted to the selected host.
     by index, state
 | join type=left index
 [ | rest /services/data/indexes splunk_server=$host$* count=0
-  | rename title AS index ]
+  | rename title AS index
+  | eval homePath.maxDataSizeMB=if('homePath.maxDataSizeMB' = 0, null(), 'homePath.maxDataSizeMB')
+  | eval coldPath.maxDataSizeMB=if('coldPath.maxDataSizeMB' = 0, null(), 'coldPath.maxDataSizeMB')
+]
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
     sum(diskTotalinMB) AS totalUsage
     first(maxTotalDataSizeMB) AS max_limit
