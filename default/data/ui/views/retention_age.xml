@@ -180,10 +180,8 @@ limit.
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, state
-| eval startEpoch=coalesce(startEpoch,
-    round(strptime(earliestTime, "%m/%d/%Y:%H:%M:%S"), 0))
-| eval endEpoch=coalesce(endEpoch,
-    round(strptime(latestTime, "%m/%d/%Y:%H:%M:%S"), 0))
+| `_fb_startEpoch_from_earliestTime`
+| `_fb_endEpoch_from_latestTime`
 | eval state=if(state="thawed", "Thawed", "Normal")
 | stats min(startEpoch) AS startEpoch,
         max(endEpoch) AS endEpoch
