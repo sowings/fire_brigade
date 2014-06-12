@@ -1,16 +1,16 @@
 <form class="formsearch">
   <label>Bucket Finder</label>
 
-  <searchTemplate>
-earliest=@d
-`_fb_summary_recs($host$, $index$)`
-| fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
-| sort startEpoch, earliestTime, endEpoch, latestTime
-  </searchTemplate>
-
   <row>
     <html>
 <div id="fire_brigade_help">
+This utility view is provided to assist administrators in the search
+for data living within a particular index bucket. By selecting a host
+and index from the pulldowns, a list of all buckets (as of midnight in
+the current day) will be provided. A user may then select a bucket to
+search by clicking on the table row of the desired bucket. The user
+will be taken to a simple events view of all of the events contained
+within that bucket.
 </div>
     </html>
   </row>
@@ -29,26 +29,24 @@ earliest=@d
 
   <row>
     <table>
-      <title>Bucketses</title>
+      <title>Bucket Listing for $host$ / $index$</title>
       <option name="link.visible">false</option>
       <option name="count">50</option>
       <option name="drilldown">row</option>
       <drilldown>
         <link><![CDATA[
-/app/fire_brigade/bucket_search?form.et=$row.et$&form.lt=$row.lt$&form.index=$row.index$&form.bucket_id=$row.bid$]]>
+/app/fire_brigade/bucket_search?form.et=$row.startEpoch$&form.lt=$row.endEpoch$&form.index=$row.index$&form.bucket_id=$row.bid$]]>
 	</link>
       </drilldown>
       <searchString>
 earliest=@d
 `_fb_summary_recs($host$, $index$)`
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
-| eval et=coalesce(startEpoch,
-    round(strptime(earliestTime, "%m/%d/%Y:%H:%M:%S"), 0))
-| eval lt=coalesce(endEpoch,
-    round(strptime(latestTime, "%m/%d/%Y:%H:%M:%S"), 0))
-| sort startEpoch, earliestTime, endEpoch, latestTime
+| `_fb_startEpoch_from_earliestTime`
+| `_fb_endEpoch_from_latestTime`
+| sort startEpoch, endEpoch
 | eval bid=index . "~" . id . "~" . guId
-| table _time, et, lt, index, eventCount, sizeOnDiskMB, state, id, bid
+| table _time, startEpoch, endEpoch, index, eventCount, sizeOnDiskMB, state, id, bid
       </searchString>
     </table>
   </row>
