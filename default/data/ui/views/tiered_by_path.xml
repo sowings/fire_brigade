@@ -44,7 +44,7 @@ desired SLA.
 | eval home_delta=tostring(home_latest - home_earliest, "duration")
 | eval cold_delta=tostring(cold_latest - cold_earliest, "duration")
 | convert ctime(*est)
-| table index, cold_earliest, cold_delta, cold_latest, home_earliest, home_delta, home_latest
+| table index, home_earliest, home_delta, home_latest, cold_earliest, cold_delta, cold_latest
 | rename index AS Index
   home_earliest AS "Earliest Time (homePath)"
   home_delta AS "homePath Data Span"
