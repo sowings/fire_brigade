@@ -1,0 +1,37 @@
+<form class="formsearch" stylesheet="bucket_search.css">
+  <label>Bucket Contents</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This view is intended to search the contents of a given bucket, and
+retrieve the results. It is a <i>target</i> view, meaning that it is
+meant to be redirected to from a drilldown link.
+<p/>
+If this page is blank, it's possible that the target bucket has been
+archived since the <code>dbinspect</code> command ran to produce the
+bucket summary. Otherwise, it may be easier to return to the <a
+href="/app/fire_brigade/bucket_list">Bucket List</a> view to begin the
+search anew.
+</div>
+    </html>
+  </row>
+
+  <fieldset>
+    <input type="text" token="index" searchWhenChanged="true"/>
+    <input type="text" token="et" searchWhenChanged="true"/>
+    <input type="text" token="lt" searchWhenChanged="true"/>
+    <input type="text" token="bucket_id" searchWhenChanged="true"/>
+  </fieldset>
+
+  <row>
+    <event>
+      <title>Bucket Events</title>
+      <option name="count">50</option>
+      <searchString>index=$index$ earliest=$et$
+[| stats count | eval latest=$lt$+1 | return latest ]
+| where _bkt="$bucket_id$"
+      </searchString>
+    </event>
+  </row>
+</form>

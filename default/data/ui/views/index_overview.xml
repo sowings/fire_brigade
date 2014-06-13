@@ -21,7 +21,7 @@
   <fieldset>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | dedup orig_index</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | dedup orig_index | sort orig_index</populatingSearch>
     </input>
   </fieldset>
 

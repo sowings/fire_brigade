@@ -2,7 +2,7 @@
   <label>Bucket Count vs. Maximum Count</label>
 
   <searchTemplate>
-earliest=-30d@d
+earliest=@d
 state="hot" OR state="warm"
 `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
@@ -29,11 +29,11 @@ buckets within the index. Only buckets in the <i>hot</i> and
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
     </input>
   </fieldset>
 
@@ -75,11 +75,18 @@ buckets within the index. Only buckets in the <i>hot</i> and
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
-      <searchPostProcess>join type=left index
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>
+state="hot" OR state="warm"
+`_fb_summary_recs($host$, $index$)`
+| bucket _time span=1d
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index, state
+| join type=left index
  [ | `_fb_rest_index_config($host$, $index$)` ]
 | eval limit=if(state=="hot", maxHotBuckets, if(state=="warm", maxWarmDBCount, 0))
 | timechart span=1d dc(id) AS "Count", first(limit) AS Limit by state
-      </searchPostProcess>
+      </searchString>
     </chart>
   </row>
 </form>

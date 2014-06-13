@@ -31,11 +31,11 @@ value labeled "Applied".
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
     </input>
   </fieldset>
 
@@ -100,6 +100,11 @@ extract auto=f fb_extract_bucket_type_time_source
 | rename sizeOnDiskMB AS "Bucket Size", average AS "Average Size",
 bucket_max AS "Size Limit"
       </searchPostProcess>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$form.index$&form.bucket_id=$click.value$]]>
+	</link>
+      </drilldown>
     </chart>
   </row>
 

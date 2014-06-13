@@ -4,11 +4,11 @@
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
     </input>
   </fieldset>
 

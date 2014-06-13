@@ -1,0 +1,156 @@
+<form class="formsearch" script="host_delta.js,host_delta_single_style.js" stylesheet="host_delta.css">
+  <label>Host Data Movement Day on Day</label>
+  
+  <searchTemplate>
+earliest=-1d@d `_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| rename comment AS "This is just to get the deduped size of each bucket"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, id, state, host, index, path
+| eventstats count AS days by id, state, host, path
+| eval marker=case(days==2, "both", relative_time(now(), "@d") > _time, "yesterday", 1==1, "today")
+  </searchTemplate>
+  
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+    </input>
+  </fieldset>
+  
+  <row>
+    <html>
+<div id="fire_brigade_help">
+Help goes here.
+</div>
+    </html>
+  </row>
+  
+  <row grouping="3,3">
+    <single id="host_delta_hot_sum">
+      <!--      <title>Overall Hot Bucket Usage</title> -->
+      <option name="field">Usage</option>
+      <option name="underLabel">total</option>
+      <searchPostProcess>`_fb_where_today` AND (state="hot")
+| stats sum(sizeOnDiskMB) AS Usage
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_hot_in_out">
+      <option name="field">Usage</option>
+      <searchPostProcess>search days=1 state="hot"
+| stats sum(sizeOnDiskMB) AS Usage by marker
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_hot_overall">
+      <option name="field">delta</option>
+      <option name="underLabel">delta</option>
+      <searchPostProcess>search state="hot" days=1
+| chart sum(sizeOnDiskMB) over state by marker
+| eval delta=today-yesterday
+| `_fb_mbytes_pretty(delta)`
+      </searchPostProcess>
+    </single>
+    
+    <single id="host_delta_warm_sum">
+      <!--      <title>Overall Warm Bucket Usage</title> -->
+      <option name="field">Usage</option>
+      <option name="underLabel">total</option>
+      <searchPostProcess>`_fb_where_today` AND (state="warm")
+| stats sum(sizeOnDiskMB) AS Usage
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_warm_in_out">
+      <option name="field">Usage</option>
+      <searchPostProcess>search days=1 state="warm"
+| stats sum(sizeOnDiskMB) AS Usage by marker
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_warm_overall">
+      <option name="field">delta</option>
+      <option name="underLabel">delta</option>
+      <searchPostProcess>search state="warm" days=1
+| chart sum(sizeOnDiskMB) AS usage over state by marker
+| eval delta=today-yesterday
+| `_fb_mbytes_pretty(delta)`
+      </searchPostProcess>
+    </single>
+  </row>
+  
+  <row grouping="3,3">
+    <single id="host_delta_cold_sum">
+      <!--      <title>Overall Cold Bucket Usage</title> -->
+      <option name="field">Usage</option>
+      <option name="underLabel">total</option>
+      <searchPostProcess>`_fb_where_today` AND (state="cold")
+| stats sum(sizeOnDiskMB) AS Usage
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_cold_in_out">
+      <option name="field">Usage</option>
+      <searchPostProcess>search days=1 state="cold"
+| stats sum(sizeOnDiskMB) AS Usage by marker
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_cold_overall">
+      <option name="field">delta</option>
+      <option name="underLabel">delta</option>
+      <searchPostProcess>search state="cold" days=1
+| chart sum(sizeOnDiskMB) AS usage over state by marker
+| eval delta=today-yesterday
+| `_fb_mbytes_pretty(delta)`
+      </searchPostProcess>
+    </single>
+    
+    <single id="host_delta_thawed_sum">
+      <!--      <title>Overall Thawed Bucket Usage</title> -->
+      <option name="field">Usage</option>
+      <option name="underLabel">total</option>
+      <searchPostProcess>`_fb_where_today` AND (state="thawed")
+| stats sum(sizeOnDiskMB) AS Usage
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_thawed_in_out">
+      <option name="field">Usage</option>
+      <searchPostProcess>search days=1 state="thawed"
+| stats sum(sizeOnDiskMB) AS Usage by marker
+| `_fb_mbytes_pretty(Usage)`
+      </searchPostProcess>
+    </single>
+    <single id="host_delta_thawed_overall">
+      <option name="field">delta</option>
+      <option name="underLabel">delta</option>
+      <searchPostProcess>search state="thawed" days=1
+| chart count, sum(sizeOnDiskMB) AS usage over state by  marker
+| eval delta=today-yesterday
+| `_fb_mbytes_pretty(delta)`
+      </searchPostProcess>
+    </single>
+  </row>
+  
+  <row>
+    <table>
+      <title>Bucket Creation (New Hot) Activity</title>
+      <searchString>`fb_bucket_transitions($host$, kindle)` | `fb_bucket_transition_pp`</searchString>
+     
+    </table>
+  </row>
+  
+  <row>
+    <table>
+      <title>Bucket Expiration (Freeze) Activity</title>
+      <searchString>`fb_bucket_transitions($host$, freeze)` | `fb_bucket_transition_pp`</searchString>
+     
+    </table>
+  </row>
+
+</form>
+
+
+      
+

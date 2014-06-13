@@ -2,10 +2,10 @@
   <label>Quick Overview</label>
 
   <searchTemplate>
-earliest=-30d@d `_fb_summary_recs(*)`
+earliest=@d `_fb_summary_recs(*)`
 | bucket _time span=1d
-| fields _time, orig_host, index, path, sizeOnDiskMB, rawSize
-| stats max(*) AS * by _time, orig_host, index, path
+| fields _time, orig_host, index, sizeOnDiskMB, rawSize
+| stats sum(*) AS * by _time, orig_host, index
   </searchTemplate>
 
   <row>
@@ -152,7 +152,7 @@ graph shows a thirty-day trend of the overall usage.
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x70A65C]</option>
       <earliestTime>-30d@d</earliestTime>
-      <searchPostProcess>timechart sum(sizeOnDiskMB) AS MBytes</searchPostProcess>
+      <searchString>`_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
       <drilldown>
         <link>/app/fire_brigade/retention_size</link>
       </drilldown>

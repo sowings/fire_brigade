@@ -63,12 +63,12 @@ limit.
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
       <choice value="*">All indexes</choice>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
     </input>
   </fieldset>
 
@@ -132,6 +132,7 @@ limit.
     <table>
       <title>Ten Oldest (Neither Thawed nor Hot) Monitored Buckets in This Group</title>
       <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
       <searchPostProcess>`_fb_where_today`
 | fillnull guId value="Locally Indexed"
 | stats values(endEpoch) AS bucket_lt,
@@ -158,6 +159,11 @@ limit.
     bucket_age AS "Bucket Age"
     max_back AS "Furthest Event Back"
       </searchPostProcess>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
+	</link>
+      </drilldown>
     </table>
   </row>
 
@@ -168,11 +174,14 @@ limit.
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
-      <searchPostProcess>
-eval startEpoch=coalesce(startEpoch,
-    round(strptime(earliestTime, "%m/%d/%Y:%H:%M:%S"), 0))
-| eval endEpoch=coalesce(endEpoch,
-    round(strptime(latestTime, "%m/%d/%Y:%H:%M:%S"), 0))
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>
+state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
+| bucket _time span=1d
+| fields _time, startEpoch, earliestTime, endEpoch, latestTime, state
+| `_fb_startEpoch_from_earliestTime`
+| `_fb_endEpoch_from_latestTime`
 | eval state=if(state="thawed", "Thawed", "Normal")
 | stats min(startEpoch) AS startEpoch,
         max(endEpoch) AS endEpoch
@@ -182,7 +191,7 @@ eval startEpoch=coalesce(startEpoch,
 | eval outside_days=round((abs_latest - abs_earliest) / 86400, 2)
 | eval bucket_span=if(state="Thawed", outside_days, bucket_days)
 | timechart span=1d first(bucket_span) AS "Bucket Days" by state
-      </searchPostProcess>
+      </searchString>
     </chart>
   </row>
 

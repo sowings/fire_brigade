@@ -2,7 +2,7 @@
   <label>Usage vs. Size Limit(s)</label>
 
   <searchTemplate>
-earliest=-30d@d
+earliest=@d
 `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB
 | bucket _time span=1d
@@ -53,11 +53,11 @@ managed manually.
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host</populatingSearch>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index</populatingSearch>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
     </input>
   </fieldset>
 
@@ -130,14 +130,18 @@ managed manually.
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <searchPostProcess>search state!="thawed"
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>state!="thawed" `_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB
+| bucket _time span=1d
+| dedup _time, path
 | eval state=if(state=="hot" OR state=="warm", "homePath", if(state=="cold", "coldPath", state))
 | join type=left index
  [ | `_fb_rest_index_config($host$, $index$)` ]
 | eval limit=if(state=="homePath", coalesce('homePath.maxDataSizeMB', maxTotalDataSizeMB), if(state=="coldPath", coalesce('coldPath.maxDataSizeMB', maxTotalDataSizeMB), 0))
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage", first(limit) AS Limit by state
-
-      </searchPostProcess>
+      </searchString>
     </chart>
   </row>
 
@@ -149,11 +153,18 @@ managed manually.
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <searchPostProcess>stats sum(sizeOnDiskMB) AS Usage by _time
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <searchString>
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB
+| bucket _time span=1d
+| dedup _time, path
+| stats sum(sizeOnDiskMB) AS Usage by _time
 | delta Usage AS Growth
 | eventstats avg(Growth) AS avg
 | timechart span=1d first(Growth) AS "Daily Growth", first(avg) AS "Average Daily Growth"
-      </searchPostProcess>
+      </searchString>
     </chart>
   </row>
 

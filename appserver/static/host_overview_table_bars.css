@@ -1,0 +1,24 @@
+td.data-bar-cell {
+    padding: 4px 8px;
+    text-align: center !important;
+}
+
+td.data-bar-cell .data-bar-wrapper {
+    position: relative;
+}
+
+td.data-bar-cell .data-bar-wrapper .data-bar-left {
+    height: 16px;
+    min-width: 1px;
+    background-color: #5479AF;
+    position: absolute;
+    right: 0px;
+}
+
+td.data-bar-cell .data-bar-wrapper .data-bar-right {
+    height: 16px;
+    min-width: 1px;
+    background-color: #838383;
+    position: absolute;
+    left: 0px;
+}

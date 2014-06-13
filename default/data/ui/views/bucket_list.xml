@@ -1,0 +1,53 @@
+<form class="formsearch">
+  <label>Bucket Finder</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This utility view is provided to assist administrators in the search
+for data living within a particular index bucket. By selecting a host
+and index from the pulldowns, a list of all buckets (as of midnight in
+the current day) will be provided. A user may then select a bucket to
+search by clicking on the table row of the desired bucket. The user
+will be taken to a simple events view of all of the events contained
+within that bucket.
+</div>
+    </html>
+  </row>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <choice value="*">All indexes</choice>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <table>
+      <title>Bucket Listing for $host$ / $index$</title>
+      <option name="link.visible">false</option>
+      <option name="count">50</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/bucket_search?form.et=$row.startEpoch$&form.lt=$row.endEpoch$&form.index=$row.index$&form.bucket_id=$row.bid$]]>
+	</link>
+      </drilldown>
+      <searchString>
+earliest=@d
+`_fb_summary_recs($host$, $index$)`
+| fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
+| `_fb_startEpoch_from_earliestTime`
+| `_fb_endEpoch_from_latestTime`
+| sort startEpoch, endEpoch
+| eval bid=index . "~" . id . "~" . guId
+| table _time, startEpoch, endEpoch, index, eventCount, sizeOnDiskMB, state, id, bid
+      </searchString>
+    </table>
+  </row>
+</form>
