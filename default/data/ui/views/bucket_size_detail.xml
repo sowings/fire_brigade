@@ -79,9 +79,10 @@ value labeled "Applied".
     <chart>
       <title>Bucket Sizes with Overlay, Local Buckets Only</title>
       <option name="link.visible">false</option>
-      <option name="charting.chart">line</option>
+      <option name="charting.chart">column</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">MBytes</option>
+      <option name="charting.chart.overlayFields">"Average Size","Size Limit"</option>
 
       <option name="charting.seriesColors">[0x6BB7C8,0x999999,0xD85E3D]</option>
 
