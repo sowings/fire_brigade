@@ -98,3 +98,12 @@ _maxHotBucketSize=10737418240 (10240MB,10GB), bucketSize=10810650624
 WHYTF?
 had to add one to LT to get all events in index (inc. last event). 
   lt epoch time matched Hosts.data
+
+[_fb_selected_sum(3)]
+args = search_str, sum_field, new_field
+definition = sum(eval(if($search_str$, $sum_field$, 0))) AS $new_field$
+
+[_fb_selected_count(3)]
+args = search_str, sum_field, new_field
+definition = count(eval(if($search_str$, $sum_field$, null()))) AS $new_field$
+
