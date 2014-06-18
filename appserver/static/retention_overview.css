@@ -1,6 +1,6 @@
 
 .fieldset {
-    display: none;
+    display: none !important;
 }
 
 /* Custom Icons */
