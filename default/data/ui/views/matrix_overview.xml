@@ -51,6 +51,7 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
       <option name="drilldown">row</option>
       <searchString>
 | rest /services/data/indexes search="totalEventCount!=0"
+| `_fb_null_hot_cold_max`
 | eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
                  coalesce('coldPath.maxDataSizeMB', 4294967295)),
                 maxTotalDataSizeMB)
