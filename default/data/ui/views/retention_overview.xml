@@ -151,6 +151,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 | join type=left orig_host, index
   [ | rest /services/data/indexes
     | fields splunk_server title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount, frozenTimePeriodInSecs
+    | `_fb_null_hot_cold_max`
     | rename homePath.maxDataSizeMB AS homelimit
         coldPath.maxDataSizeMB AS coldlimit
         splunk_server AS orig_host
@@ -275,7 +276,9 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
 | eval title=index
 | join type=left [
   | rest /services/data/indexes splunk_server=$disk_host$
-  | fields title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB  ]
+  | fields title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB 
+  | `_fb_null_hot_cold_max`
+ ]
 | eval homewarn=case(isnull('homePath.maxDataSizeMB'), null(), homedisk > .9 * 'homePath.maxDataSizeMB', "homewarn", 1=1, null())
 | eval coldwarn=case(isnull('coldPath.maxDataSizeMB'), null(), colddisk > .9 * 'coldPath.maxDataSizeMB', "coldwarn", 1=1, null())
 | eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
