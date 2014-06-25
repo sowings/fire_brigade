@@ -1,8 +1,16 @@
-<dashboard script="cumulative_overview.js">
-  <label>Quick Overview</label>
+<form script="cumulative_overview.js">
+  <label>Quick Overview (with Host Groups)</label>
 
+  <fieldset>
+    <input type="dropdown" token="host_group" searchWhenChanged="true">
+      <label>Host Group</label>
+      <choice value="All">All hosts</choice>
+      <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup hostgroups.csv | dedup host_group | sort host_group</populatingSearch>
+    </input>
+  </fieldset>
+   
   <searchTemplate>
-earliest=@d `_fb_summary_recs(*)`
+earliest=@d host_group=$host_group$ `_fb_summary_recs(*)`
 | bucket _time span=1d
 | fields _time, orig_host, index, sizeOnDiskMB, rawSize
 | stats sum(*) AS * by _time, orig_host, index
@@ -159,4 +167,4 @@ graph shows a thirty-day trend of the overall usage.
     </chart>
   </row>
 
-</dashboard>
+</form>
