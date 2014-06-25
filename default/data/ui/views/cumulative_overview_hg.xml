@@ -1,0 +1,162 @@
+<dashboard script="cumulative_overview.js">
+  <label>Quick Overview</label>
+
+  <searchTemplate>
+earliest=@d `_fb_summary_recs(*)`
+| bucket _time span=1d
+| fields _time, orig_host, index, sizeOnDiskMB, rawSize
+| stats sum(*) AS * by _time, orig_host, index
+  </searchTemplate>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+<p />
+This dashboard is intended to show the overall status of the
+indexers in the Splunk environment.
+<p />
+The values reflected in the <em>Index Counts</em> section show a
+various counts. The <i>Monitored</i> count reflects the indexes listed
+in the lookup table <b>monitored_indexes.csv</b>. Typically, this lookup
+is automatically updated by the <i>Update monitored list from REST</i>
+scheduled search. By contrast, the <i>From REST</i> count is a
+<i>current</i> snapshot of the total number of indexes as reported by
+the REST API. Comparing these two values can show whether the full
+list (as shown by REST) is actually being monitored by the
+application. In between these two values, the <i>Non-Empty</i> entry
+shows how many of those indexes reported data today.
+<p />
+Within the <em>Overall Disk Usage</em> panel are two sums. The first,
+labeled <i>Snapshot (dbinspect)</i> is the daily snapshot as captured
+by either TA-fire_brigade or this application itself, using the
+<code>dbinspect</code> command. The <i>Current (REST)</i> value comes
+from the REST API and repsresents the up-to-the minute sum.
+<p/>
+The <code>dbinspect</code> command also provides the "raw" size of the
+data that went into the index. This is analagous to license usage, and
+allows for calculating the true compression ratio of the data as
+compared to the disk space required. The third panel in the top row
+shows just that: the <i>Total Monitored Raw Size</i>,
+as well as how well that data compressed. The <i>Overall
+Compression</i> is represented as the percentage of space the data 
+takes up <i>relative</i> to its original raw size.
+<p/>
+More information about <a href="http://docs.splunk.com/Documentation/Splunk/6.0/SearchReference/Dbinspect"><code>dbinspect</code></a>
+and the <a href="http://docs.splunk.com/Documentation/Splunk/6.0/RESTAPI/RESTlist">REST API</a>
+can be found by following these links.
+<p/>
+The bottom row shows the cumulative usage of indexed data within the
+whole environment. The panel titled <i>Monitored Indexes by Host</i>
+is a stacked column chart. Each column is a single indexer, while the
+slices represent individual indexes. On the right, the simple area
+graph shows a thirty-day trend of the overall usage.
+</div>
+    </html>
+  </row>
+
+  <row grouping="3,2,2">
+    <single id="cumulative_overview_index_count_label">
+<!--      <title>Monitored Index Count</title> -->
+      <option name="field">count</option>
+      <option name="underLabel">Monitored</option>
+      <earliestTime>@d</earliestTime>
+      <searchString>| inputlookup monitored_indexes.csv | stats count</searchString>
+    </single>
+
+    <single>
+<!--      <title>Monitored Index Count</title> -->
+      <option name="field">count</option>
+      <option name="underLabel">Non-Empty</option>
+      <searchPostProcess>`_fb_where_today`
+| stats dc(index) AS count</searchPostProcess>
+    </single>
+
+     <single>
+-<!--      <title>Total Discovered Index Count</title> -->
+       <option name="field">count</option>
+       <option name="underLabel">From REST</option>
+       <searchString>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count</searchString>
+     </single>
+
+    <single id="cumulative_overview_disk_usage_label">
+<!--      <title>Monitored Disk Usage (from dbinspect)</title> -->
+      <option name="field">dbinspect_size</option>
+      <option name="underLabel">Snapshot (dbinspect)</option>
+      <searchPostProcess>`_fb_where_today`
+| stats sum(sizeOnDiskMB) AS dbinspect_size
+| `_fb_mbytes_pretty(dbinspect_size)`
+      </searchPostProcess>
+    </single>
+
+    <single>
+<!--      <title>Total Discovered Disk Usage (from REST)</title> -->
+      <option name="field">total_size</option>
+      <option name="underLabel">Current (REST)</option>
+      <searchString>| rest /services/data/indexes
+| `_fb_filter_empty_indexes_from_rest`
+| stats sum(currentDBSizeMB) AS total_size
+| `_fb_mbytes_pretty(total_size)`
+       </searchString>
+    </single>
+
+
+    <single>
+      <title>Total Monitored Raw Size</title>
+      <option name="field">rawBytes</option>
+      <option name="underLabel">(from dbinspect)</option>
+      <earliestTime>@d</earliestTime>
+      <searchPostProcess>`_fb_where_today`
+| stats sum(rawSize) AS rawBytes
+| `_fb_bytes_pretty(rawBytes)`
+      </searchPostProcess>
+    </single>
+
+    <single>
+      <title>Overall Compression</title>
+      <option name="field">comp_percent</option>
+      <option name="underLabel">Of Raw Size</option>
+      <searchPostProcess>`_fb_where_today`
+| stats sum(rawSize) AS rawBytes, sum(sizeOnDiskMB) AS diskTotalinMB
+| eval rawTotalinMB=round(rawBytes / 1024 / 1024, 0)
+| `_fb_get_comp_percent`</searchPostProcess>
+    </single>
+
+  </row>
+
+  <row>
+    <chart>
+      <title>Monitored Indexes by Host</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">column</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.axisTitleX.text">Host</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+      <earliestTime>@d</earliestTime>
+      <searchPostProcess>`_fb_where_today`
+| chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
+      </searchPostProcess>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$click.value$&form.index=$click.name2$]]></link>
+      </drilldown>
+    </chart>
+
+    <chart>
+      <title>Monitored Indexing Space Over Time (last 30 days)</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.legend.placement">none</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+      <option name="charting.seriesColors">[0x70A65C]</option>
+      <earliestTime>-30d@d</earliestTime>
+      <searchString>`_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
+      <drilldown>
+        <link>/app/fire_brigade/retention_size</link>
+      </drilldown>
+    </chart>
+  </row>
+
+</dashboard>
