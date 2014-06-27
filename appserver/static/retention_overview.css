@@ -1,6 +1,10 @@
 
-.fieldset {
+.input-text {
     display: none !important;
+}
+
+.input-dropdown {
+    display: block !important;
 }
 
 /* Custom Icons */

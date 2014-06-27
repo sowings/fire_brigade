@@ -1,0 +1,504 @@
+<form class="formsearch" script="retention_overview.js,retention_overview_iconography.js,retention_overview_table_bars.js" stylesheet="retention_overview.css">
+  <label>Retention Overview (with Host Groups)</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+<p/>
+This dashboard shows all of the retention dials on an index within the
+selected host group at the same time.
+<p/>
+<ul>
+<li><b>Count-Based Rules</b> (Bucket States): There are count-based
+limits which apply to constrain the number of hot buckets, as well as
+the number of warm buckets (see <a
+href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>
+for more information about bucket states). When the number of
+<i>hot</i> buckets is at its maximum, buckets may be rolled to the
+<i>warm</i> state before reaching their maximum size. If two types of
+storage medium (e.g. "fast" vs. "slow") are used to differentiate
+<i>hot</i> and <i>warm</i> buckets from <i>cold</i> buckets, then the
+number of <i>warm</i> buckets is significant, as it constrains when
+buckets are sent to the <i>cold</i> partition. Having too many
+<i>warm</i> buckets in this instance would move buckets to the slower
+storage earlier than intended.
+</li>
+<li><b>Size-Based Per-Index Rules</b> (Disk States): The most common
+form of retention rule, limits based on index size reflect constraints
+upon the amount of disk space taken up by the indexed data. By
+contrast to licensing volume, this calculation is based upon the
+compressed size of the data in the index. Limits are available for the
+<code>homePath</code> (hot and warm buckets), the
+<code>coldPath</code> and the total index usage.
+</li>
+<li><b>Sized-Based Volume Rules</b> (Volume Usage): Volume-based rules
+act as an extension of per-index disk-based rules, governing the total
+usage of several indexes in concert. The easiest way to think of a
+volume limit is as the maximum size of a disk partition. The
+<code>maxTotalVolumeSizeMB</code> setting sets the upper bound on how
+large each of the contained indexes can be. See the <a
+href="indexes.conf">indexes.conf</a> documentation for how to set up
+volumes. If volumes are not in use within the installation, this panel
+will report "No results found".
+</li>
+<li><b>Time-Based Rules</b> (Time-Based Retention State): Some sites
+may have restrictions about the length of time that data can persist
+on disk. Others might instead seek to meet a minimum level of service,
+but allow events to expire after that. There is also a default time
+limit for data to persist within Splunk. For all of these cases, the
+<code>frozenTimePeriodInSecs</code> limit is in play. If an index is
+close to full, <i>size-based</i> rules may activate, expiring data
+before the desired time limit is reached. In some rare cases,
+time-parsing issues may cause the index time range to be falsely
+reported as larger than it is. Each of these conditions may require
+administrator intervention; the goal of these time-based panels is to
+alert administrators to the existence of these issues.
+</li>
+</ul>
+<p/>
+Note: As always the <i>most restrictive</i> retention policy wins!
+<p/>
+<b>Legend:</b>
+<table>
+<tr>
+  <td>Icon</td>
+  <td>Table</td>
+  <td>Meaning</td>
+</tr>
+<tr>
+  <td class="icon" style="color:#5379AF;width:10%"><i class="icon-check"></i></td>
+  <td>Bucket States</td>
+  <td>The count of buckets is under 90% of the available limit(s): <code>maxHotBuckets</code> or <code>maxWarmDBCount</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Disk States</td>
+  <td>The disk usage for that particular bucket state (or total usage, as appropriate) is below 90% of the configured limit.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Volume Usage</td>
+  <td>The combined usage of all indexes in the volume is below 90% of the configured volume size limit.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Time-Based Retention State</td>
+  <td>The disk space usage for <i>none</i> of the indexes on the host is over 90% of its configured maximum AND there are no events older than the time limit (as calculated back from "now")</td>
+</tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-clock quar"></i></td>
+  <td>Bucket States</td>
+  <td>A quarantine bucket was detected; this is marked when there are <i>more</i>hot buckets than the configured max in <code>maxHotBuckets</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Time-Based Retention State</td>
+  <td>A possible time-parsing issue has been found. The earliest event time in the index is substantially longer than the desired retention period. This can arise from events being identified as "in the past" when parsing.</td>
+</tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-alert warmwarn"></i></td>
+  <td>Bucket States</td>
+  <td>An index on the host is at 90% or higher of one of its configured "maximum bucket count" limits, either <code>maxHotBuckets</code> or <code>maxWarmDBCount</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Bucket Information ... (detail)</td>
+  <td>The index listed is at 90% or higher of one of its configured limits. <em>Hot Status</em> maps to <code>maxHotBuckets</code>, and <em>Warm Status</em> maps to <code>maxWarmDBCount</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Disk States</td>
+  <td>An index on the host is at 90% or higher of its configured limit for the given index subdirectory. This could be <code>homePath</code> (combined hot and warm index states), <code>coldPath</code> (cold bucket states), or the total disk usage, <code>maxTotalDataSizeMB</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Disk Information ... (detail)</td>
+  <td>The named index is at 90% or higher of the given limit (<em>Home Status</em> maps to <code>homePath.maxDataSizeMB</code>, <em>Cold Status</em> maps to <code>coldPath.maxDataSizeMB</code>, <em>Total Space Status</em> maps to <code>maxTotalDataSizeMB</code>.</td>
+</tr>
+<tr>
+  <td></td>
+  <td>Time-Based Retention State</td>
+  <td>An index is at risk of failing to reach its SLA for time-based retention--the index is more than 90% full, and the event time range is less than 90% of its desired target.</td>
+</tr>
+<tr>
+  <td class="icon" style="width:10%"><i class="icon-alert extreme"></i></td>
+  <td>Time-Based Retention State</td>
+  <td>An index is at <i>extreme</i> risk of failing to reach its SLA for time-based retention; the index is more than 90% full, and the event time range is less than 50% of the target.</td>
+</tr>
+</table>
+</div>
+    </html>
+  </row>
+
+  <fieldset submitButton="false">
+    <input type="dropdown" token="host_group" searchWhenChanged="true">
+      <label>Host Group</label>
+      <choice value="All">All hosts</choice>
+      <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup hostgroups.csv | dedup host_group | sort host_group</populatingSearch>
+    </input>
+    <input type="text" token="bucket_host" searchWhenChanged="true" />
+    <input type="text" token="disk_host" searchWhenChanged="true" />
+    <input type="text" token="volume_host" searchWhenChanged="true" />
+    <input type="text" token="volume_title" searchWhenChanged="true" />
+    <input type="text" token="time_host" searchWhenChanged="true" />
+  </fieldset>
+
+  <searchTemplate>
+<![CDATA[earliest=@d host_group=$host_group$ `_fb_summary_recs("*")`
+| stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
+  sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
+  dc(eval(if(state="hot", path, null()))) AS hot, 
+  dc(eval(if(state="warm", path, null()))) AS warm, 
+  dc(eval(if(state="cold", path, null()))) AS cold, 
+  sum(sizeOnDiskMB) AS totaldisk
+  max(endEpoch) AS endEpoch,
+  min(startEpoch) AS startEpoch
+  by orig_host, index
+| join type=left orig_host, index
+  [ | rest /services/data/indexes
+    | fields splunk_server title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB, maxHotBuckets maxWarmDBCount, frozenTimePeriodInSecs
+    | `_fb_null_hot_cold_max`
+    | rename homePath.maxDataSizeMB AS homelimit
+        coldPath.maxDataSizeMB AS coldlimit
+        splunk_server AS orig_host
+        title AS index ]
+| eval homewarn=case(isnull(homelimit), null(), homedisk > .9 * homelimit, "homewarn", 1=1, null())
+| eval coldwarn=case(isnull(coldlimit), null(), colddisk > .9 * coldlimit, "coldwarn", 1=1, null())
+| eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
+| eval hotbkt=case(hot > maxHotBuckets, "quar", hot > .9 * maxHotBuckets, "hotwarn", 1=1, null())
+| eval warmbkt=if(warm > .9 * maxWarmDBCount, "warmwarn", null())
+| eval span_back=round(relative_time(now(), "@d+1h")) - startEpoch
+| eval span_pct=round(span_back / frozenTimePeriodInSecs * 100)
+| rename comment AS "1 - quar, 2 - warn, 3 - extreme"
+| eval timewarn=case(totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 50, 3,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 90, 2,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_back > frozenTimePeriodInSecs, 3,
+                     span_back > frozenTimePeriodInSecs, 1)
+| stats count
+  sum(hot) AS hot, sum(warm) AS warm, sum(cold) AS cold
+  values(warmbkt) AS warmbkt, values(hotbkt) AS hotbkt
+  values(totalwarn) AS totalwarn, values(homewarn) AS homewarn, values(coldwarn) AS coldwarn
+  max(timewarn) AS timewarn
+  sum(*disk) AS *disk
+  by orig_host
+| fillnull value=0 colddisk
+| eval timewarn=case(timewarn=3, "extreme",
+                     timewarn=2, "warn",
+                     timewarn=1, "quar",
+                     1=1, null())
+| table orig_host, count, hot, warm, cold, hotbkt, warmbkt, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn, timewarn]]>
+  </searchTemplate>
+
+  <row>
+    <table id="retention_overview_bucket_states">
+      <title>Bucket States</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess>table orig_host, count, hot, hotbkt, warm, warmbkt, cold
+| rename 
+    orig_host AS Host
+    count AS Indexes
+    hot AS "Hot Buckets"
+    hotbkt AS "Hot Status"
+    warm AS "Warm Buckets"
+    warmbkt AS "Warm Status"
+    cold AS "Cold Buckets"
+</searchPostProcess>
+    </table>
+  </row>
+
+  <row>
+    <table id="retention_overview_bucket_detail">
+      <title>Bucket information for $bucket_host$</title>
+      <option name="link.visible">false</option>
+      <option name="count">50</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_count?form.host=$form.bucket_host$&form.index=$row.Index$]]>
+	</link>
+      </drilldown>
+      <searchString><![CDATA[
+earliest=@d `_fb_summary_recs($bucket_host$, "*")`
+| stats 
+  dc(eval(if(state="hot", path, null()))) AS hot
+  dc(eval(if(state="warm", path, null()))) AS warm
+  dc(eval(if(state="cold", path, null()))) AS cold
+  by orig_host, index
+| eval title=index
+| join type=left [| rest /services/data/indexes splunk_server=$bucket_host$ | fields title, maxHotBuckets maxWarmDBCount ]
+| eval hotbkt=case(hot > maxHotBuckets, "quar", hot > .9 * maxHotBuckets, "hotwarn", 1=1, null())
+| eval warmbkt=if(warm > .9 * maxWarmDBCount, "warmwarn", null())
+| table index, hot, maxHotBuckets, hotbkt, warm, warmbkt, maxWarmDBCount, cold
+| rename 
+  index AS Index
+  hot AS "Hot Buckets"
+  maxHotBuckets AS "Hot Limit"
+  hotbkt AS "Hot Status"
+  warm AS "Warm Buckets"
+  maxWarmDBCount AS "Warm Limit"
+  warmbkt AS "Warm Status"
+  cold AS "Cold Buckets"]]>
+      </searchString>
+    </table>
+  </row>
+
+  <row>
+    <table id="retention_overview_disk_states">
+      <title>Disk States</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess><![CDATA[table orig_host, count, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn
+| foreach *disk [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| rename
+    orig_host AS Host
+    count AS Indexes
+    homedisk AS "homePath Space"
+    homewarn AS "Home Status"
+    colddisk AS "coldPath Space"
+    coldwarn AS "Cold Status"
+    totaldisk AS "Total Disk"
+    totalwarn AS "Total Space Status"]]>
+      </searchPostProcess>
+    </table>
+  </row>
+
+  <row>
+    <table id="retention_overview_disk_detail">
+      <title>Disk information for $disk_host$</title>
+      <option name="link.visible">false</option>
+      <option name="count">50</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_size?form.host=$form.disk_host$&form.index=$row.Index$]]>
+	</link>
+      </drilldown>
+      <searchString><![CDATA[
+earliest=@d `_fb_summary_recs($disk_host$, "*")`
+| stats 
+  sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk
+  sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk
+  sum(sizeOnDiskMB) AS totaldisk
+  by orig_host, index
+| eval title=index
+| join type=left [
+  | rest /services/data/indexes splunk_server=$disk_host$
+  | fields title, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB 
+  | `_fb_null_hot_cold_max`
+ ]
+| eval homewarn=case(isnull('homePath.maxDataSizeMB'), null(), homedisk > .9 * 'homePath.maxDataSizeMB', "homewarn", 1=1, null())
+| eval coldwarn=case(isnull('coldPath.maxDataSizeMB'), null(), colddisk > .9 * 'coldPath.maxDataSizeMB', "coldwarn", 1=1, null())
+| eval totalwarn=if(totaldisk > .9 * maxTotalDataSizeMB, "totalwarn", null())
+| rename command AS "Yes, this is a redundant rename, but we want to pretty print"
+| rename homePath.maxDataSizeMB AS homelimit, coldPath.maxDataSizeMB AS coldlimit, maxTotalDataSizeMB AS totallimit
+| table index, homedisk, homelimit, homewarn, colddisk, coldlimit, coldwarn, totaldisk, totallimit, totalwarn
+| foreach *disk *limit [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| rename
+  index AS Index
+  homedisk AS "homePath Space"
+  homelimit AS "homePath Limit"
+  homewarn AS "Home Status"
+  colddisk AS "coldPath Space"
+  coldlimit AS "coldPath Limit"
+  coldwarn AS "Cold Status"
+  totaldisk AS "Total Space"
+  totallimit AS "Total Space Limit"
+  totalwarn AS "Total Space Status"
+]]>
+      </searchString>
+    </table>
+  </row>
+
+  <row>
+    <table id="retention_overview_volume_states">
+      <title>Volume Usage</title>
+      <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <searchString><![CDATA[
+earliest=@d 
+[| rest /services/data/indexes search="totalEventCount!=0"
+   | search homePath="volume:*" OR coldPath="volume:*"
+   | fields title | rename title AS orig_index ]
+state!="thawed" host_group=$host_group$ `_fb_summary_recs("*")`
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, index, state
+| eval state=if(state="cold", state, "home")
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB
+  by orig_host, index, state
+| join type=left orig_host, index
+  [| rest /services/data/indexes
+   | fields homePath, coldPath, title, splunk_server
+   | rename title AS index, splunk_server AS orig_host ]
+| rex field=homePath "^(?<home_vol>volume:\w+)"
+| rex field=coldPath "^(?<cold_vol>volume:\w+)"
+| eval volume=if(state="cold", cold_vol, home_vol)
+| join type=left volume, orig_host
+  [ | rest /services/configs/conf-indexes
+    | search title="volume:*"
+    | fields title, maxVolumeDataSizeMB, splunk_server
+    | rename title AS volume, splunk_server AS orig_host ]
+| stats sum(sizeOnDiskMB) AS totaldisk
+  first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB
+  by orig_host, volume
+| eval vol_pct=round(totaldisk / maxVolumeDataSizeMB * 100, 1)
+| sort orig_host - volume
+| table orig_host, volume, totaldisk, maxVolumeDataSizeMB, vol_pct
+| foreach totaldisk maxVolumeDataSizeMB [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| rename
+  orig_host AS Host
+  volume AS Volume
+  totaldisk AS "Disk Usage"
+  maxVolumeDataSizeMB AS "Volume Limit"
+  vol_pct AS "% of Capacity"
+]]>
+      </searchString>
+    </table>
+
+    <table id="retention_overview_time_states">
+      <title>Time-Based Retention State</title>
+      <option name="link.visible">false</option>
+      <searchPostProcess>table orig_host, count, timewarn
+| rename
+    orig_host AS Host
+    count AS Indexes
+    timewarn AS "Time-Based Status" 
+      </searchPostProcess>
+    </table>
+
+  </row>
+  <row>
+    <chart id="retention_overview_volume_index_detail">
+      <title>Combined Volume Usage by Index Over Time for $volume_host$</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.chart.stackMode">stacked</option>
+      <option name="charting.axisTitleX.text">Date</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
+	</link>
+      </drilldown>
+      <searchString>
+[| rest /services/data/indexes splunk_server=$volume_host$*
+| search coldPath=$volume_title$* OR homePath=$volume_title$*
+| rename title AS orig_index | fields orig_index | dedup orig_index ]
+state!="thawed" `_fb_summary_recs_host($volume_host$)`
+| bucket span=1d _time
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
+| eval bookkeeping="$volume_title$"
+| join type=left bookkeeping
+[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$volume_host$*
+  | fields title, path, maxVolumeDataSizeMB
+  | rename title AS bookkeeping, path AS wanted_path]
+| rename comment AS "Set state to null for rows we don't want, stats will ignore."
+| eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
+| stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
+    sum(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot_usage,
+    sum(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm_usage,
+    sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold_usage
+    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
+    by _time, index
+| eventstats sum(sizeOnDiskMB) AS daily_usage by _time
+| eventstats dc(index) AS idx_count, max(_time) AS latest
+| timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchString>
+    </chart>
+
+    <chart id="retention_overview_volume_limit_detail">
+      <title>Combined Data Usage vs. Limit Over Time for $volume_host$</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">line</option>
+      <option name="charting.chart.nullValueMode">connect</option>
+      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleY.text">MBytes</option>
+
+      <earliestTime>-30d@d</earliestTime>
+      <latestTime>now</latestTime>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
+	</link>
+      </drilldown>
+      <searchString>
+[| rest /services/data/indexes splunk_server=$volume_host$*
+| search coldPath=$volume_title$* OR homePath=$volume_title$*
+| rename title AS orig_index | fields orig_index | dedup orig_index ]
+state!="thawed" `_fb_summary_recs_host($volume_host$)`
+| bucket span=1d _time
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
+| eval bookkeeping="$volume_title$"
+| join type=left bookkeeping
+[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$volume_host$*
+  | fields title, path, maxVolumeDataSizeMB
+  | rename title AS bookkeeping, path AS wanted_path]
+| rename comment AS "Set state to null for rows we don't want, stats will ignore."
+| eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
+| stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
+    sum(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot_usage,
+    sum(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm_usage,
+    sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold_usage
+    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
+    by _time, index
+| eventstats sum(sizeOnDiskMB) AS daily_usage by _time
+| eventstats dc(index) AS idx_count, max(_time) AS latest
+| timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</searchString>
+    </chart>
+  </row>
+
+  <row>
+    <table id="retention_overview_time_detail">
+      <title>Time-Based Retention Status for $time_host$</title>
+      <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_age?form.host=$form.time_host$&form.index=$row.Index$]]>
+	</link>
+      </drilldown>
+      <searchString><![CDATA[
+earliest=@d `_fb_summary_recs($time_host$, "*")`
+| stats 
+  sum(sizeOnDiskMB) AS totaldisk
+  max(endEpoch) AS endEpoch,
+  min(startEpoch) AS startEpoch
+  by orig_host, index
+| join type=left orig_host, index
+  [ | rest /services/data/indexes splunk_server=$time_host$*
+    | fields splunk_server title, maxTotalDataSizeMB, frozenTimePeriodInSecs
+    | rename 
+        splunk_server AS orig_host
+        title AS index ]
+| eval span_back=round(relative_time(now(), "@d+1h")) - startEpoch
+| eval span_pct=round(span_back / frozenTimePeriodInSecs * 100)
+| rename comment AS "1 - quar, 2 - warn, 3 - extreme"
+| eval timewarn=case(totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 50, 3,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_pct < 90, 2,
+                     totaldisk > .9 * maxTotalDataSizeMB AND span_back > frozenTimePeriodInSecs, 3,
+                     span_back > frozenTimePeriodInSecs, 1)
+| eval span_back=tostring(span_back, "duration")
+| eval cutoff=now()-frozenTimePeriodInSecs
+| eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "duration")
+| eval disk_pct=round(totaldisk / maxTotalDataSizeMB * 100, 2) . "%"
+| eval timewarn=case(timewarn=3, "extreme",
+                     timewarn=2, "warn",
+                     timewarn=1, "quar",
+                     1=1, null())
+| convert ctime(cutoff), ctime(*Epoch)
+| rename comment AS "The disk space part helps make sense of the icons"
+| table index, disk_pct, startEpoch, endEpoch, span_back, frozenTimePeriodInSecs, cutoff, timewarn
+| rename index AS Index
+  disk_pct AS "Index Capacity"
+  startEpoch AS "Earliest Event"
+  endEpoch AS "Latest Event"
+  frozenTimePeriodInSecs AS "Retention Limit"
+  cutoff AS "Retention Cutoff"
+  timewarn AS "Time-Based Status"
+  span_back AS "Available Data Span"]]>
+      </searchString>
+    </table>
+  </row>
+
+</form>
