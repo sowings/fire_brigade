@@ -177,7 +177,7 @@ limit.
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>
-state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
+state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, state
 | `_fb_startEpoch_from_earliestTime`
