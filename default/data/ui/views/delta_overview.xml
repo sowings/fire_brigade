@@ -1,0 +1,45 @@
+<form script="cumulative_overview.js">
+  <label>Data Movement Summary</label>
+
+  <searchTemplate><![CDATA[
+earliest=-1d@d `_fb_summary_recs_host("*")`
+| bucket _time span=1d
+| rename comment AS "This is just to get the deduped size of each bucket"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, id, state, host, index, path
+| eval marker=case(relative_time(now(), "@d") > _time, "yesterday", 1==1, "today")
+| stats 
+  sum(eval(if(state="hot" AND marker="today", sizeOnDiskMB, 0))) AS hot_today
+  sum(eval(if(state="hot" AND marker="yesterday", sizeOnDiskMB, 0))) AS hot_yesterday
+  sum(eval(if(state="warm" AND marker="today", sizeOnDiskMB, 0))) AS warm_today
+  sum(eval(if(state="warm" AND marker="yesterday", sizeOnDiskMB, 0))) AS warm_yesterday
+  sum(eval(if(state="cold" AND marker="today", sizeOnDiskMB, 0))) AS cold_today
+  sum(eval(if(state="cold" AND marker="yesterday", sizeOnDiskMB, 0))) AS cold_yesterday
+  by host
+| eval cold_delta=cold_today - cold_yesterday
+| eval warm_delta=warm_today - warm_yesterday
+| eval hot_delta=hot_today - hot_yesterday
+| table host, hot_today, hot_delta, warm_today, warm_delta, cold_today, cold_delta
+| foreach hot_*, warm_*, cold_* [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| rename host AS Indexer
+  hot_today AS "Current Hot Usage"
+  hot_delta AS "Hot Delta"
+  warm_today AS "Current Warm Usage"
+  warm_delta AS "Warm Delta"
+  cold_today AS "Current Cold"
+  cold_delta AS "Cold Delta"]]>
+  </searchTemplate>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+</div>
+    </html>
+  </row>
+
+  <row>
+    <table>
+      <title>Results</title>
+    </table>
+  </row>
+
+</form>
