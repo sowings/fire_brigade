@@ -1,7 +1,26 @@
-<form script="cumulative_overview.js">
+<form>
   <label>Data Movement Summary</label>
 
-  <searchTemplate><![CDATA[
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This dashboard provides visibility into the flow of data through the
+system. As documented here, data indexed by Splunk moves through
+several distinct phases of its life cycle. Administrators may wish to
+track these transitions more closely to understand which retention
+constraints are being applied to the data. Further, it can be useful
+to understand if the system is in a steady state, where the influx
+matches the data being archived out of Splunk, or whether that balance
+tips in another direction.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <table>
+      <title>Data Movement Per-Host</title>
+      <option name="link.visible">false</option>
+      <searchString><![CDATA[
 earliest=-1d@d `_fb_summary_recs_host("*")`
 | bucket _time span=1d
 | rename comment AS "This is just to get the deduped size of each bucket"
@@ -26,19 +45,7 @@ earliest=-1d@d `_fb_summary_recs_host("*")`
   warm_today AS "Current Warm Usage"
   warm_delta AS "Warm Delta"
   cold_today AS "Current Cold"
-  cold_delta AS "Cold Delta"]]>
-  </searchTemplate>
-
-  <row>
-    <html>
-<div id="fire_brigade_help">
-</div>
-    </html>
-  </row>
-
-  <row>
-    <table>
-      <title>Results</title>
+  cold_delta AS "Cold Delta"]]></searchString>
     </table>
   </row>
 
