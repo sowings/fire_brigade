@@ -5,7 +5,7 @@
     <html>
 <div id="fire_brigade_help">
 This dashboard provides visibility into the flow of data through the
-system. As documented here, data indexed by Splunk moves through
+system. As documented <a href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>, data indexed by Splunk moves through
 several distinct phases of its life cycle. Administrators may wish to
 track these transitions more closely to understand which retention
 constraints are being applied to the data. Further, it can be useful
