@@ -5,7 +5,7 @@
     <input type="dropdown" token="host_group" searchWhenChanged="true">
       <label>Host Group</label>
       <choice value="All">All hosts</choice>
-      <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup hostgroups.csv | dedup host_group | sort host_group</populatingSearch>
+      <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup fb_host_groups | dedup host_group | sort host_group</populatingSearch>
     </input>
   </fieldset>
    
