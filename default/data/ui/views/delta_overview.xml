@@ -12,6 +12,13 @@ constraints are being applied to the data. Further, it can be useful
 to understand if the system is in a steady state, where the influx
 matches the data being archived out of Splunk, or whether that balance
 tips in another direction.
+<p/>
+The size values given in the table below (in the columns identified as 
+<em>Current</em>) are for the current day (values collected at
+midnight). The <em>Delta</em> columns reflect the change from the
+prior 24h period. A negative value represents a decline from the prior
+day, and can signal archival or state transition (hot to warm, warm to
+cold, etc).
 </div>
     </html>
   </row>
@@ -44,7 +51,7 @@ earliest=-1d@d `_fb_summary_recs_host("*")`
   hot_delta AS "Hot Delta"
   warm_today AS "Current Warm Usage"
   warm_delta AS "Warm Delta"
-  cold_today AS "Current Cold"
+  cold_today AS "Current Cold Usage"
   cold_delta AS "Cold Delta"]]></searchString>
     </table>
   </row>
