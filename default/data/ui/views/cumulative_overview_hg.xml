@@ -10,7 +10,7 @@
   </fieldset>
    
   <searchTemplate>
-earliest=@d host_group=$host_group$ `_fb_summary_recs(*)`
+earliest=@d host_group="$host_group$" `_fb_summary_recs(*)`
 | bucket _time span=1d
 | fields _time, orig_host, index, sizeOnDiskMB, rawSize
 | stats sum(*) AS * by _time, orig_host, index
@@ -160,7 +160,7 @@ graph shows a thirty-day trend of the overall usage.
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x70A65C]</option>
       <earliestTime>-30d@d</earliestTime>
-      <searchString>host_group=$host_group$ `_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
+      <searchString>host_group="$host_group$" `_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
       <drilldown>
         <link>/app/fire_brigade/retention_size</link>
       </drilldown>

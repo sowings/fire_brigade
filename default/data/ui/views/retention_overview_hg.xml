@@ -144,7 +144,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   </fieldset>
 
   <searchTemplate>
-<![CDATA[earliest=@d host_group=$host_group$ `_fb_summary_recs("*")`
+<![CDATA[earliest=@d host_group="$host_group$" `_fb_summary_recs("*")`
 | stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
   dc(eval(if(state="hot", path, null()))) AS hot, 
@@ -318,7 +318,7 @@ earliest=@d
 [| rest /services/data/indexes search="totalEventCount!=0"
    | search homePath="volume:*" OR coldPath="volume:*"
    | fields title | rename title AS orig_index ]
-state!="thawed" host_group=$host_group$ `_fb_summary_recs("*")`
+state!="thawed" host_group="$host_group$" `_fb_summary_recs("*")`
 | stats sum(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, index, state
 | eval state=if(state="cold", state, "home")
 | stats sum(sizeOnDiskMB) AS sizeOnDiskMB

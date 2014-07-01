@@ -1,7 +1,7 @@
 <form class="formsearch" script="index_overview.js">
   <label>Cross-Host Index Overview (with Host Groups)</label>
 
-  <searchTemplate>earliest=@d host_group=$host_group$ `_fb_summary_recs($index$)`
+  <searchTemplate>earliest=@d host_group="$host_group$" `_fb_summary_recs($index$)`
 | bucket _time span=1d
 | eventstats avg(sizeOnDiskMB) AS global_avgBucket
 | stats
@@ -200,7 +200,7 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.axisTitleX.text">Host</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <searchString>earliest=@d host_group=$host_group$ `_fb_summary_recs($index$)`
+      <searchString>earliest=@d host_group="$host_group$" `_fb_summary_recs($index$)`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, path, guId
 | join type=left guId [ | rest /services/server/info | fields - id 
   | rename guid as guId ]
