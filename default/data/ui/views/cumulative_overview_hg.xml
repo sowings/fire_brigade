@@ -100,6 +100,7 @@ graph shows a thirty-day trend of the overall usage.
 <!--      <title>Total Discovered Disk Usage (from REST)</title> -->
       <option name="field">total_size</option>
       <option name="underLabel">Current (REST)</option>
+      <!-- Ideally, this will get fixed to filter on host_group eventually -->
       <searchString>| rest /services/data/indexes
 | `_fb_filter_empty_indexes_from_rest`
 | stats sum(currentDBSizeMB) AS total_size
