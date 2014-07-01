@@ -40,11 +40,14 @@ desired SLA.
   max(eval(if(state="hot" OR state="warm", endEpoch, null()))) AS home_latest
   min(eval(if(state="cold", startEpoch, null()))) AS cold_earliest
   max(eval(if(state="cold", endEpoch, null()))) AS cold_latest
+  min(eval(if(state="thawed", startEpoch, null()))) AS thawed_earliest
+  max(eval(if(state="thawed", endEpoch, null()))) AS thawed_latest
   by index
 | eval home_delta=tostring(home_latest - home_earliest, "duration")
 | eval cold_delta=tostring(cold_latest - cold_earliest, "duration")
+| eval thawed_delta=tostring(thawed_latest - thawed_earliest, "duration")
 | convert ctime(*est)
-| table index, home_earliest, home_delta, home_latest, cold_earliest, cold_delta, cold_latest
+| table index, home_earliest, home_delta, home_latest, cold_earliest, cold_delta, cold_latest, thawed_earliest, thawed_delta, thawed_latest
 | rename index AS Index
   home_earliest AS "Earliest Time (homePath)"
   home_delta AS "homePath Data Span"
@@ -52,6 +55,9 @@ desired SLA.
   cold_earliest AS "Earliest Time (coldPath)"
   cold_delta AS "coldPath Data Span"
   cold_latest AS "Latest Time (coldPath)"
+  thawed_earliest AS "Earliest Time (thawedPath)"
+  thawed_delta AS "thawedPath Data Span"
+  thawed_latest AS "Latest Time (thawedPath)"
       </searchString>
 
       <drilldown>
