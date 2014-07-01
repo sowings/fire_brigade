@@ -67,8 +67,8 @@ disproportionately loaded.
       <option name="charting.axisTitleY.text">MBytes</option>
       <searchPostProcess>`_fb_where_today`
 | eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
-| stats sum(sizeOnDiskMB) AS sizeOnDiskMB by host, bucket_type
-| chart sum(sizeOnDiskMB) AS "Disk Usage" OVER host by bucket_type
+| stats sum(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, bucket_type
+| chart sum(sizeOnDiskMB) AS "Disk Usage" OVER orig_host by bucket_type
       </searchPostProcess>
     </chart>
     <chart>
