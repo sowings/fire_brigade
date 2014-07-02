@@ -5,7 +5,7 @@
 earliest=@d
 `_fb_summary_recs($host$, $index$)`
 | extract auto=f fb_extract_bucket_type_time_source
-| fields _time, sizeOnDiskMB, path, bucket_type, guId
+| fields _time, sizeOnDiskMB, path, bucket_type, bucket_primary_guid, guId
 | bucket _time span=1d
   </searchTemplate>
 
@@ -121,7 +121,7 @@ other members of the cluster.
       <option name="charting.chart">pie</option>
       <searchPostProcess>`_fb_where_today`
 | extract auto=f fb_extract_hot_bucket
-| eval guid=guId
+| eval guid=coalesce(bucket_primary_guid, guId)
 | join type=left guid [ | rest /services/server/info | rename splunk_server AS host ]
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by host, path
 | stats sum(sizeOnDiskMB) AS MBytes by host
