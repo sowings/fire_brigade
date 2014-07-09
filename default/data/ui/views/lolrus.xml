@@ -69,7 +69,7 @@ old buckets.
   <!-- This will drive the table and the event set -->
   <searchTemplate>
 `fb_bucket_transitions($host$, *)`
-| fields + timestamped, bucket_parent, bucket, bucket_id, idx, from, isinit, tag::eventtype
+| fields + timestamped, bucket_parent, bucket, bucket_id, idx, from, isinit, tag::eventtype, now, latest, frozenTimePeriodInSecs
 | `_fb_figure_idx_name_from_home_or_cold_path`
 | search idx=$index$ bucket_id=$bucket_id$
 | `fb_bucket_transition_pp`
