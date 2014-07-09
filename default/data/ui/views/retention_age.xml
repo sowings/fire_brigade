@@ -2,7 +2,7 @@
   <label>Bucket Age vs. Age Limit</label>
 
   <searchTemplate>
-earliest=-30d@d
+earliest=@d
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
