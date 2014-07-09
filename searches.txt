@@ -98,3 +98,5 @@ _maxHotBucketSize=10737418240 (10240MB,10GB), bucketSize=10810650624
 WHYTF?
 had to add one to LT to get all events in index (inc. last event). 
   lt epoch time matched Hosts.data
+
+|rest /services/data/indexes/*/bucket-cache | search isHot=0| table title size* splunk_server last* | rex field=title "(?<index>.+)\~(?<bid>\d+)\~.+" | stats sum(sizeOnDisk_actual) as sizeOnDisk_actual sum(sizeOnDisk_cached) as sizeOnDisk_cached by splunk_server, index
