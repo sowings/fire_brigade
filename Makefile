@@ -38,7 +38,7 @@ app_package: build_number
 	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && tar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf ${APP_NAME})
 
 change_list:
-	$(eval TAG_HASH := $(shell git rev-list v2.0.2 | head -1))
+	$(eval TAG_HASH := $(shell git rev-list v2.0.3 | head -1))
 	$(eval HEAD_HASH := $(shell git rev-list HEAD | head -1))
 
 	git log -p --name-only --pretty=format:"%s" --no-color ${TAG_HASH}..${HEAD_HASH}
