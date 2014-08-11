@@ -128,6 +128,7 @@ versions seen elsewhere, but are restricted to the selected host.
 | join type=left index
 [ | rest /services/data/indexes splunk_server=$host$* count=0
   | rename title AS index ]
+| `_fb_null_hot_cold_max`
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
     sum(diskTotalinMB) AS totalUsage
     first(maxTotalDataSizeMB) AS max_limit
