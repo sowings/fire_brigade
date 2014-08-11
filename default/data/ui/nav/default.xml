@@ -6,12 +6,19 @@
     <view name="matrix_overview" />
     <view name="cluster_overview" />
   </collection>
+  <collection label="Host Group Overviews">
+    <view name="cumulative_overview_hg" />
+    <view name="index_overview_hg" />
+    <view name="retention_overview_hg" />
+  </collection>
   <collection label="Detail">
     <view name="index_detail" />
     <view name="cluster_detail" />
     <divider />
     <view name="bucket_size_detail" />
     <view name="bucket_span_detail" />
+    <divider />
+    <view name="tiered_by_path" />
   </collection>
   <collection label="Retention Planning">
     <view name="retention_overview" />
