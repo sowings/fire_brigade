@@ -1,0 +1,228 @@
+<form class="formsearch">
+  <label>The flower of unfolding</label>
+
+  <row grouping="1,3">
+    <single>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <searchString>| stats count | eval label="Current State"</searchString>
+      <drilldown>
+        <set token="current">yes</set>
+        <unset token="time_based"/>
+        <unset token="size_based"/>
+	</drilldown>
+    </single>
+    <single>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <searchString>| stats count | eval label="Time-Based"</searchString>
+      <drilldown>
+        <unset token="current"/>
+        <set token="time_based">yes</set>
+        <unset token="size_based"/>
+	</drilldown>
+    </single>
+    <single>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <searchString>| stats count | eval label="Size-Based"</searchString>
+      <drilldown>
+        <unset token="current"/>
+        <unset token="time_based"/>
+        <set token="size_based">yes</set>
+	</drilldown>
+    </single>
+  </row>
+
+
+  <row>
+    <panel>
+      <table depends="$current$">
+        <title>Select a Host</title>
+        <searchString>
+| rest /services/server/info
+| table splunk_server
+	</searchString>
+	<drilldown>
+          <set token="server_host">$row.splunk_server$</set>
+	</drilldown>
+      </table>
+      <table depends="$time_based$">
+        <title>Select an Index</title>
+        <searchString>
+| rest /services/server/info
+| table splunk_server
+	</searchString>
+	<drilldown>
+          <set token="server_host">$row.splunk_server$</set>
+	</drilldown>
+      </table>
+      <table depends="$size_based$">
+        <title>Select an Index</title>
+        <searchString>
+| rest /services/server/info
+| table splunk_server
+	</searchString>
+	<drilldown>
+          <set token="server_host">$row.splunk_server$</set>
+	</drilldown>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$server_host$">
+        <title>Select an Index</title>
+        <searchString>
+| rest /services/data/indexes
+| stats count by title | rename title AS index | fields - count
+        </searchString>
+        <drilldown>
+          <set token="index_index">$row.index$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+<!--
+
+  <row>
+    <panel>
+      <table id="current_server_index_state" depends="$current$,$server_host$,$index_index$">
+        <title>Current Retention State for Host / Index ($server_host$ / $index_index$)</title>
+        <searchString>
+| rest /services/data/indexes/$index_index$ splunk_server=$server_host$
+| `_fb_null_hot_cold_max`
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
+                maxTotalDataSizeMB)
+| eval span=tostring(currentDBSizeMB) + " / " +
+    tostring(roof) + " MB (" +
+    tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
+| chart useother=f limit=50 first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+	</searchString>
+      </table>
+    </panel>
+    <panel>
+      <table id="indexer_based_retention" depends="$index_index$">
+        <title>Current retention state by index</title>
+        <searchString>
+| rest /services/data/indexes/$index_index$
+| `_fb_null_hot_cold_max`
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
+                maxTotalDataSizeMB)
+| eval span=tostring(currentDBSizeMB) + " / " +
+    tostring(roof) + " MB (" +
+    tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
+| chart useother=f limit=50 first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+	</searchString>
+        <drilldown>
+          <set token="index_host">$row.Indexer$</set>
+	</drilldown>
+      </table>
+    </panel>
+  </row>
+-->
+
+
+  <row>
+    <panel>
+      <table id="current_deep_dive" depends="$current$,$index_index$,$server_host$" rejects="$size_based$">
+        <title>Deep Dive on Host ($server_host$) / Index ($index_index$)</title>
+        <searchString>
+| rest /services/data/indexes/$index_index$ splunk_server=$server_host$
+| table title, eai:acl.app, disabled, totalEventCount, currentDBSizeMB, homePath, coldPath, thawedPath
+| rename title AS Index
+   eai:acl.app AS App
+   disabled AS Disabled
+   totalEventCount AS "Event Count"
+   currentDBSizeMB AS "Size in MiB"
+   homePath AS "Home Path"
+   coldPath AS "Cold Path"
+   thawedPath AS "Thawed Path"
+	</searchString>
+      </table>
+      <table id="count_deep_dive" depends="$count_based$,$index_index$,$server_host$" rejects="$current$,$size_based$">
+        <title>Deep Dive on Host ($server_host$) / Index ($index_index$)</title>
+        <searchString>
+| rest /services/data/indexes-extended/$index_index$ splunk_server=$server_host$
+| join type=left splunk_server, title
+  [ | rest /services/data/indexes/$index_index$ splunk_server=$server_host$
+    | fields title, splunk_server, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB ]
+| fillnull value=0 bucket_dirs.home.bucket_count bucket_dirs.cold.bucket_count bucket_dirs.thawed.bucket_count
+| table title, bucket_dirs.home.bucket_count, homePath.maxDataBucket_CountMB, bucket_dirs.cold.bucket_count, coldPath.maxDataSizeMB, bucket_dirs.thawed.bucket_count, total_raw_size, total_size, maxTotalDataSizeMB, comp_pct, comp_ratio
+| rename title AS Index
+   bucket_dirs.home.size AS "Home Path Size"
+   homePath.maxDataSizeMB AS "Home Path Limit"
+   bucket_dirs.cold.size AS "Cold Path Size"
+   coldPath.maxDataSizeMB AS "Home Path Limit"
+   bucket_dirs.thawed.size AS "Thawed Path Size"
+   total_raw_size AS "Raw Size"
+   total_size AS "Total Size"
+   maxTotalDataSizeMB AS "Max Total Size"
+   comp_pct AS "Compression %"
+   comp_ratio AS "Compression Ratio"
+	</searchString>
+      </table>
+      <table id="time_deep_dive" depends="$time_based$,$index_index$,$server_host$" rejects="$current$,$size_based$">
+        <title>Deep Dive on Host ($server_host$) / Index ($index_index$)</title>
+        <searchString><![CDATA[
+| rest /services/data/indexes-extended/$index_index$ splunk_server=$server_host$
+| join type=left splunk_server, title
+  [ | rest /services/data/indexes/$index_index$ splunk_server=$server_host$
+    | fields title, splunk_server, frozenTimePeriodInSecs ]
+| fillnull value="N/A"
+  bucket_dirs.home.event_min_time bucket_dirs.home.event_max_time
+  bucket_dirs.cold.event_min_time bucket_dirs.cold.event_max_time
+  bucket_dirs.thawed.event_min_time bucket_dirs.thawed.event_max_time
+| eval freeze=tostring(frozenTimePeriodInSecs, "duration")
+| eval frozen_cutoff_time = now() - frozenTimePeriodInSecs
+| convert ctime(frozen_cutoff_time)
+| table title, bucket_dirs.home.event_min_time bucket_dirs.home.event_max_time
+  bucket_dirs.cold.event_min_time bucket_dirs.cold.event_max_time
+  bucket_dirs.thawed.event_min_time bucket_dirs.thawed.event_max_time
+  frozenTimePeriodInSecs, frozenTimePeriodInSecs, freeze, frozen_cutoff_time
+| foreach bucket_dirs.* [ | eval <<FIELD>>=if(isint('<<FIELD>>'), strftime('<<FIELD>>', "%m/%d/%Y %H:%M:%S"), '<<FIELD>>') ]
+| rename title AS Index
+   bucket_dirs.home.event_min_time AS "Earliest Home Time"
+   bucket_dirs.home.event_max_time AS "Latest Home Time"
+   bucket_dirs.cold.event_min_time AS "Earliest Cold Time"
+   bucket_dirs.cold.event_max_time AS "Latest Cold Time"
+   bucket_dirs.thawed.event_min_time AS "Earliest Thawed Time"
+   bucket_dirs.thawed.event_max_time AS "Latest Thawed Time"
+   frozenTimePeriodInSecs AS "Frozen Limit (sec)"
+   freeze AS "Frozen Limit"
+   frozen_cutoff_time AS "Frozen Cutoff"]]>
+	</searchString>
+      </table>
+      <table id="size_deep_dive" depends="$size_based$,$index_index$,$server_host$" rejects="$current$">
+        <title>Deep Dive on Host ($server_host$) / Index ($index_index$)</title>
+        <searchString>
+| rest /services/data/indexes-extended/$index_index$ splunk_server=$server_host$
+| join type=left splunk_server, title
+  [ | rest /services/data/indexes/$index_index$ splunk_server=$server_host$
+    | fields title, splunk_server, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB ]
+| fillnull value=0 bucket_dirs.home.size bucket_dirs.cold.size bucket_dirs.thawed.size
+| eval comp_pct=tostring(round(total_size / total_raw_size * 100, 2)) + "%"
+| eval comp_ratio=tostring(round(total_raw_size / total_size, 2)) + "::1"
+| table title, bucket_dirs.home.size, homePath.maxDataSizeMB, bucket_dirs.cold.size, coldPath.maxDataSizeMB, bucket_dirs.thawed.size, total_raw_size, total_size, maxTotalDataSizeMB, comp_pct, comp_ratio
+| rename title AS Index
+   bucket_dirs.home.size AS "Home Path Size"
+   homePath.maxDataSizeMB AS "Home Path Limit"
+   bucket_dirs.cold.size AS "Cold Path Size"
+   coldPath.maxDataSizeMB AS "Home Path Limit"
+   bucket_dirs.thawed.size AS "Thawed Path Size"
+   total_raw_size AS "Raw Size"
+   total_size AS "Total Size"
+   maxTotalDataSizeMB AS "Max Total Size"
+   comp_pct AS "Compression %"
+   comp_ratio AS "Compression Ratio"
+	</searchString>
+      </table>
+    </panel>
+  </row>        
+
+
+</form>
+
