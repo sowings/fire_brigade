@@ -1,6 +1,12 @@
 <form class="formsearch" script="retention_age.js">
   <label>Bucket Age vs. Age Limit</label>
 
+<!-- These search commands, inserted after the bucket call, seem to
+     break the overall search. 
+| extract auto=f fb_extract_bucket_type_time_source
+| search [| rest /services/server/info splunk_server=$host$ | rename guid AS bucket_primary_guid | return bucket_primary_guid ]
+-->
+
   <searchTemplate>
 earliest=@d
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
