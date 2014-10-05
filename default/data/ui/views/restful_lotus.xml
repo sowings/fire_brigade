@@ -2,7 +2,7 @@
   <label>The flower of unfolding</label>
 
   <row grouping="1,3">
-    <single>
+    <single id="restful_lotus_current_state">
       <option name="field">label</option>
       <option name="underLabel">click here</option>
       <searchString>| stats count | eval label="Current State"</searchString>
@@ -10,6 +10,7 @@
         <set token="current">yes</set>
         <unset token="time_based"/>
         <unset token="size_based"/>
+        <unset token="count_based"/>
 	</drilldown>
     </single>
     <single>
@@ -20,6 +21,7 @@
         <unset token="current"/>
         <set token="time_based">yes</set>
         <unset token="size_based"/>
+        <unset token="count_based"/>
 	</drilldown>
     </single>
     <single>
@@ -30,6 +32,18 @@
         <unset token="current"/>
         <unset token="time_based"/>
         <set token="size_based">yes</set>
+        <unset token="count_based"/>
+	</drilldown>
+    </single>
+    <single>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <searchString>| stats count | eval label="Count-Based"</searchString>
+      <drilldown>
+        <unset token="current"/>
+        <unset token="time_based"/>
+        <unset token="size_based"/>
+        <set token="count_based">yes</set>
 	</drilldown>
     </single>
   </row>
@@ -48,7 +62,7 @@
 	</drilldown>
       </table>
       <table depends="$time_based$">
-        <title>Select an Index</title>
+        <title>Select a Host</title>
         <searchString>
 | rest /services/server/info
 | table splunk_server
@@ -58,7 +72,17 @@
 	</drilldown>
       </table>
       <table depends="$size_based$">
-        <title>Select an Index</title>
+        <title>Select a Host</title>
+        <searchString>
+| rest /services/server/info
+| table splunk_server
+	</searchString>
+	<drilldown>
+          <set token="server_host">$row.splunk_server$</set>
+	</drilldown>
+      </table>
+      <table depends="$count_based$">
+        <title>Select a Host</title>
         <searchString>
 | rest /services/server/info
 | table splunk_server
@@ -149,20 +173,16 @@
 | rest /services/data/indexes-extended/$index_index$ splunk_server=$server_host$
 | join type=left splunk_server, title
   [ | rest /services/data/indexes/$index_index$ splunk_server=$server_host$
-    | fields title, splunk_server, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB ]
+    | fields title, splunk_server, maxHotBuckets, maxWarmDBCount ]
 | fillnull value=0 bucket_dirs.home.bucket_count bucket_dirs.cold.bucket_count bucket_dirs.thawed.bucket_count
-| table title, bucket_dirs.home.bucket_count, homePath.maxDataBucket_CountMB, bucket_dirs.cold.bucket_count, coldPath.maxDataSizeMB, bucket_dirs.thawed.bucket_count, total_raw_size, total_size, maxTotalDataSizeMB, comp_pct, comp_ratio
+| table title, bucket_dirs.home.hot_bucket_count, maxHotBuckets, bucket_dirs.home.warm_bucket_count, maxWarmDBCount, bucket_dirs.cold.bucket_count, bucket_dirs.thawed.bucket_count
 | rename title AS Index
-   bucket_dirs.home.size AS "Home Path Size"
-   homePath.maxDataSizeMB AS "Home Path Limit"
-   bucket_dirs.cold.size AS "Cold Path Size"
-   coldPath.maxDataSizeMB AS "Home Path Limit"
-   bucket_dirs.thawed.size AS "Thawed Path Size"
-   total_raw_size AS "Raw Size"
-   total_size AS "Total Size"
-   maxTotalDataSizeMB AS "Max Total Size"
-   comp_pct AS "Compression %"
-   comp_ratio AS "Compression Ratio"
+  bucket_dirs.home.hot_bucket_count AS "Hot Buckets"
+  maxHotBuckets AS "Max Hot Count"
+  bucket_dirs.home.warm_bucket_count AS "Warm Buckets"
+  maxWarmDBCount AS "Max Warm Count"
+  bucket_dirs.cold.bucket_count AS "Cold Buckets"
+  bucket_dirs.thawed.bucket_count AS "Thawed Buckets"
 	</searchString>
       </table>
       <table id="time_deep_dive" depends="$time_based$,$index_index$,$server_host$" rejects="$current$,$size_based$">
