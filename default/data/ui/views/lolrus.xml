@@ -39,6 +39,19 @@ old buckets.
     </html>
   </row>
 
+<!--
+  <row>
+    <single>
+      <title>Search This Bucket</title>
+      <searchString>| stats count | eval label=$host$ . " / " . $index$ . " / " . $bucket_id$</searchString>
+      <drilldown>
+	<link>
+	  bucket_search=
+	</link>
+      </drilldown>
+    </single>
+  </row>
+-->
   <row>
     <chart>
       <title>Bucket State and Size Over Time</title>
