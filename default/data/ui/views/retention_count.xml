@@ -85,7 +85,7 @@ state="hot" OR state="warm"
 | join type=left index
  [ | `_fb_rest_index_config($host$, $index$)` ]
 | eval limit=if(state=="hot", maxHotBuckets, if(state=="warm", maxWarmDBCount, 0))
-| timechart span=1d dc(id) AS "Count", first(limit) AS Limit by state
+| timechart span=1d dc(path) AS "Count", first(limit) AS Limit by state
       </searchString>
     </chart>
   </row>
