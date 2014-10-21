@@ -10,6 +10,7 @@
    values(repFactor) AS repFactor,
    values(splunk_server) AS indexers, dc(splunk_server) AS idx_count
  by title
+| eventstats max(idx_count) AS all_idx_all_server
   </searchTemplate>
 
   <row>
@@ -47,7 +48,7 @@ all of the search peers.
     <single>
       <title>Number of "Missing" Indexes</title>
       <option name="field">missing</option>
-      <searchPostProcess>eventstats max(idx_count) AS all_idx_all_server
+      <searchPostProcess>
 | where idx_count &lt; all_idx_all_server
 | stats dc(title) AS missing
 | rangemap field=missing foo=0-0 default=severe
@@ -69,13 +70,14 @@ all of the search peers.
     <table>
       <title>Index Configuration Summary</title>
       <option name="link.visible">false</option>
-      <searchPostProcess>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths
+      <searchPostProcess>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths, all_idx_all_server
 | rename title AS Index, maxTotalDataSizeMB AS "Max Total Size(s)", pop_max AS "Common Max Size(s)"
     repFactor AS "Rep. Factor",
     home_max AS "Home Path Max Size(s)", pop_home AS "Common Home Size(s)",
     cold_max AS "Cold Path Max Size(s)", pop_cold AS "Common Cold Size(s)",
     cold_paths AS "Cold Path Directory", home_paths AS "Home Path Directory",
     indexers AS "Indexers w/ this Index"
+    all_idx_all_server AS "Target Count"
       </searchPostProcess>
     </table>
   </row>
