@@ -108,7 +108,6 @@ More information about index configuration can be found <a href="http://docs.spl
   </row>
 
  <row>
-    <panel>
       <chart>
         <title>Bucket Event Count vs. Time Span</title>
         <searchPostProcess>sort 0 id | table id, eventCount, bucket_span</searchPostProcess>
@@ -117,7 +116,6 @@ More information about index configuration can be found <a href="http://docs.spl
         <option name="charting.axisTitleX.text">Events</option>
         <option name="charting.axisTitleY.text">Span in Seconds</option>
       </chart>
-    </panel>
   </row>
 
 </form>
