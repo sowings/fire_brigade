@@ -1,6 +1,6 @@
 <panel>
+  <title>Monitored Indexing Space Over Time (last 30 days)</title>
   <chart id="host_overview_space_trend">
-    <title>Monitored Indexing Space Over Time (last 30 days)</title>
     <option name="link.visible">false</option>
     <option name="charting.chart">area</option>
     <option name="charting.chart.stackMode">stacked</option>

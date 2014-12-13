@@ -1,6 +1,6 @@
 <panel>
+  <title>Local vs. Replicated Data Over Time (last 30 days)</title>
   <chart>
-    <title>Local vs. Replicated Data Over Time (last 30 days)</title>
     <option name="link.visible">false</option>
     <option name="charting.chart">area</option>
     <option name="charting.chart.stackMode">stacked</option>
