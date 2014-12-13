@@ -1,11 +1,17 @@
 <form class="formsearch">
   <label>Bucket Lifecycle</label>
 
-  <searchTemplate>`fb_bucket_transitions($host$, $stage$)` | `fb_bucket_transition_pp`</searchTemplate>
+  <searchTemplate>`fb_bucket_transitions($host$, $stage$)` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</searchTemplate>
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
       <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
     </input>
     <input type="dropdown" token="stage" searchWhenChanged="true">
       <label>State Transition</label>
