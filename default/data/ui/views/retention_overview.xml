@@ -120,7 +120,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   <td>An index is at risk of failing to reach its SLA for time-based retention--the index is more than 90% full, and the event time range is less than 90% of its desired target.</td>
 </tr>
 <tr>
-  <td class="icon" style="width:10%"><i class="icon-alert extreme"></i></td>
+  <td class="icon" style="width:10%"><i class="icon-alert-circle extreme"></i></td>
   <td>Time-Based Retention State</td>
   <td>An index is at <i>extreme</i> risk of failing to reach its SLA for time-based retention; the index is more than 90% full, and the event time range is less than 50% of the target.</td>
 </tr>
