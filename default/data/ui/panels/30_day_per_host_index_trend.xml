@@ -1,5 +1,9 @@
 <panel>
-  <title>Monitored Indexing Space Over Time (last 30 days)</title>
+  <title>Per-Index Consumption Over Time (last 30 days)</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
   <chart id="host_overview_space_trend">
     <option name="link.visible">false</option>
     <option name="charting.chart">area</option>
