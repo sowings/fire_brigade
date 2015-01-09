@@ -1,5 +1,10 @@
 <panel>
   <title>Monitored Indexing Space Over Time (last 30 days)</title>
+  <input type="dropdown" token="host_group" searchWhenChanged="true">
+    <label>Host Group</label>
+    <choice value="All">All hosts</choice>
+    <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup fb_host_groups | dedup host_group | sort host_group</populatingSearch>
+  </input>
   <chart>
     <option name="link.visible">false</option>
     <option name="charting.chart">area</option>
