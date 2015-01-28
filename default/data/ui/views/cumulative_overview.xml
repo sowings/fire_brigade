@@ -16,14 +16,9 @@ This dashboard is intended to show the overall status of the
 indexers in the Splunk environment.
 <p />
 The values reflected in the <em>Index Counts</em> section show a
-various counts. The <i>Monitored</i> count reflects the indexes listed
-in the lookup table <b>monitored_indexes.csv</b>. Typically, this lookup
-is automatically updated by the <i>Update monitored list from REST</i>
-scheduled search. By contrast, the <i>From REST</i> count is a
+various counts. The <i>From REST</i> count is a
 <i>current</i> snapshot of the total number of indexes as reported by
-the REST API. Comparing these two values can show whether the full
-list (as shown by REST) is actually being monitored by the
-application. In between these two values, the <i>Non-Empty</i> entry
+the REST API. To the right of this panel, the <i>Non-Empty</i> entry
 shows how many of those indexes reported data today.
 <p />
 Within the <em>Overall Disk Usage</em> panel are two sums. The first,
