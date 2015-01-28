@@ -54,29 +54,19 @@ graph shows a thirty-day trend of the overall usage.
     </html>
   </row>
 
-  <row grouping="3,2,2">
+  <row grouping="2,2,2">
     <single id="cumulative_overview_index_count_label">
-<!--      <title>Monitored Index Count</title> -->
-      <option name="field">count</option>
-      <option name="underLabel">Monitored</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>| inputlookup monitored_indexes.csv | stats count</searchString>
+<!--      <title>Total Discovered Index Count</title> -->
+       <option name="field">count</option>
+       <option name="underLabel">From REST</option>
+       <searchString>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count</searchString>
     </single>
-
-    <single>
-<!--      <title>Monitored Index Count</title> -->
+     <single>
       <option name="field">count</option>
       <option name="underLabel">Non-Empty</option>
       <searchPostProcess>`_fb_where_today`
 | stats dc(index) AS count</searchPostProcess>
     </single>
-
-     <single>
--<!--      <title>Total Discovered Index Count</title> -->
-       <option name="field">count</option>
-       <option name="underLabel">From REST</option>
-       <searchString>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count</searchString>
-     </single>
 
     <single id="cumulative_overview_disk_usage_label">
 <!--      <title>Monitored Disk Usage (from dbinspect)</title> -->
