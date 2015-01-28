@@ -102,6 +102,8 @@ More information about index configuration can be found <a href="http://docs.spl
       <option name="charting.axisTitleY.text">Hours</option>
       <option name="charting.legend.placement">none</option>
       <searchPostProcess>sort 0 id
+| rename comment AS "This was in seconds, convert to hours for display"
+| eval bucket_span=bucket_span / 3600 
 | chart max(bucket_span) by id
       </searchPostProcess>
     </chart>
