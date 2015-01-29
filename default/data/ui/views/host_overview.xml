@@ -173,9 +173,9 @@ versions seen elsewhere, but are restricted to the selected host.
       </searchString>
 -->
       <searchString>| rest /services/server/status/partitions-space splunk_server=$host$*
-| fields mount_point, free, capacity
-| eval UsePct=round((capacity - free) * 100 / capacity, 1)
-| eval Size=capacity | eval Avail=free
+| fields mount_point, available, capacity
+| eval UsePct=round((capacity - available) * 100 / capacity, 1)
+| rename capacity AS Size, available AS Avail
 | `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
 | rename mount_point AS MountedOn
 | table MountedOn, Size, Avail, UsePct
