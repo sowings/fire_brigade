@@ -321,11 +321,11 @@ state!="thawed" `_fb_summary_recs("*")`
   [| rest /services/data/indexes
    | fields homePath, coldPath, title, splunk_server
    | rename title AS index, splunk_server AS orig_host ]
-| rex field=homePath "^(?<home_vol>volume:\w+)"
-| rex field=coldPath "^(?<cold_vol>volume:\w+)"
+| rex field=homePath "^(?<home_vol>volume:[-\w]+)"
+| rex field=coldPath "^(?<cold_vol>volume:[-\w]+)"
 | eval volume=if(state="cold", cold_vol, home_vol)
 | join type=left volume, orig_host
-  [ | rest /services/configs/conf-indexes
+  [ | rest /servicesNS/-/-/configs/conf-indexes
     | search title="volume:*"
     | fields title, maxVolumeDataSizeMB, splunk_server
     | rename title AS volume, splunk_server AS orig_host ]
