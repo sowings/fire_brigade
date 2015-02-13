@@ -1,6 +1,6 @@
 <nav>
   <collection label="Overview">
-    <view name="cumulative_overview" />
+    <view name="cumulative_overview" default="true"/>
     <view name="host_overview" />
     <view name="index_overview" />
     <view name="matrix_overview" />
