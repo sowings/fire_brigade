@@ -3,12 +3,17 @@
 
   <searchTemplate>
 | rest /services/data/indexes count=0 | search disabled=0
-| stats values(maxTotalDataSizeMB) AS maxTotalDataSizeMB, mode(maxTotalDataSizeMB) AS pop_max,
-   values(homePath.maxDataSizeMB) AS home_max, mode(homePath.maxDataSizeMB) AS pop_home,
-   values(coldPath.maxDataSizeMB) AS cold_max, mode(coldPath.maxDataSizeMB) AS pop_cold,
-   values(coldPath_expanded) AS cold_paths, values(homePath_expanded) AS home_paths,
-   values(repFactor) AS repFactor,
-   values(splunk_server) AS indexers, dc(splunk_server) AS idx_count
+| stats `values_or_list($choice$, maxTotalDataSizeMB)` AS maxTotalDataSizeMB,
+   mode(maxTotalDataSizeMB) AS pop_max,
+   `values_or_list($choice$, homePath.maxDataSizeMB)` AS home_max,
+   mode(homePath.maxDataSizeMB) AS pop_home,
+   `values_or_list($choice$, coldPath.maxDataSizeMB)` AS cold_max,
+   mode(coldPath.maxDataSizeMB) AS pop_cold,
+   `values_or_list($choice$, coldPath_expanded)` AS cold_paths,
+   `values_or_list($choice$, homePath_expanded)` AS home_paths,
+   `values_or_list($choice$, repFactor)` AS repFactor,
+   `values_or_list($choice$, splunk_server)` AS indexers,
+   dc(splunk_server) AS idx_count
  by title
 | eventstats max(idx_count) AS all_idx_all_server
   </searchTemplate>
@@ -30,6 +35,14 @@ all of the search peers.
 </div>
     </html>
   </row>
+
+  <fieldset>
+    <input type="checkbox" token="choice" searchWhenChanged="true">
+      <label>Collapse Distinct Values</label>
+      <default>list</default>
+      <choice value="values">Yes</choice>
+    </input>
+  </fieldset>
 
   <row>
     <single>
