@@ -36,11 +36,12 @@ all of the search peers.
     </html>
   </row>
 
-  <fieldset>
-    <input type="checkbox" token="choice" searchWhenChanged="true">
+  <fieldset submitButton="false">
+    <input type="radio" token="choice" searchWhenChanged="true">
       <label>Collapse Distinct Values</label>
-      <default>list</default>
+      <default>Yes</default>
       <choice value="values">Yes</choice>
+      <choice value="list">No</choice>
     </input>
   </fieldset>
 
