@@ -139,6 +139,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 
   <searchTemplate>
 <![CDATA[earliest=@d `_fb_summary_recs("*")`
+| eval state=case(state!="hot", state, match(path, "[/\\\\]\d+_\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$"), "replicahot", 1=1, "hot")
 | stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
   dc(eval(if(state="hot", path, null()))) AS hot, 
@@ -213,6 +214,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
       </drilldown>
       <searchString><![CDATA[
 earliest=@d `_fb_summary_recs($bucket_host$, "*")`
+| eval state=case(state!="hot", state, match(path, "[/\\\\]\d+_\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$"), "replicahot", 1=1, "hot")
 | stats 
   dc(eval(if(state="hot", path, null()))) AS hot
   dc(eval(if(state="warm", path, null()))) AS warm
