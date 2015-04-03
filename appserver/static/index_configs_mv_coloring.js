@@ -36,14 +36,6 @@ require([
 
     mvc.Components.get('index_configs_table').getVisualization(function(tableView){
         tableView.table.addCellRenderer(new MVTableCellRenderer());
-        tableView.on('rendered', function() {
-            // Apply a class to the cells to the parent row
-            // in order to color the whole row
-            tableView.$el.find('td.problem-cell').each(function() {
-                $(this).parents('tr').addClass('problem-row');
-            });
-        });
-
         tableView.table.render();
     });
 });
