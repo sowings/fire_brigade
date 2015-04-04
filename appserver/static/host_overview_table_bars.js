@@ -12,8 +12,15 @@ require([
         },
 
         render: function($td, cell) {
-            $td.addClass('data-bar-cell').html(_.template('<div class="data-bar-wrapper"> <%- value %>% <span class="data-bar-right" style="width:<%- percent %>%"></span></div>', {
+            var pColor = "data-bar-under";
+            if (cell.value > 50) {
+                pColor = "data-bar-over";
+            }
+
+// template='<div style="position: relative; width: ' + args['width'] + 'px"><div class="vbar-bar-wrapper"><div class="vbar-bar-full vbar-bar-sanford-text <%-pColor %>"><%-percentValue%>%</div><div class="vbar-bar-progress vbar-bar-sanford" style="width:<%-percentValue%>%"></div></div>';
+            $td.addClass('data-bar-cell').html(_.template('<div class="data-bar-wrapper"> <div style="position: absolute" class="data-bar-text-overlay <%-pColor %>"> <%- value %> % </div> <div class="data-bar-right" style="width:<%- percent %>%"></div></div>', {
                 percent: Math.min(Math.max(parseFloat(cell.value), 0), 100),
+                pColor: pColor,
                 value: parseFloat(cell.value)
             }));
 
