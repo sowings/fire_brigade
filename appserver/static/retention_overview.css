@@ -94,3 +94,12 @@ td.data-bar-cell .data-bar-wrapper .data-bar-right {
     position: absolute;
     left: 0px;
 }
+
+.data-bar-over { color: #FFFFFF; }
+.data-bar-under { color: #000000; }
+
+.data-bar-text-overlay {
+    z-index: 10;
+    text-align: center;
+    width:100%;
+}
