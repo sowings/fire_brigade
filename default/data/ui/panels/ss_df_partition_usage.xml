@@ -1,0 +1,16 @@
+<panel>
+  <title>Snapshot: Disk Usage Information From 'df'</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
+  <table>
+    <option name="link.visible">false</option>
+    <searchString>index=`os_index` sourcetype="df" host=$host$ | head 15
+| eventstats max(_time) AS latest | where _time=latest
+| eval Size=TotalMBytes | eval Avail=FreeMBytes
+| `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
+| table MountedOn, Size, Avail, UsePct
+| sort MountedOn</searchString>
+  </table>
+</panel>
