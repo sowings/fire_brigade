@@ -1,0 +1,26 @@
+<panel>
+  <title>Snapshot: Bucket Count vs. Limit (REST)</title>
+  <table>
+    <option name="link.visible">false</option>
+    <option name="drilldown">row</option>
+    <searchString><![CDATA[| rest /services/data/indexes-extended splunk_server=local
+| join type=left splunk_server, title
+  [ | rest /services/data/indexes splunk_server=local
+    | fields title, splunk_server, maxHotBuckets, maxWarmDBCount ]
+| fillnull value=0 bucket_dirs.home.hot_bucket_count bucket_dirs.home.warm_bucket_count bucket_dirs.cold.bucket_count bucket_dirs.thawed.bucket_count, maxHotBuckets, maxWarmDBCount
+| eval state_hot="Hot: " . 'bucket_dirs.home.hot_bucket_count' . " / " . maxHotBuckets
+| eval state_warm="Warm: " . 'bucket_dirs.home.warm_bucket_count' . " / " . maxWarmDBCount
+| eval state_cold="Cold: " . 'bucket_dirs.cold.bucket_count' . " / -"
+| eval state_thawed="Thawed: " . 'bucket_dirs.thawed.bucket_count' . " / -"
+| foreach state_hot, state_warm, state_cold, state_thawed [ eval mvfield=mvappend(mvfield, <<FIELD>>) ] 
+| eval state=mvjoin(mvfield, "+++")
+| chart limit=20 useother=f first(state) AS state by splunk_server, title
+| foreach * [ eval <<FIELD>>=if("<<FIELD>>"="splunk_server",
+<<FIELD>>, split(<<FIELD>>, "+++")) ]
+| rename splunk_server AS Indexer ]]></searchString>
+    <drilldown>
+      <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+      <link><![CDATA[/app/fire_brigade/retention_count?form.host=$row.Indexer$&form.index=$click.name2$]]></link>
+    </drilldown>
+  </table>
+</panel>
