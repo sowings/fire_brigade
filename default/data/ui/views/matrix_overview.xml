@@ -58,7 +58,7 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
 | eval span=tostring(currentDBSizeMB) + " / " +
     tostring(roof) + " MB (" +
     tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
-| chart first(span) over splunk_server by title
+| chart useother=f usenull=f limit=50 first(span) over splunk_server by title
 | rename splunk_server AS Indexer
       </searchString>
 
@@ -80,7 +80,7 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
 | eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
 | eval span=tostring(maxTime-minTime, "duration") + " / " +
     tostring(frozenTimePeriodInSecs, "duration")
-| chart first(span) over splunk_server by title
+| chart useother=f usenull=f limit=50 first(span) over splunk_server by title
 | rename splunk_server AS Indexer
       </searchString>
 
