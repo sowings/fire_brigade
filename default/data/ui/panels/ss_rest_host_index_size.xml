@@ -1,0 +1,28 @@
+<panel>
+  <title>Snapshot: Per-Host Index Size (REST)</title>
+  <table>
+    <option name="link.visible">false</option>
+    <option name="drilldown">row</option>
+    <searchString><![CDATA[
+| rest /services/data/indexes-extended 
+| join type=left splunk_server, title
+  [ | rest /services/data/indexes 
+    | fields title, splunk_server, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, maxTotalDataSizeMB  ]
+| fillnull value=0 bucket_dirs.home.size bucket_dirs.cold.size bucket_dirs.thawed.size, homePath.maxDataSizeMB, coldPath.maxDataSizeMB
+| eval state_home="Home: " . tostring(round('bucket_dirs.home.size')) . " / " . 'homePath.maxDataSizeMB'
+| eval state_cold="Cold: " . tostring(round('bucket_dirs.cold.size')) . " / " . 'coldPath.maxDataSizeMB'
+| eval state_ret="Retention: " . tostring(round('bucket_dirs.cold.size' + 'bucket_dirs.home.size')) . " / " . maxTotalDataSizeMB
+| eval state_thawed="Thawed: " . tostring(round('bucket_dirs.thawed.size')) . " / -"
+| foreach state_home, state_cold, state_ret, state_thawed [ eval mvfield=mvappend(mvfield, <<FIELD>>) ]
+| eval state=mvjoin(mvfield, "+++")
+| chart limit=20 useother=f first(state) AS state by splunk_server, title
+| foreach * [ eval <<FIELD>>=if("<<FIELD>>"="splunk_server",
+<<FIELD>>, split(<<FIELD>>, "+++")) ]
+| rename splunk_server AS Indexer]]>
+    </searchString>
+    <drilldown>
+      <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+      <link><![CDATA[/app/fire_brigade/retention_size?form.host=$row.Indexer$&form.index=$click.name2$]]></link>
+    </drilldown>
+  </table>
+</panel>
