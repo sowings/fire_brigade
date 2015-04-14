@@ -1,0 +1,112 @@
+<form script="volume_configs.js">
+  <label>Troubleshooting Volume Configuration</label>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <default>Any</default>
+      <choice value="*">Any</choice>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <single id="volume_configs_index_count">
+        <option name="field">count</option>
+        <option name="underLabel">using volumes</option>
+        <searchString>| rest /services/data/indexes splunk_server=$host$
+| search coldPath=volume:* OR homePath=volume:* | stats count</searchString>
+      </single>
+      <single>
+        <option name="field">count</option>
+        <option name="underLabel">total</option>
+        <searchString>| rest /services/data/indexes splunk_server=$host$ | stats count</searchString>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Volume Definitions Found</title>
+<!--
+        <searchString>| rest /servicesNS/-/-/configs/conf-indexes splunk_server=$host$ | search title="volume:*"
+| fields splunk_server, title, path, maxVolumeDataSizeMB
+| rename splunk_server AS Indexer, title AS "Volume Label", path as "Path", maxVolumeDataSizeMB AS "Size Limit (MB)"</searchString>
+-->
+        <searchString>| rest /servicesNS/-/-/configs/conf-indexes | search title=volume:* | fields splunk_server, title, path, maxVolumeDataSizeMB
+| join type=left [| rest /services/server/status/partitions-space | table splunk_server, mount_point, capacity]
+| eval volume_mount=if(match(path, "^" . mount_point . ".*"), mount_point, "Unknown")
+| eval capacity=if(volume_mount="Unknown", "N/A", capacity)
+| eval pct_subscribed=round(maxVolumeDataSizeMB * 100 / round(capacity), 2)
+| fillnull value="N/A" pct_subscribed
+| fields splunk_server, title, path, volume_mount, maxVolumeDataSizeMB, capacity, pct_subscribed
+| rename splunk_server AS Indexer, title AS Volume, path AS Path, volume_mount AS "Filesystem", maxVolumeDataSizeMB AS Limit, capacity AS "Filesystem Capacity", pct_subscribed AS "Subscription Percentage"</searchString>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+        <title>Indexes Using Volumes</title>
+        <searchString>| rest /services/data/indexes splunk_server=$host$
+| search coldPath=volume:* OR homePath=volume:*
+| fields splunk_server, title, homePath, coldPath
+| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</searchString>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Indexes Not Using Volumes</title>
+        <searchString>| rest /services/data/indexes splunk_server=$host$
+| search coldPath!=volume:* homePath!=volume:*
+| fields splunk_server, title, homePath, coldPath
+| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</searchString>
+      </table>
+    </panel>
+  </row>
+
+
+  <row>
+    <table id="index_configs_table">
+      <title>Volume Configuration Warnings</title>
+      <option name="link.visible">false</option>
+      <!-- Things taht make this start over: 
+            loader - Starting splunkd (build ...) -->
+      <searchString><![CDATA[index=_internal source=*splunkd.log* host=$host$
+(component=IndexConfig idx inside config error) OR (component=loader starting)
+| rex "volume=(?<volume>\w+)\s" | eval volume="volume:" . volume 
+| rex "homePath='(?<homePath_expanded>.+?)'" | rex "coldPath='(?<coldPath_expanded>.+?)'" 
+| eval state=case(isnotnull(homePath_expanded), "Home (Hot + Warm)", isnotnull(coldPath_expanded), "Cold", 1=1, "unknown") 
+| eval path=coalesce(homePath_expanded, coldPath_expanded, "NULL?")
+| eval idx=if(component!="IndexConfig", "RESTART", idx)
+| stats values(volume) AS volume,
+    values(state) AS state,
+    values(path) AS Directories,
+    max(_time) AS mytime,
+    max(eval(if(component!="IndexConfig", _time, 0))) AS last_start
+    by host, idx
+| eventstats max(last_start) AS host_restart by host
+| where mytime>host_restart
+| fields - mytime last_start host_restart]]></searchString>
+    </table>
+  </row>
+
+</form>
+
+<!--
+| rest /services/data/indexes splunk_server=*
+| search coldPath=volume:* OR homePath=volume:*
+| rex field=coldPath "(?<coldVol>volume:[^\\/]+)"
+| rex field=homePath "(?<homeVol>volume:[^\\/]+)"
+| fields title, homeVol homePath coldVol coldPath, maxTotalDataSizeMB
+| eval volumes=mvappend(coldVol, homeVol)
+-->
