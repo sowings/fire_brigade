@@ -109,7 +109,7 @@ specifications, this might result in a blank value for the
     </single>
     <single>
       <option name="field">daily_usage</option>
-      <option name="underLabel">disk usage</option>
+      <option name="underLabel">disk space</option>
       <searchPostProcess>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
     </single>
   </row>
