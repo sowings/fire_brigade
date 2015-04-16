@@ -96,9 +96,10 @@ specifications, this might result in a blank value for the
 | eval vol_cold=if(match(coldPath, "^" . "$volume_title$" . ".*"), "cold", null())
 | eval neat=mvappend(neat, vol_hot, vol_cold)
 | fields - vol_hot, vol_cold
-| eval vol_usage=case(neat="home" AND neat="cold", max(('homePath.maxDataSizeMB' + 'coldPath.maxDataSizeMB'), maxTotalDataSizeMB),
-  neat="home", max('homePath.maxDataSizeMB', maxTotalDataSizeMB),
-  neat="cold", max('coldPath.maxDataSizeMB', maxTotalDataSizeMB),
+| `_fb_null_hot_cold_max`
+| eval vol_usage=case(neat="home" AND neat="cold", min(('homePath.maxDataSizeMB' + 'coldPath.maxDataSizeMB'), maxTotalDataSizeMB),
+  neat="home", min('homePath.maxDataSizeMB', maxTotalDataSizeMB),
+  neat="cold", min('coldPath.maxDataSizeMB', maxTotalDataSizeMB),
   1=1, "Unknown")
 | stats sum(vol_usage) AS volume_sum
 | `_fb_mbytes_pretty(volume_sum)`</searchString>
