@@ -41,8 +41,11 @@
 | fields splunk_server, title, path, maxVolumeDataSizeMB
 | rename splunk_server AS Indexer, title AS "Volume Label", path as "Path", maxVolumeDataSizeMB AS "Size Limit (MB)"</searchString>
 -->
-        <searchString>| rest /servicesNS/-/-/configs/conf-indexes | search title=volume:* | fields splunk_server, title, path, maxVolumeDataSizeMB
-| join type=left [| rest /services/server/status/partitions-space | table splunk_server, mount_point, capacity]
+        <searchString>| rest /servicesNS/-/-/configs/conf-indexes splunk_server=$host$
+| search title=volume:* | fields splunk_server, title, path, maxVolumeDataSizeMB
+| join type=left
+  [| rest /services/server/status/partitions-space splunk_server=$host$
+   | table splunk_server, mount_point, capacity]
 | eval volume_mount=if(match(path, "^" . mount_point . ".*"), mount_point, "Unknown")
 | eval capacity=if(volume_mount="Unknown", "N/A", capacity)
 | eval pct_subscribed=round(maxVolumeDataSizeMB * 100 / round(capacity), 2)
