@@ -1,0 +1,24 @@
+<panel>
+  <title>Snapshot: Per-Host Volume State (REST)</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
+  <table>
+    <option name="link.visible">false</option>
+    <option name="drilldown">row</option>
+    <searchString><![CDATA[| rest /services/data/index-volumes splunk_server=$host$
+| eval Volume="volume:" . title
+| fields Volume, splunk_server, total_size, max_size
+| `_fb_mbytes_pretty(max_size)`
+| `_fb_mbytes_pretty(total_size)`
+| rename comment AS "If max_size reads as 'infinite', then it ends up null here" 
+| fillnull value="N/A" total_size, max_size
+| rename total_size AS "Current Size", max_size AS "Size Limit", splunk_server AS Indexer]]>
+    </searchString>
+    <drilldown>
+      <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+      <link field="Volume"><![CDATA[/app/fire_brigade/retention_volume?form.host=$row.Indexer$&form.volume_title=$click.name2$]]></link>
+    </drilldown>
+  </table>
+</panel>
