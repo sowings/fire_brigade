@@ -13,6 +13,45 @@
   <row>
     <html>
 <div id="fire_brigade_help">
+This dashboard is designed to highlight the configuration of any volumes
+(shared paths for index storage) which may exist in the deployment. The Splunk
+daemon will emit a warning if an index is configured to use the same path as
+an existing volume if the index is not a member of that volume. See <a
+href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Configureindexstoragesize">here</a>
+for more information about using volumes.
+<p />
+In the panel titled <em>Index Counts</em> two numbers are listed. These counts
+represent the total number of indexes found (on the right) and the number of
+those which are utilizing volume definitions for indexed data (on the left).
+<p />
+<strong>Note: Hosts making use of volume configurations for neither
+<code>homePath</code> nor <code>coldPath</code> will not reflect any entries
+here. There is a default volume titled <code>_splunk_summaries</code> which
+can be used to set a cap on the size of accelerated data models. This
+dashboard is concerned <em>only</em> with volumes used for index
+storage.</strong>
+<p />
+The volume definitions (if any are found--this includes the default
+<code>_splunk_summaries</code> mentioned above) will be displayed in the panel
+titled <em>Volume Definitions Found</em>. The salient qualities of a volume
+are its path and configured limit (if any). This panel also attempts to
+correlate with the partitions found on the system, to provide a hint whether
+the volume (partition) is oversubscribed.
+<p />
+The next row features two panels which are intrinsically linked. The first is 
+<em>Indexes Using Volumes</em>. This panel shows a list of indexes (and the
+host on which they reside) that are making use of a volume for either
+<code>homePath</code> or <code>coldPath</code> or both. By contrast,
+<em>Indexes Not Using Volumes</em> is the converse; it shows indexes that are
+not using volumes at all.
+<p />
+The bottom panel, titled <em>Volume Configuration Warnings</em> shows any
+warnings emitted by the Splunk daemon regarding volume configuration. This
+would occur when a volume is defined for a given path, and other indexes are
+utilizing that path, but <i>not</i> using a volume. The warning from Splunk
+indicates that the named index will not participate in the shared storage
+limit that the volume defines. If the index definition is adjusted to correct
+this, the subsequent restart will "clear" the warning shown in this panel.
 </div>
     </html>
   </row>
