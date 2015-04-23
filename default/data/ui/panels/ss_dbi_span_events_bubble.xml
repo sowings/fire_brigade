@@ -15,6 +15,7 @@
 | eval span=endEpoch-startEpoch
 | table index, eventCount, span, id
     </searchString>
+    <option name="link.visible">false</option>
     <option name="charting.axisTitleX.text">Number of Events</option>
     <option name="charting.axisTitleY.text">Bucket Span (sec)</option>
     <option name="charting.chart">bubble</option>
