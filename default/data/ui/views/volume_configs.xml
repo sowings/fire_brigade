@@ -124,7 +124,7 @@ this, the subsequent restart will "clear" the warning shown in this panel.
     <table id="index_configs_table">
       <title>Volume Configuration Warnings</title>
       <option name="link.visible">false</option>
-      <!-- Things taht make this start over: 
+      <!-- Things that make this start over: 
             loader - Starting splunkd (build ...) -->
       <searchString><![CDATA[index=_internal source=*splunkd.log* host=$host$
 (component=IndexConfig idx inside config error) OR (component=loader starting)
