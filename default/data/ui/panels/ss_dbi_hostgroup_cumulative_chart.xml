@@ -1,5 +1,5 @@
 <panel>
-  <title>Daily Snapshot: Host Group Index Size by Host</title>
+  <title>Snapshot: Host Group Index Size by Host</title>
   <input type="dropdown" token="host_group" searchWhenChanged="true">
     <label>Host Group</label>
     <choice value="All">All hosts</choice>

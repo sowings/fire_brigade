@@ -1,5 +1,5 @@
 <panel>
-  <title>Current Snapshot: Index Size by Host</title>
+  <title>Snapshot: Index Size by Host</title>
   <chart>
     <option name="link.visible">false</option>
     <option name="charting.chart">column</option>

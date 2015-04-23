@@ -1,5 +1,5 @@
 <panel>
-  <title>Current Snapshot: Windows Disk Usage Information</title>
+  <title>Snapshot: Windows Disk Usage Information</title>
   <input type="dropdown" token="host" searchWhenChanged="true">
     <label>Host</label>
     <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
