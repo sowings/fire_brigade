@@ -75,6 +75,7 @@ this, the subsequent restart will "clear" the warning shown in this panel.
     <panel>
       <table>
         <title>Volume Definitions Found</title>
+        <option name="link.visible">false</option>
 <!--
         <searchString>| rest /servicesNS/-/-/configs/conf-indexes splunk_server=$host$ | search title="volume:*"
 | fields splunk_server, title, path, maxVolumeDataSizeMB
@@ -99,6 +100,7 @@ this, the subsequent restart will "clear" the warning shown in this panel.
     <panel>
       <table>
         <title>Indexes Using Volumes</title>
+        <option name="link.visible">false</option>
         <searchString>| rest /services/data/indexes `_fb_use_or_ignore('splunk_server', $host$)`
 | search coldPath=volume:* OR homePath=volume:*
 | fields splunk_server, title, homePath, coldPath
@@ -108,6 +110,7 @@ this, the subsequent restart will "clear" the warning shown in this panel.
     <panel>
       <table>
         <title>Indexes Not Using Volumes</title>
+        <option name="link.visible">false</option>
         <searchString>| rest /services/data/indexes `_fb_use_or_ignore('splunk_server', $host$)`
 | search coldPath!=volume:* homePath!=volume:*
 | fields splunk_server, title, homePath, coldPath
