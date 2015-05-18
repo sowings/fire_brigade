@@ -2,7 +2,7 @@
   <label>Bucket Span Detail</label>
 
   <searchTemplate>
-earliest=@d
+`fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | extract auto=f fb_extract_bucket_type_time_source
 | search NOT bucket_type="rb"

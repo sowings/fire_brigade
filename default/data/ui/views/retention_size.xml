@@ -2,7 +2,7 @@
   <label>Usage vs. Size Limit(s)</label>
 
   <searchTemplate>
-earliest=@d
+`fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB
 | bucket _time span=1d
@@ -86,7 +86,6 @@ managed manually.
 <!--      <title>Cold Path Usage</title> -->
       <option name="field">coldUsage</option>
       <option name="underLabel">Usage</option>
-      <earliestTime>@d</earliestTime>
       <searchPostProcess>`_fb_where_today` AND state="cold"
 | stats count, sum(sizeOnDiskMB) AS coldUsage
 | fillnull coldUsage value=0
@@ -130,6 +129,10 @@ managed manually.
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>state!="thawed" `_fb_summary_recs($host$, $index$)`
@@ -153,6 +156,10 @@ managed manually.
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>

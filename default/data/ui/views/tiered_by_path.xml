@@ -32,7 +32,7 @@ desired SLA.
     <table>
       <title>Indexes by Time Span and Path</title>
       <option name="link.visible">false</option>
-      <searchString>earliest=@d `_fb_summary_recs_host($host$)`
+      <searchString>`fb_data_from_today` `_fb_summary_recs_host($host$)`
 | fields _time, index, startEpoch, earliestTime, endEpoch, latestTime, path, state, sizeOnDiskMB
 | `_fb_startEpoch_from_earliestTime`
 | `_fb_endEpoch_from_latestTime`

@@ -138,7 +138,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   </fieldset>
 
   <searchTemplate>
-<![CDATA[earliest=@d `_fb_summary_recs("*")`
+<![CDATA[`fb_data_from_today` `_fb_summary_recs("*")`
 | eval state=case(state!="hot", state, match(path, "[/\\\\]\d+_\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$"), "replicahot", 1=1, "hot")
 | stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
@@ -213,7 +213,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 	</link>
       </drilldown>
       <searchString><![CDATA[
-earliest=@d `_fb_summary_recs($bucket_host$, "*")`
+`fb_data_from_today` `_fb_summary_recs($bucket_host$, "*")`
 | eval state=case(state!="hot", state, match(path, "[/\\\\]\d+_\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$"), "replicahot", 1=1, "hot")
 | stats 
   dc(eval(if(state="hot", path, null()))) AS hot
@@ -269,7 +269,7 @@ earliest=@d `_fb_summary_recs($bucket_host$, "*")`
 	</link>
       </drilldown>
       <searchString><![CDATA[
-earliest=@d `_fb_summary_recs($disk_host$, "*")`
+`fb_data_from_today` `_fb_summary_recs($disk_host$, "*")`
 | stats 
   sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk
@@ -310,7 +310,7 @@ earliest=@d `_fb_summary_recs($disk_host$, "*")`
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
       <searchString><![CDATA[
-earliest=@d 
+`fb_data_from_today` 
 [| rest /services/data/indexes search="totalEventCount!=0"
    | search homePath="volume:*" OR coldPath="volume:*"
    | fields title | rename title AS orig_index ]
@@ -371,6 +371,10 @@ state!="thawed" `_fb_summary_recs("*")`
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <drilldown>
@@ -411,6 +415,10 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
 
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <drilldown>
@@ -455,7 +463,7 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 	</link>
       </drilldown>
       <searchString><![CDATA[
-earliest=@d `_fb_summary_recs($time_host$, "*")`
+`fb_data_from_today` `_fb_summary_recs($time_host$, "*")`
 | stats 
   sum(sizeOnDiskMB) AS totaldisk
   max(endEpoch) AS endEpoch,

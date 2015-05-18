@@ -158,7 +158,7 @@
         <option name="charting.axisTitleY.text">MBytes</option>
         <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
         <searchString>
-earliest=@d `_fb_summary_recs(*)`
+`fb_data_from_today` `_fb_summary_recs(*)`
 | chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
 	</searchString>
       </chart>
@@ -173,7 +173,7 @@ earliest=@d `_fb_summary_recs(*)`
         <option name="charting.axisTitleY.text">MBytes</option>
         <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
         <searchString>
-earliest=@d `_fb_summary_recs($server_host$, $index_index$)`
+`fb_data_from_today` `_fb_summary_recs($server_host$, $index_index$)`
 | chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
 	</searchString>
       </chart>

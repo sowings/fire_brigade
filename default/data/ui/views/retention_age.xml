@@ -8,7 +8,7 @@
 -->
 
   <searchTemplate>
-earliest=@d
+`fb_data_from_today`
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
@@ -180,6 +180,10 @@ limit.
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>
