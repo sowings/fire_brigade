@@ -61,13 +61,13 @@ this, the subsequent restart will "clear" the warning shown in this panel.
       <single id="volume_configs_index_count">
         <option name="field">count</option>
         <option name="underLabel">using volumes</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore('splunk_server', $host$)`
+        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
 | search coldPath=volume:* OR homePath=volume:* | stats count</searchString>
       </single>
       <single>
         <option name="field">count</option>
         <option name="underLabel">total</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore('splunk_server', $host$)` | stats count</searchString>
+        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)` | stats count</searchString>
       </single>
     </panel>
   </row>
@@ -81,10 +81,10 @@ this, the subsequent restart will "clear" the warning shown in this panel.
 | fields splunk_server, title, path, maxVolumeDataSizeMB
 | rename splunk_server AS Indexer, title AS "Volume Label", path as "Path", maxVolumeDataSizeMB AS "Size Limit (MB)"</searchString>
 -->
-        <searchString>| rest /servicesNS/-/-/configs/conf-indexes `_fb_use_or_ignore('splunk_server', $host$)`
+        <searchString>| rest /servicesNS/-/-/configs/conf-indexes `_fb_use_or_ignore(splunk_server, $host$)`
 | search title=volume:* | fields splunk_server, title, path, maxVolumeDataSizeMB
 | join type=left
-  [| rest /services/server/status/partitions-space `_fb_use_or_ignore('splunk_server', $host$)`
+  [| rest /services/server/status/partitions-space `_fb_use_or_ignore(splunk_server, $host$)`
    | table splunk_server, mount_point, capacity]
 | eval volume_mount=if(match(path, "^" . mount_point . ".*"), mount_point, "Unknown")
 | eval capacity=if(volume_mount="Unknown", "N/A", capacity)
@@ -101,7 +101,7 @@ this, the subsequent restart will "clear" the warning shown in this panel.
       <table>
         <title>Indexes Using Volumes</title>
         <option name="link.visible">false</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore('splunk_server', $host$)`
+        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
 | search coldPath=volume:* OR homePath=volume:*
 | fields splunk_server, title, homePath, coldPath
 | rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</searchString>
@@ -111,7 +111,7 @@ this, the subsequent restart will "clear" the warning shown in this panel.
       <table>
         <title>Indexes Not Using Volumes</title>
         <option name="link.visible">false</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore('splunk_server', $host$)`
+        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
 | search coldPath!=volume:* homePath!=volume:*
 | fields splunk_server, title, homePath, coldPath
 | rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</searchString>
