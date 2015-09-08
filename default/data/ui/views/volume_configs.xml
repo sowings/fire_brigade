@@ -59,12 +59,14 @@ this, the subsequent restart will "clear" the warning shown in this panel.
   <row>
     <panel>
       <single id="volume_configs_index_count">
+        <option name="link.visible">false</option>
         <option name="field">count</option>
         <option name="underLabel">using volumes</option>
         <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
 | search coldPath=volume:* OR homePath=volume:* | stats dc(title) AS count</searchString>
       </single>
       <single>
+        <option name="link.visible">false</option>
         <option name="field">count</option>
         <option name="underLabel">total</option>
         <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)` | stats dc(title) AS count</searchString>

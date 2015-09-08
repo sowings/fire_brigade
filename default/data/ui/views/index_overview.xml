@@ -60,6 +60,7 @@ The chart on the bottom is mostly aimed at environments utilizing <i>Index Repli
 
   <row grouping="4">
     <single id="index_overview_cumulative_label">
+      <option name="link.visible">false</option>
       <option name="field">home</option>
       <option name="underLabel">Home Usage</option>
 <!-- need this? | stats max(sizeOnDiskMB) AS sizeOnDiskMB by host, path -->
@@ -69,6 +70,7 @@ The chart on the bottom is mostly aimed at environments utilizing <i>Index Repli
       </searchPostProcess>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">cold</option>
       <option name="underLabel">Cold Usage</option>
       <searchPostProcess>search state="cold"
@@ -77,6 +79,7 @@ The chart on the bottom is mostly aimed at environments utilizing <i>Index Repli
       </searchPostProcess>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">thawed</option>
       <option name="underLabel">Thawed Usage</option>
       <searchPostProcess>search state="thawed"
@@ -85,6 +88,7 @@ The chart on the bottom is mostly aimed at environments utilizing <i>Index Repli
       </searchPostProcess>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">total</option>
       <option name="underLabel">Total Usage</option>
       <searchPostProcess>
@@ -136,16 +140,19 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
   <row>
     <single>
       <title>Total Bucket Count</title>
+      <option name="link.visible">false</option>
       <option name="field">buckets</option>
       <searchPostProcess>stats sum(buckets) AS buckets</searchPostProcess>
     </single>
     <single>
       <title>Median Bucket Size</title>
+      <option name="link.visible">false</option>
       <option name="field">global_avgBucket</option>
       <searchPostProcess>head 1 | `_fb_mbytes_pretty(global_avgBucket)`</searchPostProcess>
     </single>
     <single>
       <title>Total Event Count</title>
+      <option name="link.visible">false</option>
       <option name="field">events</option>
       <searchPostProcess>stats sum(eventCount) AS events | eval events=tostring(events, "commas")</searchPostProcess>
     </single>

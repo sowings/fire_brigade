@@ -75,6 +75,7 @@ shown over a thirty-day trend.
   <row>
     <single>
       <title>Total On-Disk Size</title>
+      <option name="link.visible">false</option>
       <option name="field">diskTotalinMB</option>
       <searchPostProcess>`_fb_where_today`
 | `_fb_mbytes_pretty(diskTotalinMB)`
@@ -82,6 +83,7 @@ shown over a thirty-day trend.
     </single>
     <single>
       <title>Total Raw Size</title>
+      <option name="link.visible">false</option>
       <option name="field">rawSize</option>
       <searchPostProcess>`_fb_where_today`
 | `_fb_bytes_pretty(rawSize)`
@@ -89,6 +91,7 @@ shown over a thirty-day trend.
     </single>
     <single>
       <title>Compression Percentage</title>
+      <option name="link.visible">false</option>
       <option name="field">comp_percent</option>
       <option name="underLabel">of raw size</option>
       <searchPostProcess>

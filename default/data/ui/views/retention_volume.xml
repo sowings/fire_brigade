@@ -70,11 +70,13 @@ specifications, this might result in a blank value for the
 
   <row grouping="2,1,2">
     <single id="retention_volume_limits">
+      <option name="link.visible">false</option>
       <option name="field">maxVolumeDataSizeMB</option>
       <option name="underLabel">volume</option>
       <searchPostProcess>head 1 | `_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">capacity</option>
       <option name="underLabel">filesystem</option>
       <searchString>| rest /servicesNS/-/-/configs/conf-indexes/$volume_title$
@@ -87,6 +89,7 @@ specifications, this might result in a blank value for the
     </single>
     <single id="retention_volume_subscription">
       <title>Subscribed Usage</title>
+      <option name="link.visible">false</option>
       <option name="field">volume_sum</option>
       <option name="underLabel">subscribed</option>
       <searchString>| rest /services/data/indexes splunk_server=$host$*
@@ -105,10 +108,12 @@ specifications, this might result in a blank value for the
 | `_fb_mbytes_pretty(volume_sum)`</searchString>
     </single>
     <single id="retention_volume_current_usage_panel">
+      <option name="link.visible">false</option>
       <option name="field">idx_count</option>
       <option name="underLabel">indexes</option>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">daily_usage</option>
       <option name="underLabel">disk space</option>
       <searchPostProcess>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</searchPostProcess>

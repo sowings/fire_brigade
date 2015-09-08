@@ -3,6 +3,7 @@
 
   <row grouping="1,2,1">
     <single id="dbinspect_lotus_current_state">
+      <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
       <searchString>| stats count | eval label="Current State"</searchString>
@@ -13,6 +14,7 @@
 	</drilldown>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
       <searchString>| stats count | eval label="Thirty Day Trend"</searchString>
@@ -23,6 +25,7 @@
 	</drilldown>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
       <searchString>| stats count | eval label="Sixty Day Trend"</searchString>
@@ -33,6 +36,7 @@
 	</drilldown>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
       <searchString>| stats count | eval label="Reset"</searchString>

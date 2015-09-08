@@ -57,12 +57,14 @@ More information about index configuration can be found <a href="http://docs.spl
   <row grouping="1,2,2">
     <single id="bucket_span_detail_count_label">
       <title>Local Bucket Count</title>
+      <option name="link.visible">false</option>
       <option name="field">count</option>
       <searchPostProcess>stats count</searchPostProcess>
     </single>
 
     <single id="bucket_span_detail_avg_span_label">
 <!--      <title>Average Local Bucket Span</title> -->
+      <option name="link.visible">false</option>
       <option name="field">average</option>
       <option name="underLabel">seconds</option>
       <searchPostProcess>
@@ -71,6 +73,7 @@ More information about index configuration can be found <a href="http://docs.spl
     </single>
     <single>
 <!--      <title>Average Local Bucket Span (Human-Readable)</title> -->
+      <option name="link.visible">false</option>
       <option name="field">average</option>
       <option name="underLabel">Human-Readable</option>
       <searchPostProcess>
@@ -81,12 +84,14 @@ More information about index configuration can be found <a href="http://docs.spl
 
     <single id="bucket_span_detail_hot_limits_label">
 <!--      <title>Configured Hot Span Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxHotSpanSecs</option>
       <option name="underLabel">maxHotSpanSecs</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
     </single>
     <single>
 <!--      <title>Configured Hot Idle Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxHotIdleSecs</option>
       <option name="underLabel">maxHotIdleSecs</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>

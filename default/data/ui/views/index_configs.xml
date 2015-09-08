@@ -48,11 +48,13 @@ all of the search peers.
   <row>
     <single>
       <title>Count of Indexers</title>
+      <option name="link.visible">false</option>
       <option name="field">indexers</option>
       <searchPostProcess>stats dc(indexers) AS indexers</searchPostProcess>
     </single>
     <single>
       <title>Count of Indexes</title>
+      <option name="link.visible">false</option>
       <option name="field">indexes</option>
       <searchPostProcess>stats dc(title) AS indexes</searchPostProcess>
     </single>
@@ -61,6 +63,7 @@ all of the search peers.
   <row>
     <single>
       <title>Number of "Missing" Indexes</title>
+      <option name="link.visible">false</option>
       <option name="field">missing</option>
       <searchPostProcess>
 | where idx_count &lt; all_idx_all_server
@@ -71,6 +74,7 @@ all of the search peers.
     </single>
     <single>
       <title>Number of Indexes with Mis-Matched Size</title>
+      <option name="link.visible">false</option>
       <option name="field">mismatch</option>
       <searchPostProcess>where mvcount(maxTotalDataSizeMB) &gt; 1
 | stats dc(title) AS mismatch

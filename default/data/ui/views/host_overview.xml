@@ -68,6 +68,7 @@ versions seen elsewhere, but are restricted to the selected host.
        acceleration size -->
   <row grouping="2,1,1">
     <single id="host_overview_retention_label">
+      <option name="link.visible">false</option>
 <!--      <title>Usage Affected by Retention Policies</title> -->
       <option name="field">homeUsage</option>
       <option name="underLabel">Home Path</option>
@@ -77,6 +78,7 @@ versions seen elsewhere, but are restricted to the selected host.
       </searchPostProcess>
     </single>
     <single>
+      <option name="link.visible">false</option>
       <option name="field">coldUsage</option>
       <option name="underLabel">Cold Path</option>
       <searchPostProcess>`_fb_where_today` AND (state="cold")
@@ -86,6 +88,7 @@ versions seen elsewhere, but are restricted to the selected host.
     </single>
     <single>
       <title>Thawed Path Usage</title>
+      <option name="link.visible">false</option>
       <option name="field">thawedUsage</option>
       <searchPostProcess>`_fb_where_today` AND (state="thawed")
 | dedup path
@@ -95,6 +98,7 @@ versions seen elsewhere, but are restricted to the selected host.
     </single>
     <single>
       <title>Report Acceleration Usage</title>
+      <option name="link.visible">false</option>
       <option name="field">RAbytes</option>
       <searchString>| rest /services/admin/summarization splunk_server=$host$
 | stats sum(summary.size) AS RAbytes
