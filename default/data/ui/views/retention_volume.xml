@@ -111,6 +111,8 @@ specifications, this might result in a blank value for the
       <option name="link.visible">false</option>
       <option name="field">idx_count</option>
       <option name="underLabel">indexes</option>
+      <option name="showSparkline">false</option>
+      <option name="showTrendIndicator">false</option>
     </single>
     <single>
       <option name="link.visible">false</option>
