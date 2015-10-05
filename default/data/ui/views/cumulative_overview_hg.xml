@@ -10,7 +10,7 @@
   </fieldset>
    
   <searchTemplate>
-earliest=@d host_group="$host_group$" `_fb_summary_recs(*)`
+`fb_data_from_today` host_group="$host_group$" `_fb_summary_recs(*)`
 | bucket _time span=1d
 | fields _time, orig_host, index, sizeOnDiskMB, rawSize
 | stats sum(*) AS * by _time, orig_host, index
@@ -67,7 +67,6 @@ graph shows a thirty-day trend of the overall usage.
 <!--      <title>Monitored Index Count</title> -->
       <option name="field">count</option>
       <option name="underLabel">Monitored</option>
-      <earliestTime>@d</earliestTime>
       <searchString>| inputlookup monitored_indexes.csv | stats count</searchString>
     </single>
 
@@ -113,7 +112,6 @@ graph shows a thirty-day trend of the overall usage.
       <title>Total Monitored Raw Size</title>
       <option name="field">rawBytes</option>
       <option name="underLabel">(from dbinspect)</option>
-      <earliestTime>@d</earliestTime>
       <searchPostProcess>`_fb_where_today`
 | stats sum(rawSize) AS rawBytes
 | `_fb_bytes_pretty(rawBytes)`
@@ -141,7 +139,6 @@ graph shows a thirty-day trend of the overall usage.
       <option name="charting.axisTitleX.text">Host</option>
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
-      <earliestTime>@d</earliestTime>
       <searchPostProcess>`_fb_where_today`
 | chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
       </searchPostProcess>
@@ -160,6 +157,10 @@ graph shows a thirty-day trend of the overall usage.
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x70A65C]</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <searchString>host_group="$host_group$" `_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
       <drilldown>
