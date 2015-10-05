@@ -39,7 +39,7 @@ within that bucket.
 	</link>
       </drilldown>
       <searchString>
-earliest=@d
+`fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
 | `_fb_startEpoch_from_earliestTime`

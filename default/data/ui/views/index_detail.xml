@@ -105,8 +105,7 @@ shown over a thirty-day trend.
       <option name="charting.chart">fillerGauge</option>
       <option name="charting.axisTitleY.text">Percentage</option>
       <option name="charting.chart.showLabels">false</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
 | join type=left index
 [ | `_fb_rest_index_config($host$, $index$)` ]
   | stats
@@ -138,8 +137,7 @@ shown over a thirty-day trend.
       <option name="charting.legend.placement">none</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
 | extract auto=f fb_extract_bucket_type_time_source
 | search NOT bucket_type="rb"
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path, id
@@ -162,6 +160,10 @@ shown over a thirty-day trend.
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x70A65C,0x0223825]</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <searchString>`_fb_summary_recs($host$, $index$)`
 | bucket span=1d _time
