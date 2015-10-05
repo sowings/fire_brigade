@@ -2,12 +2,13 @@
   <label>Bucket Span Detail</label>
 
   <searchTemplate>
-earliest=@d
+`fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | extract auto=f fb_extract_bucket_type_time_source
 | search NOT bucket_type="rb"
 | dedup path
-| fields id, bucket_et, bucket_lt
+| fields id, eventCount, startEpoch, endEpoch, bucket_et, bucket_lt
+| eval bucket_span=endEpoch - startEpoch
   </searchTemplate>
 
   <fieldset>
@@ -64,7 +65,7 @@ More information about index configuration can be found <a href="http://docs.spl
 <!--      <title>Average Local Bucket Span</title> -->
       <option name="field">average</option>
       <option name="underLabel">seconds</option>
-      <searchPostProcess>eval bucket_span=bucket_lt - bucket_et
+      <searchPostProcess>
 | stats avg(bucket_span) AS average | eval average=round(average, 0)
       </searchPostProcess>
     </single>
@@ -72,7 +73,7 @@ More information about index configuration can be found <a href="http://docs.spl
 <!--      <title>Average Local Bucket Span (Human-Readable)</title> -->
       <option name="field">average</option>
       <option name="underLabel">Human-Readable</option>
-      <searchPostProcess>eval bucket_span=bucket_lt - bucket_et
+      <searchPostProcess>
 | stats avg(bucket_span) AS average
 | eval average=tostring(round(average, 0), "duration")
       </searchPostProcess>
@@ -101,7 +102,8 @@ More information about index configuration can be found <a href="http://docs.spl
       <option name="charting.axisTitleY.text">Hours</option>
       <option name="charting.legend.placement">none</option>
       <searchPostProcess>sort 0 id
-| eval bucket_span=round((bucket_lt - bucket_et) / 3600, 1)
+| rename comment AS "This was in seconds, convert to hours for display"
+| eval bucket_span=bucket_span / 3600 
 | chart max(bucket_span) by id
       </searchPostProcess>
     </chart>
