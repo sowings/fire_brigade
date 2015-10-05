@@ -9,7 +9,7 @@
 | chart limit=50 sum(sizeOnDiskMB) over orig_host by index
 -->
 
-  <searchTemplate>earliest=@d
+  <searchTemplate>`fb_data_from_today`
 [| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
@@ -68,19 +68,52 @@ specifications, this might result in a blank value for the
     </html>
   </row>
 
-  <row>
-    <single>
-      <title>Volume-Wide Retention Limit</title>
+  <row grouping="2,1,2">
+    <single id="retention_volume_limits">
+      <option name="link.visible">false</option>
       <option name="field">maxVolumeDataSizeMB</option>
+      <option name="underLabel">volume</option>
       <searchPostProcess>head 1 | `_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
     </single>
     <single>
-      <title>Monitored Indexes Using This Volume</title>
+      <option name="link.visible">false</option>
+      <option name="field">capacity</option>
+      <option name="underLabel">filesystem</option>
+      <searchString>| rest /servicesNS/-/-/configs/conf-indexes/$volume_title$
+| fields splunk_server, title, path
+| join type=left [| rest /services/server/status/partitions-space | fields splunk_server, mount_point, capacity]
+| eval volume_mount=if(match(path, "^" . mount_point . ".*"), mount_point, "Unknown")
+| eval capacity=round(capacity)
+| `_fb_mbytes_pretty(capacity)`
+| fields splunk_server, title, path, volume_mount, capacity</searchString>
+    </single>
+    <single id="retention_volume_subscription">
+      <title>Subscribed Usage</title>
+      <option name="link.visible">false</option>
+      <option name="field">volume_sum</option>
+      <option name="underLabel">subscribed</option>
+      <searchString>| rest /services/data/indexes splunk_server=$host$*
+| search coldPath=$volume_title$* OR homePath=$volume_title$*
+| fields title, maxTotalDataSizeMB, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, homePath, coldPath
+| eval vol_hot=if(match(homePath, "^" . "$volume_title$" . ".*"), "home", null())
+| eval vol_cold=if(match(coldPath, "^" . "$volume_title$" . ".*"), "cold", null())
+| eval neat=mvappend(neat, vol_hot, vol_cold)
+| fields - vol_hot, vol_cold
+| `_fb_null_hot_cold_max`
+| eval vol_usage=case(neat="home" AND neat="cold", min(('homePath.maxDataSizeMB' + 'coldPath.maxDataSizeMB'), maxTotalDataSizeMB),
+  neat="home", min('homePath.maxDataSizeMB', maxTotalDataSizeMB),
+  neat="cold", min('coldPath.maxDataSizeMB', maxTotalDataSizeMB),
+  1=1, "Unknown")
+| stats sum(vol_usage) AS volume_sum
+| `_fb_mbytes_pretty(volume_sum)`</searchString>
+    </single>
+    <single id="retention_volume_current_usage_panel">
+      <option name="link.visible">false</option>
       <option name="field">idx_count</option>
     </single>
     <single>
-      <title>Total Monitored Space on This Volume</title>
       <option name="field">daily_usage</option>
+      <option name="underLabel">disk space</option>
       <searchPostProcess>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
     </single>
   </row>
@@ -105,7 +138,7 @@ specifications, this might result in a blank value for the
       <title>Utilization of Indexes</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
-      <option name="charting.fieldColors">{"AVAILABLE": 0x666666}</option>
+      <option name="charting.fieldColors">{"AVAILABLE": 0x999999}</option>
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
       <searchPostProcess>`_fb_where_today`
 | append [| stats count | eval index="AVAILABLE" | fields index]
@@ -127,6 +160,10 @@ specifications, this might result in a blank value for the
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>
@@ -156,10 +193,15 @@ state!="thawed" `_fb_summary_recs_host($host$)`
     <chart>
       <title>Combined Data Usage vs. Limit Over Time</title>
       <option name="link.visible">false</option>
-      <option name="charting.chart">line</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.overlayFields">Limit</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>

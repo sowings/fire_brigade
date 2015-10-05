@@ -1,8 +1,14 @@
 <form class="formsearch" script="retention_age.js">
   <label>Bucket Age vs. Age Limit</label>
 
+<!-- These search commands, inserted after the bucket call, seem to
+     break the overall search. 
+| extract auto=f fb_extract_bucket_type_time_source
+| search [| rest /services/server/info splunk_server=$host$ | rename guid AS bucket_primary_guid | return bucket_primary_guid ]
+-->
+
   <searchTemplate>
-earliest=@d
+`fb_data_from_today`
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
@@ -174,6 +180,10 @@ limit.
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>

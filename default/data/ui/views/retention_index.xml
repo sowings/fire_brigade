@@ -27,7 +27,7 @@
       <!-- <title>Hot Counts</title> -->
       <option name="field">hot</option>
       <option name="underLabel">Count</option>
-      <searchString>earliest=@d state=hot `_fb_summary_recs($host$, $index$)` | stats count AS hot</searchString>
+      <searchString>`fb_data_from_today` state=hot `_fb_summary_recs($host$, $index$)` | stats count AS hot</searchString>
     </single>
     <single>
       <!-- <title>Hot Limit</title> -->
@@ -39,7 +39,7 @@
       <!-- If this had a title it would be <title>Warm Counts</title> -->
       <option name="field">warm</option>
       <option name="underLabel">Count</option>
-      <searchString>earliest=@d state=warm `_fb_summary_recs($host$, $index$)` | stats count AS warm</searchString>
+      <searchString>`fb_data_from_today` state=warm `_fb_summary_recs($host$, $index$)` | stats count AS warm</searchString>
     </single>
     <single>
       <!-- <title>Warm Limit</title> -->
@@ -51,13 +51,13 @@
       <title>Cold Count</title>
       <option name="field">cold</option>
       <option name="underLabel">Count</option>
-      <searchString>earliest=@d state=cold `_fb_summary_recs($host$, $index$)` | stats count AS cold</searchString>
+      <searchString>`fb_data_from_today` state=cold `_fb_summary_recs($host$, $index$)` | stats count AS cold</searchString>
     </single>
     <single>
       <title>Thawed Count</title>
       <option name="field">thawed</option>
       <option name="underLabel">Count</option>
-      <searchString>earliest=@d state=thawed `_fb_summary_recs($host$, $index$)` | stats count AS thawed</searchString>
+      <searchString>`fb_data_from_today` state=thawed `_fb_summary_recs($host$, $index$)` | stats count AS thawed</searchString>
     </single>
   </row>
 
@@ -66,7 +66,7 @@
       <!-- <title>homePath size</title> -->
       <option name="field">home_size</option>
       <option name="underLabel">usage</option>
-      <searchString>earliest=@d state=hot OR state=warm `_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` state=hot OR state=warm `_fb_summary_recs($host$, $index$)`
 | stats sum(sizeOnDiskMB) AS home_size
 | `_fb_mbytes_pretty(home_size)`
       </searchString>
@@ -86,7 +86,7 @@
       <!-- <title>coldPath size</title> -->
       <option name="field">cold_size</option>
       <option name="underLabel">usage</option>
-      <searchString>earliest=@d state=cold `_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` state=cold `_fb_summary_recs($host$, $index$)`
 | stats count, sum(sizeOnDiskMB) AS cold_size | fillnull value=0 cold_size
 | `_fb_mbytes_pretty(cold_size)`
       </searchString>
@@ -106,7 +106,7 @@
       <!-- <title>Total size</title> -->
       <option name="field">total_size</option>
       <option name="underLabel">usage</option>
-      <searchString>earliest=@d state!=thawed `_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` state!=thawed `_fb_summary_recs($host$, $index$)`
 | stats sum(sizeOnDiskMB) AS total_size
 | `_fb_mbytes_pretty(total_size)`</searchString>
     </single>
@@ -126,7 +126,7 @@
     <single id="retention_overview_home_volume">
       <!-- <title>Volume: homePath</title> -->
     <option name="underLabel">usage</option>
-    <searchString>earliest=@d
+    <searchString>`fb_data_from_today`
 [| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=volume:* OR homePath=volume:*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
@@ -151,7 +151,7 @@ state="hot" OR state="warm" `_fb_summary_recs_host($host$)`
     <single id="retention_overview_cold_volume">
       <!-- <title>Volume: homePath</title> -->
       <option name="underLabel">usage</option>
-      <searchString>earliest=@d
+      <searchString>`fb_data_from_today`
 [| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=volume:*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
@@ -208,7 +208,7 @@ state="cold" `_fb_summary_recs_host($host$)`
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
       <option name="field">age</option>
       <option name="underLabel">seconds</option>
-      <searchString>earliest=@d `_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
 | stats min(endEpoch) AS bucket_lt
 | eval age=tostring(now() - bucket_lt, "commas")
       </searchString>
@@ -217,7 +217,7 @@ state="cold" `_fb_summary_recs_host($host$)`
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
       <option name="field">age</option>
       <option name="underLabel">Human-Readable</option>
-      <searchString>earliest=@d `_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
 | stats min(endEpoch) AS bucket_lt
 | eval age=tostring(now() - bucket_lt, "duration")
       </searchString>
@@ -226,7 +226,7 @@ state="cold" `_fb_summary_recs_host($host$)`
     <single>
       <title>Oldest Bucket in This Index</title>
       <option name="field">bucket_lt</option>
-      <searchString>earliest=@d state!="thawed" `_fb_summary_recs($host$, $index$)`
+      <searchString>`fb_data_from_today` state!="thawed" `_fb_summary_recs($host$, $index$)`
 | stats min(endEpoch) AS bucket_lt | convert ctime(bucket_lt)
       </searchString>
     </single>
