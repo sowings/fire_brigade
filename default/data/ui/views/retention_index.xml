@@ -25,36 +25,42 @@
   <row grouping="2,2,1,1">
     <single id="retention_overview_hot_counts">
       <!-- <title>Hot Counts</title> -->
+      <option name="link.visible">false</option>
       <option name="field">hot</option>
       <option name="underLabel">Count</option>
       <searchString>`fb_data_from_today` state=hot `_fb_summary_recs($host$, $index$)` | stats count AS hot</searchString>
     </single>
     <single>
       <!-- <title>Hot Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxHotBuckets</option>
       <option name="underLabel">limit</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
     </single>
     <single id="retention_overview_warm_counts">
       <!-- If this had a title it would be <title>Warm Counts</title> -->
+      <option name="link.visible">false</option>
       <option name="field">warm</option>
       <option name="underLabel">Count</option>
       <searchString>`fb_data_from_today` state=warm `_fb_summary_recs($host$, $index$)` | stats count AS warm</searchString>
     </single>
     <single>
       <!-- <title>Warm Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxWarmDBCount</option>
       <option name="underLabel">limit</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
     </single>
     <single>
       <title>Cold Count</title>
+      <option name="link.visible">false</option>
       <option name="field">cold</option>
       <option name="underLabel">Count</option>
       <searchString>`fb_data_from_today` state=cold `_fb_summary_recs($host$, $index$)` | stats count AS cold</searchString>
     </single>
     <single>
       <title>Thawed Count</title>
+      <option name="link.visible">false</option>
       <option name="field">thawed</option>
       <option name="underLabel">Count</option>
       <searchString>`fb_data_from_today` state=thawed `_fb_summary_recs($host$, $index$)` | stats count AS thawed</searchString>
@@ -64,6 +70,7 @@
   <row grouping="2,2,2">
     <single id="retention_overview_homePath">
       <!-- <title>homePath size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">home_size</option>
       <option name="underLabel">usage</option>
       <searchString>`fb_data_from_today` state=hot OR state=warm `_fb_summary_recs($host$, $index$)`
@@ -73,6 +80,7 @@
     </single>
     <single>
       <!-- <title>homePath limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">home_max</option>
       <option name="underLabel">limit</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
@@ -84,6 +92,7 @@
 
     <single id="retention_overview_coldPath">
       <!-- <title>coldPath size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">cold_size</option>
       <option name="underLabel">usage</option>
       <searchString>`fb_data_from_today` state=cold `_fb_summary_recs($host$, $index$)`
@@ -93,6 +102,7 @@
     </single>
     <single>
       <!-- <title>coldPath limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">cold_max</option>
       <option name="underLabel">limit</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
@@ -104,6 +114,7 @@
 
     <single id="retention_overview_total_usage">
       <!-- <title>Total size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">total_size</option>
       <option name="underLabel">usage</option>
       <searchString>`fb_data_from_today` state!=thawed `_fb_summary_recs($host$, $index$)`
@@ -113,6 +124,7 @@
 
     <single>
       <!-- <title>overall limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxTotalDataSizeMB</option>
       <option name="underLabel">limit</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>

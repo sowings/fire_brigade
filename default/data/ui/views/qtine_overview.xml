@@ -47,12 +47,14 @@ time format, and can be made easier to read with <code>convert</code> or
   <row>
     <single>
       <title>Quarantine Past Seconds</title>
+      <option name="link.visible">false</option>
       <option name="field">quarantinePastSecs</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
       </searchString>
     </single>
     <single>
       <title>Quarantine Future Seconds</title>
+      <option name="link.visible">false</option>
       <option name="field">quarantineFutureSecs</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
       </searchString>

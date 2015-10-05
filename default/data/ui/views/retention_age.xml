@@ -81,6 +81,7 @@ limit.
   <row grouping="2,1">
     <single id="retention_age_freeze_label">
 <!--      <title>Frozen Time Limit Setting (Raw)</title> -->
+      <option name="link.visible">false</option>
       <option name="underLabel">seconds</option>
       <option name="field">frozenTimePeriodInSecs</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
@@ -90,6 +91,7 @@ limit.
 
     <single>
 <!--      <title>Frozen Time Limit (Human Readable)</title> -->
+      <option name="link.visible">false</option>
       <option name="field">strf</option>
       <option name="underLabel">Human-Readable</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
@@ -98,6 +100,7 @@ limit.
 
     <single>
       <title>Cutoff Time</title>
+      <option name="link.visible">false</option>
       <option name="field">cutoff</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
 | eval cutoff=now() - frozenTimePeriodInSecs | convert ctime(cutoff)
@@ -108,6 +111,7 @@ limit.
   <row grouping="2,1">  
     <single id="retention_age_oldest_label">
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
+      <option name="link.visible">false</option>
       <option name="field">age</option>
       <option name="underLabel">seconds</option>
       <searchPostProcess>`_fb_where_today`
@@ -117,6 +121,7 @@ limit.
     </single>
     <single>
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
+      <option name="link.visible">false</option>
       <option name="field">age</option>
       <option name="underLabel">Human-Readable</option>
       <searchPostProcess>`_fb_where_today`
@@ -127,6 +132,7 @@ limit.
 
     <single>
       <title>Oldest Bucket in This Group</title>
+      <option name="link.visible">false</option>
       <option name="field">bucket_lt</option>
       <searchPostProcess>`_fb_where_today`
 | stats min(endEpoch) AS bucket_lt | convert ctime(bucket_lt)

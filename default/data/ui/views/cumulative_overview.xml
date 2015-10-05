@@ -54,9 +54,11 @@ graph shows a thirty-day trend of the overall usage.
 <!--      <title>Total Discovered Index Count</title> -->
        <option name="field">count</option>
        <option name="underLabel">From REST</option>
+       <option name="link.visible">false</option>
        <searchString>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count</searchString>
     </single>
      <single>
+      <option name="link.visible">false</option>
       <option name="field">count</option>
       <option name="underLabel">Non-Empty</option>
       <searchPostProcess>`_fb_where_today`
@@ -65,6 +67,7 @@ graph shows a thirty-day trend of the overall usage.
 
     <single id="cumulative_overview_disk_usage_label">
 <!--      <title>Monitored Disk Usage (from dbinspect)</title> -->
+      <option name="link.visible">false</option>
       <option name="field">dbinspect_size</option>
       <option name="underLabel">Snapshot (dbinspect)</option>
       <searchPostProcess>`_fb_where_today`
@@ -75,6 +78,7 @@ graph shows a thirty-day trend of the overall usage.
 
     <single>
 <!--      <title>Total Discovered Disk Usage (from REST)</title> -->
+      <option name="link.visible">false</option>
       <option name="field">total_size</option>
       <option name="underLabel">Current (REST)</option>
       <searchString>| rest /services/data/indexes
@@ -87,6 +91,7 @@ graph shows a thirty-day trend of the overall usage.
 
     <single>
       <title>Total Monitored Raw Size</title>
+      <option name="link.visible">false</option>
       <option name="field">rawBytes</option>
       <option name="underLabel">(from dbinspect)</option>
       <searchPostProcess>`_fb_where_today`
@@ -97,6 +102,7 @@ graph shows a thirty-day trend of the overall usage.
 
     <single>
       <title>Overall Compression</title>
+      <option name="link.visible">false</option>
       <option name="field">comp_percent</option>
       <option name="underLabel">Of Raw Size</option>
       <searchPostProcess>`_fb_where_today`

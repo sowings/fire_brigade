@@ -59,24 +59,28 @@ other members of the cluster.
   <row grouping="1,2,1">
     <single>
       <title>Clustering Mode for This Host</title>
+      <option name="link.visible">false</option>
       <option name="field">mode</option>
       <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
     </single>
 
     <single id="cluster_detail_replication_label">
 <!--      <title>Global Replication Factor</title> -->
+      <option name="link.visible">false</option>
       <option name="field">replication_factor</option>
       <option name="underLabel">Global</option>
       <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
     </single>
     <single>
 <!--      <title>Replication Factor for This Index</title> -->
+      <option name="link.visible">false</option>
       <option name="underLabel">This index</option>
       <option name="field">repFactor</option>
       <searchString>| `_fb_rest_index_config($index$)`</searchString>
     </single>
     <single>
       <title>Search Factor for This Index</title>
+      <option name="link.visible">false</option>
       <option name="field">search_factor</option>
       <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
     </single>
@@ -85,6 +89,7 @@ other members of the cluster.
   <row>
     <single>
       <title>Locally Indexed Data</title>
+      <option name="link.visible">false</option>
       <option name="field">indexed</option>
       <searchPostProcess>`_fb_where_today`
 | search NOT bucket_type="rb"
@@ -95,6 +100,7 @@ other members of the cluster.
     </single>
     <single>
       <title>Replicated Data</title>
+      <option name="link.visible">false</option>
       <option name="field">replicated</option>
       <searchPostProcess>`_fb_where_today`
 | search bucket_type="rb"
@@ -105,6 +111,7 @@ other members of the cluster.
     </single>
     <single>
       <title>Total (Local + Replicated)</title>
+      <option name="link.visible">false</option>
       <option name="field">Total</option>
       <searchPostProcess>`_fb_where_today`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path

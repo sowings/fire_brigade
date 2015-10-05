@@ -42,11 +42,13 @@ value labeled "Applied".
   <row grouping="1,1,2">
     <single>
       <title>Bucket Count for This Index</title>
+      <option name="link.visible">false</option>
       <option name="field">count</option>
       <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path | stats count</searchPostProcess>
     </single>
     <single>
       <title>Average Bucket Size</title>
+      <option name="link.visible">false</option>
       <option name="field">average</option>
       <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
 | stats avg(sizeOnDiskMB) AS average
@@ -56,12 +58,14 @@ value labeled "Applied".
 
     <single id="bucket_size_detail_max_size_label">
 <!--      <title>Configured Max Bucket Size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxDataSize</option>
       <option name="underLabel">Setting</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
     </single>
     <single>
 <!--      <title>Applied Max Bucket Size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">bucket_max</option>
       <option name="underLabel">Applied</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
