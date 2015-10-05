@@ -9,7 +9,7 @@ require([
     // Translations from rangemap results to CSS class
     var ICONS = {
         coldwarn:  'alert',
-        extreme:   'alert',
+        extreme:   'alert-circle',
         homewarn:  'alert',
         hotwarn:   'alert',
         quar:      'clock',
