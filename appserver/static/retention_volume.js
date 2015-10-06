@@ -5,4 +5,16 @@ require(['splunkjs/mvc/simplexml/ready!'], function(){
 
 	panel_of_interest = $('#retention_volume_fullness_pie').parent().parent().parent();
 	panel_of_interest.attr('style', "width: 33.34%");
+
+    var group_header = $('#retention_volume_limits').parent();
+
+    $('h3', group_header).hide();
+
+    group_header.prepend('<div class="panel-head"><h3>Current Limits</h3></div>');
+
+    group_header = $('#retention_volume_current_usage_panel').parent();
+
+    $('h3', group_header).hide();
+
+    group_header.prepend('<div class="panel-head"><h3>Current Volume Particpation</h3></div>');
 });
