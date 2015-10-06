@@ -37,7 +37,14 @@ Compression</i> is represented as the percentage of space the data
 takes up <i>relative</i> to its original raw size.
 <p/>
 More information about <a href="http://docs.splunk.com/Documentation/Splunk/6.0/SearchReference/Dbinspect"><code>dbinspect</code></a>
-and the <a href="http://docs.splunk.com/Documentation/Splunk/6.0/RESTAPI/RESTlist">REST API</a>
+and the REST API documentation for <a
+href="http://docs.splunk.com/Documentation/Splunk/6.0/RESTAPI/RESTlist">version
+6.0</a>, <a
+href="http://docs.splunk.com/Documentation/Splunk/6.1/RESTAPI/RESTlist">version
+6.1</a>, <a
+href="http://docs.splunk.com/Documentation/Splunk/6.2/RESTREF/RESTlist">version
+6.2</a> or <a
+href="http://docs.splunk.com/Documentation/Splunk/6.2/RESTREF/RESTlist">version 6.3</a>
 can be found by following these links.
 <p/>
 The bottom row shows the cumulative usage of indexed data within the
