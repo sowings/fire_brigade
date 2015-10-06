@@ -6,5 +6,5 @@ require(['splunkjs/mvc/simplexml/ready!'], function(){
     $('h3', group_header).hide();
 
     // Now add in the desired group title. Styled in dashboard.css.
-    group_header.prepend('<h3>Replication Settings</h3>');
+    group_header.prepend('<div class="panel-head"><h3>Replication Settings</h3></div>');
 });
