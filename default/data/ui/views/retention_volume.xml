@@ -72,7 +72,7 @@ specifications, this might result in a blank value for the
     <single id="retention_volume_limits">
       <option name="link.visible">false</option>
       <option name="field">maxVolumeDataSizeMB</option>
-      <option name="underLabel">volume</option>
+      <option name="underLabel">maxVolumeDataSizeMB</option>
       <searchPostProcess>head 1 | `_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
     </single>
     <single>
