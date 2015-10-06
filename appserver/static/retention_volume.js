@@ -10,7 +10,7 @@ require(['splunkjs/mvc/simplexml/ready!'], function(){
 
     $('h3', group_header).hide();
 
-    group_header.prepend('<div class="panel-head"><h3>Current Limits</h3></div>');
+    group_header.prepend('<div class="panel-head"><h3>Disk Space Limits</h3></div>');
 
     group_header = $('#retention_volume_current_usage_panel').parent();
 
