@@ -62,17 +62,9 @@ graph shows a thirty-day trend of the overall usage.
     </html>
   </row>
 
-  <row grouping="3,2,2">
-    <single id="cumulative_overview_index_count_label">
-<!--      <title>Monitored Index Count</title> -->
-      <option name="link.visible">false</option>
-      <option name="field">count</option>
-      <option name="underLabel">Monitored</option>
-      <searchString>| inputlookup monitored_indexes.csv | stats count</searchString>
-    </single>
-
+  <row grouping="2,2,2">
     <single>
-<!--      <title>Monitored Index Count</title> -->
+<!--      <title>Total Discovered Index Count</title> -->
       <option name="link.visible">false</option>
       <option name="field">count</option>
       <option name="underLabel">Non-Empty</option>
@@ -81,7 +73,6 @@ graph shows a thirty-day trend of the overall usage.
     </single>
 
      <single>
--<!--      <title>Total Discovered Index Count</title> -->
        <option name="link.visible">false</option>
        <option name="field">count</option>
        <option name="underLabel">From REST</option>
