@@ -36,7 +36,7 @@ usage of several indexes in concert. The easiest way to think of a
 volume limit is as the maximum size of a disk partition. The
 <code>maxTotalVolumeSizeMB</code> setting sets the upper bound on how
 large each of the contained indexes can be. See the <a
-href="indexes.conf">indexes.conf</a> documentation for how to set up
+href="http://docs.splunk.com/Documentation/Splunk/latest/Admin/Indexesconf">indexes.conf</a> documentation for how to set up
 volumes. If volumes are not in use within the installation, this panel
 will report "No results found".
 </li>
