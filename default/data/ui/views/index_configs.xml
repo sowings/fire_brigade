@@ -76,7 +76,7 @@ all of the search peers.
       <title>Number of Indexes with Mis-Matched Size</title>
       <option name="link.visible">false</option>
       <option name="field">mismatch</option>
-      <searchPostProcess>where mvcount(maxTotalDataSizeMB) &gt; 1
+      <searchPostProcess>where mvcount(mvdedup(maxTotalDataSizeMB)) &gt; 1
 | stats dc(title) AS mismatch
 | rangemap field=mismatch foo=0-0 default=severe
       </searchPostProcess>
