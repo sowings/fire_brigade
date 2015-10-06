@@ -1,4 +1,4 @@
-<form script="index_configs_mv_coloring.js" stylesheet="index_configs_mv_coloring.css">
+<form>
   <label>Troubleshooting Index Configuration</label>
 
   <searchTemplate>
