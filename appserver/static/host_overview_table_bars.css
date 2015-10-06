@@ -19,6 +19,17 @@ td.data-bar-cell .data-bar-wrapper .data-bar-right {
     height: 16px;
     min-width: 1px;
     background-color: #838383;
-    position: absolute;
+    position: relative;
     left: 0px;
+    border-style: solid;
+    border-width: 1px;
+}
+
+.data-bar-over { color: #FFFFFF; }
+.data-bar-under { color: #000000; }
+
+.data-bar-text-overlay {
+    z-index: 10;
+    text-align: center;
+    width:100%;
 }
