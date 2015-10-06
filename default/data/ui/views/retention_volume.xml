@@ -139,7 +139,7 @@ specifications, this might result in a blank value for the
     </table>
 
     <chart id="retention_volume_fullness_pie">
-      <title>Utilization of Indexes</title>
+      <title>Utilization of Indexes vs. Volume Limit</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
       <option name="charting.fieldColors">{"AVAILABLE": 0x999999}</option>
