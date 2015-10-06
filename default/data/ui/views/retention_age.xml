@@ -82,7 +82,7 @@ limit.
     <single id="retention_age_freeze_label">
 <!--      <title>Frozen Time Limit Setting (Raw)</title> -->
       <option name="link.visible">false</option>
-      <option name="underLabel">seconds</option>
+      <option name="underLabel">Seconds</option>
       <option name="field">frozenTimePeriodInSecs</option>
       <searchString>| `_fb_rest_index_config($host$, $index$)`
 | eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "commas")
@@ -113,7 +113,7 @@ limit.
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
       <option name="link.visible">false</option>
       <option name="field">age</option>
-      <option name="underLabel">seconds</option>
+      <option name="underLabel">Seconds</option>
       <searchPostProcess>`_fb_where_today`
 | stats min(endEpoch) AS bucket_lt
 | eval age=tostring(now() - bucket_lt, "commas")

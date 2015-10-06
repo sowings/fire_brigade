@@ -108,7 +108,7 @@ graph shows a thirty-day trend of the overall usage.
       <title>Total Monitored Raw Size</title>
       <option name="link.visible">false</option>
       <option name="field">rawBytes</option>
-      <option name="underLabel">(from dbinspect)</option>
+      <option name="underLabel">From dbinspect</option>
       <searchPostProcess>`_fb_where_today`
 | stats sum(rawSize) AS rawBytes
 | `_fb_bytes_pretty(rawBytes)`
