@@ -47,6 +47,10 @@ The latest time serves as the
 endpoint of the bucket boundary, and dictates when this bucket would
 be eligible for freezing (archival) with a time-based retention
 policy.
+If the original indexer where the data was indexed has been retired or
+gone missing, the host field will read as <em>Missing Indexer</em>. In
+rows where the <em>Event Count</em> field is zero (0), this represents
+a non-searchable "replica" bucket copy.
 <strong>For the "Oldest Bucket"
 group, thawed buckets are expressly excluded, as they are not governed
 by any retention policy.</strong>
