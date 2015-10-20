@@ -11,7 +11,7 @@
 `fb_data_from_today`
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
-| fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id
+| fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id, bucketId
   </searchTemplate>
 
   <row>
@@ -145,13 +145,16 @@ limit.
       <title>Ten Oldest (Neither Thawed nor Hot) Monitored Buckets in This Group</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchPostProcess>`_fb_where_today`
-| fillnull guId value="Locally Indexed"
+      <searchPostProcess><![CDATA[`_fb_where_today`
 | stats values(endEpoch) AS bucket_lt,
     values(startEpoch) AS bucket_et,
     first(eventCount) AS eventCount,
-    max(sizeOnDiskMB) AS sizeOnDiskMB by index, guId, id
+    max(sizeOnDiskMB) AS sizeOnDiskMB
+    first(index) AS index
+    first(id) AS id
+    by bucketId
 | sort 10 bucket_lt
+| rex field=bucketId "^[^~]+~[^~]+~(?<guId>[^~]+)$"
 | eval bucket_age=tostring(now() - bucket_lt, "duration")
 | eval max_back=tostring(now() - bucket_et, "duration")
 | convert ctime(bucket_lt)
@@ -160,6 +163,7 @@ limit.
 | join type=left guId [ | rest /services/server/info | fields - id
     | rename splunk_server AS host,
         guid AS guId ]
+| fillnull host value="Missing Indexer"
 | table host, index, id, eventCount, sizeOnDiskMB, bucket_et, max_back, bucket_lt, bucket_age
 | rename bucket_lt AS "Latest Time",
     bucket_et AS "Earliest Time",
@@ -169,7 +173,7 @@ limit.
     sizeOnDiskMB AS "Bucket Size",
     host AS "Source Server"
     bucket_age AS "Bucket Age"
-    max_back AS "Furthest Event Back"
+    max_back AS "Furthest Event Back"]]>
       </searchPostProcess>
       <drilldown>
         <link><![CDATA[
