@@ -1,5 +1,5 @@
 APP_NAME=fire_brigade
-APP_ID=fire_bubbles
+APP_ID=fire_brigade
 APP_LABEL=Fire Brigade
 BUILD_ROOT=../build
 TA_PACKAGE_BASE=TA-${APP_NAME}
