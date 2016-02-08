@@ -24,14 +24,9 @@ This dashboard is intended to show the overall status of the
 indexers in the Splunk environment.
 <p />
 The values reflected in the <em>Index Counts</em> section show a
-various counts. The <i>Monitored</i> count reflects the indexes listed
-in the lookup table <b>monitored_indexes.csv</b>. Typically, this lookup
-is automatically updated by the <i>Update monitored list from REST</i>
-scheduled search. By contrast, the <i>From REST</i> count is a
+various counts. The <i>From REST</i> count is a
 <i>current</i> snapshot of the total number of indexes as reported by
-the REST API. Comparing these two values can show whether the full
-list (as shown by REST) is actually being monitored by the
-application. In between these two values, the <i>Non-Empty</i> entry
+the REST API. To the right of this panel, the <i>Non-Empty</i> entry
 shows how many of those indexes reported data today.
 <p />
 Within the <em>Overall Disk Usage</em> panel are two sums. The first,
@@ -50,7 +45,14 @@ Compression</i> is represented as the percentage of space the data
 takes up <i>relative</i> to its original raw size.
 <p/>
 More information about <a href="http://docs.splunk.com/Documentation/Splunk/6.0/SearchReference/Dbinspect"><code>dbinspect</code></a>
-and the <a href="http://docs.splunk.com/Documentation/Splunk/6.0/RESTAPI/RESTlist">REST API</a>
+and the REST API documentation for <a
+href="http://docs.splunk.com/Documentation/Splunk/6.0/RESTAPI/RESTlist">version
+6.0</a>, <a
+href="http://docs.splunk.com/Documentation/Splunk/6.1/RESTAPI/RESTlist">version
+6.1</a>, <a
+href="http://docs.splunk.com/Documentation/Splunk/6.2/RESTREF/RESTlist">version
+6.2</a> or <a
+href="http://docs.splunk.com/Documentation/Splunk/6.2/RESTREF/RESTlist">version 6.3</a>
 can be found by following these links.
 <p/>
 The bottom row shows the cumulative usage of indexed data within the
@@ -62,31 +64,21 @@ graph shows a thirty-day trend of the overall usage.
     </html>
   </row>
 
-  <row grouping="3,2,2">
+  <row grouping="2,2,2">
     <single id="cumulative_overview_index_count_label">
-<!--      <title>Monitored Index Count</title> -->
-      <option name="link.visible">false</option>
-      <option name="field">count</option>
-      <option name="underLabel">Monitored</option>
-      <searchString>| inputlookup monitored_indexes.csv | stats count</searchString>
+<!--      <title>Total Discovered Index Count</title> -->
+       <option name="field">count</option>
+       <option name="underLabel">From REST</option>
+       <option name="link.visible">false</option>
+       <searchString>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count</searchString>
     </single>
-
-    <single>
-<!--      <title>Monitored Index Count</title> -->
+     <single>
       <option name="link.visible">false</option>
       <option name="field">count</option>
       <option name="underLabel">Non-Empty</option>
       <searchPostProcess>`_fb_where_today`
 | stats dc(index) AS count</searchPostProcess>
     </single>
-
-     <single>
--<!--      <title>Total Discovered Index Count</title> -->
-       <option name="link.visible">false</option>
-       <option name="field">count</option>
-       <option name="underLabel">From REST</option>
-       <searchString>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count</searchString>
-     </single>
 
     <single id="cumulative_overview_disk_usage_label">
 <!--      <title>Monitored Disk Usage (from dbinspect)</title> -->
@@ -117,7 +109,7 @@ graph shows a thirty-day trend of the overall usage.
       <title>Total Monitored Raw Size</title>
       <option name="link.visible">false</option>
       <option name="field">rawBytes</option>
-      <option name="underLabel">(from dbinspect)</option>
+      <option name="underLabel">From dbinspect</option>
       <searchPostProcess>`_fb_where_today`
 | stats sum(rawSize) AS rawBytes
 | `_fb_bytes_pretty(rawBytes)`

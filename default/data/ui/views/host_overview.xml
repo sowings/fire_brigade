@@ -107,18 +107,22 @@ versions seen elsewhere, but are restricted to the selected host.
     </single>
 <!-- Punt on this; the map command won't run if there are no matching
      models. So while we could run this search to get data, in most
-     cases it will retur nothing, and complain about the search being
+     cases it will return nothing, and complain about the search being
      unresolved in the UI. Undesired. Hide this for now.
+-->
     <single>
       <title>Data Model Acceleration Usage</title>
       <option name="field">modelBytes</option>
-      <searchString>| rest /services/data/models splunk_server=$host$ count=0 | search acceleration=1
-| map maxsearches=99 search="| rest /services/admin/summarization/tstats%3ADM_search_$$title$$"
-| stats count, sum(summary.size) AS modelBytes | fillnull value=0 modelBytes
-| `_fb_bytes_pretty(modelBytes)`
+      <option name="underLabel">Serving this SH</option>
+      <searchString><![CDATA[| rest /services/data/models | search acceleration=1 | fields eai:acl.app, title | rename eai:acl.app AS app title AS model
+| map maxsearches=99 search="
+| rest /services/admin/summarization/tstats:DM_$$app$$_$$model$$/details splunk_server=local
+| rex field=title \"^details_(?<Indexer>[^\:]+)\:(?<Index>[^\:]+)\:(?<bid_again>.*)$\"
+| search Indexer=$host$"
+| stats sum(summary_size) AS summary_size
+| `_fb_bytes_pretty(summary_size)`]]>
       </searchString>
     </single>
--->
   </row>
 
   <row>
@@ -206,6 +210,8 @@ versions seen elsewhere, but are restricted to the selected host.
 	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
+      <!-- Maybe something like this
+	   | eventstats max(rawSize) AS largestRaw by bucketId -->
       <searchString>`_fb_summary_recs($host$, "*")`
 | bucket _time span=1d
 | extract auto=f fb_extract_bucket_type_time_source

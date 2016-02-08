@@ -72,13 +72,13 @@ specifications, this might result in a blank value for the
     <single id="retention_volume_limits">
       <option name="link.visible">false</option>
       <option name="field">maxVolumeDataSizeMB</option>
-      <option name="underLabel">volume</option>
+      <option name="underLabel">maxVolumeDataSizeMB</option>
       <searchPostProcess>head 1 | `_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
     </single>
     <single>
       <option name="link.visible">false</option>
       <option name="field">capacity</option>
-      <option name="underLabel">filesystem</option>
+      <option name="underLabel">Filesystem</option>
       <searchString>| rest /servicesNS/-/-/configs/conf-indexes/$volume_title$
 | fields splunk_server, title, path
 | join type=left [| rest /services/server/status/partitions-space | fields splunk_server, mount_point, capacity]
@@ -91,7 +91,6 @@ specifications, this might result in a blank value for the
       <title>Subscribed Usage</title>
       <option name="link.visible">false</option>
       <option name="field">volume_sum</option>
-      <option name="underLabel">subscribed</option>
       <searchString>| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
 | fields title, maxTotalDataSizeMB, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, homePath, coldPath
@@ -110,14 +109,14 @@ specifications, this might result in a blank value for the
     <single id="retention_volume_current_usage_panel">
       <option name="link.visible">false</option>
       <option name="field">idx_count</option>
-      <option name="underLabel">indexes</option>
+      <option name="underLabel">Indexes</option>
       <option name="showSparkline">false</option>
       <option name="showTrendIndicator">false</option>
     </single>
     <single>
       <option name="link.visible">false</option>
       <option name="field">daily_usage</option>
-      <option name="underLabel">disk space</option>
+      <option name="underLabel">Disk Space</option>
       <searchPostProcess>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
     </single>
   </row>
@@ -139,7 +138,7 @@ specifications, this might result in a blank value for the
     </table>
 
     <chart id="retention_volume_fullness_pie">
-      <title>Utilization of Indexes</title>
+      <title>Utilization of Indexes vs. Volume Limit</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
       <option name="charting.fieldColors">{"AVAILABLE": 0x999999}</option>
