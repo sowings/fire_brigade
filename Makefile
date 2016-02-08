@@ -35,7 +35,7 @@ app_package: build_number
 	sed -e 's/%buildnum%/${BUILD}/g' -e 's/%label%/${APP_LABEL}/g' -e 's/%package_id%/${APP_ID}/g' -e 's/%version%/${APP_VERSION}/g' default/app.conf > ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/app.conf
 	@rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README*.txt
 	cp -p README.${APP_NAME}.txt ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README.txt
-	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && tar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf ${APP_NAME})
+	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && tar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf --exclude *.diff ${APP_NAME})
 
 change_list:
 	$(eval TAG_HASH := $(shell git rev-list v2.0.3 | head -1))
