@@ -28,6 +28,15 @@
     <view name="retention_age" />
     <divider />
     <view name="retention_volume" />
+    <view name="retention_summary" />
+  </collection>
+  <collection label="Summary Data">
+    <view name="summary_overview" />
+    <divider />
+    <view name="summary_dma_summary_detail" />
+    <view name="summary_dma_host_detail" />
+    <divider />
+    <view name="retention_summary" />
   </collection>
   <collection label="Log Activity">
     <view name="bucket_lifecycle" />
