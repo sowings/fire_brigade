@@ -29,6 +29,8 @@
     <divider />
     <view name="retention_volume" />
     <view name="retention_summary" />
+    <divider />
+    <view name="retention_ballast" />
   </collection>
   <collection label="Summary Data">
     <view name="summary_overview" />
