@@ -178,7 +178,7 @@
 | join type=left splunk_server, title
   [ | rest /services/data/indexes/$index_index$ splunk_server=$server_host$
     | fields title, splunk_server, maxHotBuckets, maxWarmDBCount ]
-| fillnull value=0 bucket_dirs.home.bucket_count bucket_dirs.cold.bucket_count bucket_dirs.thawed.bucket_count
+| fillnull value=0 bucket_dirs.home.hot_bucket_count bucket_dirs.home.warm_bucket_count bucket_dirs.cold.bucket_count bucket_dirs.thawed.bucket_count
 | table title, bucket_dirs.home.hot_bucket_count, maxHotBuckets, bucket_dirs.home.warm_bucket_count, maxWarmDBCount, bucket_dirs.cold.bucket_count, bucket_dirs.thawed.bucket_count
 | rename title AS Index
   bucket_dirs.home.hot_bucket_count AS "Hot Buckets"
