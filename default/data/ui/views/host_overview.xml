@@ -6,7 +6,9 @@
 | bucket _time span=1d
 | extract auto=f fb_extract_bucket_type_time_source
 | extract auto=f fb_extract_hot_bucket
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, state, index, bucket_type, path
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB
+   max(endEpoch) AS endEpoch
+   by _time, state, index, bucket_type, path
   </searchTemplate>
 
 
@@ -132,12 +134,14 @@ versions seen elsewhere, but are restricted to the selected host.
       <searchPostProcess>`_fb_where_today`
 | stats
     sum(sizeOnDiskMB) AS diskTotalinMB
+    max(endEpoch) AS endEpoch
     by index, state
 | join type=left index
 [ | rest /services/data/indexes splunk_server=$host$* count=0
   | rename title AS index ]
 | `_fb_null_hot_cold_max`
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
     sum(diskTotalinMB) AS totalUsage
     first(maxTotalDataSizeMB) AS max_limit
     first(homePath.maxDataSizeMB) AS home_limit
@@ -149,12 +153,15 @@ versions seen elsewhere, but are restricted to the selected host.
 | sort - ratedUsage
 | eventstats max(totalUsage) AS top_total
 | eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval ratedUsage=round(ratedUsage, 2)
+| eval totalUsage=round(totalUsage, 2)
+| eval Ballast=round(Ballast, 2)
 | rename ratedUsage AS "\"Retention\" Usage"
     totalUsage AS "Total Usage" 
     rel_size AS "Relative Size"
     percentage AS "% of Capacity"
     index AS Index
-| table "Relative Size", Index, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+| table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
       </searchPostProcess>
       <drilldown>
         <link><![CDATA[
