@@ -159,7 +159,8 @@ limit.
     by bucketId
 | sort 10 bucket_lt
 | rex field=bucketId "^[^~]+~[^~]+~(?<guId>[^~]+)$"
-| eval bucket_age=tostring(now() - bucket_lt, "duration")
+| eval distance=tostring(if(now() > bucket_lt, now() - bucket_lt, bucket_lt - now()), "duration")
+| eval bucket_age=if(now() > bucket_lt, distance, "+ " . distance . " (FUTURE)")
 | eval max_back=tostring(now() - bucket_et, "duration")
 | convert ctime(bucket_lt)
 | convert ctime(bucket_et)
