@@ -190,6 +190,37 @@ limit.
   </row>
 
   <row>
+    <table>
+      <title>Ballast Buckets in This Group</title>
+      <option name="link.visible">false</option>
+      <searchString>`fb_data_from_today`
+state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
+| dedup bucketId
+| where endEpoch > now()
+| eval distance=tostring(if(now() > endEpoch, now() - endEpoch, endEpoch - now()), "duration")
+| eval bucket_age=if(now() > endEpoch, distance, "+ " . distance . " (FUTURE)")
+| eval distance=tostring(if(now() > endEpoch, now() - endEpoch, endEpoch - now()), "duration")
+| eval max_back=if(now() > startEpoch, distance, "+ " . distance . " (FUTURE)")
+| convert ctime(endEpoch)
+| convert ctime(startEpoch)
+| eval pathLoc=case(state="cold", "coldPath", state="thawed", "thawedPath", 1=1, "homePath")
+| table host, index, id, state, pathLoc, eventCount, sizeOnDiskMB, startEpoch, endEpoch, max_back, bucket_age
+| `_fb_mbytes_pretty(sizeOnDiskMB)`
+| rename endEpoch AS "Latest Time",
+    startEpoch AS "Earliest Time",
+    index AS Index,
+    id AS "Bucket ID",
+    state AS State
+    eventCount AS "Event Count",
+    sizeOnDiskMB AS "Bucket Size",
+    host AS "Source Server"
+    pathLoc AS "Path Setting"
+    bucket_age AS "Bucket Age"
+    max_back AS "Furthest Event Back"</searchString>
+    </table>
+  </row>
+
+  <row>
     <chart>
       <title>Maximal Span (in Days) in This Group</title>
       <option name="link.visible">false</option>
