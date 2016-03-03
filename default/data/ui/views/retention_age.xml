@@ -161,7 +161,8 @@ limit.
 | rex field=bucketId "^[^~]+~[^~]+~(?<guId>[^~]+)$"
 | eval distance=tostring(if(now() > bucket_lt, now() - bucket_lt, bucket_lt - now()), "duration")
 | eval bucket_age=if(now() > bucket_lt, distance, "+ " . distance . " (FUTURE)")
-| eval max_back=tostring(now() - bucket_et, "duration")
+| eval distance=tostring(if(now() > bucket_lt, now() - bucket_lt, bucket_lt - now()), "duration")
+| eval max_back=if(now() > bucket_et, distance, "+ " . distance . " (FUTURE)")
 | convert ctime(bucket_lt)
 | convert ctime(bucket_et)
 | `_fb_mbytes_pretty(sizeOnDiskMB)`
