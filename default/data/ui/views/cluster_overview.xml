@@ -1,13 +1,13 @@
 <dashboard>
   <label>Replication Overview</label>
 
-  <searchTemplate>
+  <searchTemplate><![CDATA[
 `fb_data_from_today`
 `_fb_summary_recs(*)`
 | bucket _time span=1d
-| extract auto=f fb_extract_bucket_type_time_source
-| extract auto=f fb_extract_hot_bucket
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, orig_host, path, bucket_type
+| rex field=bucketId "^(?<idx_name>[^~]+)~(?<bid>\d+)~(?<bucket_guid>[-A-F0-9]+)$"
+| eval bucket_type=if(guId=bucket_guid, "db", "rb")
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, orig_host, bucket_type]]>
   </searchTemplate>
 
   <row>
@@ -87,14 +87,13 @@ disproportionately loaded.
 	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
-      <searchString>
-`_fb_summary_recs(*)`
+      <searchString><![CDATA[`_fb_summary_recs(*)`
 | bucket _time span=1d
-| extract auto=f fb_extract_bucket_type_time_source
-| extract auto=f fb_extract_hot_bucket
+| rex field=bucketId "^(?<idx_name>[^~]+)~(?<bid>\d+)~(?<bucket_guid>[-A-F0-9]+)$"
+| eval bucket_type=if(guId=bucket_guid, "db", "rb")
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, orig_host, path, bucket_type
 | eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
-| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
+| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type]]>
       </searchString>
     </chart>
   </row>
