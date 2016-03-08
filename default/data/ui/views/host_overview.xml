@@ -103,7 +103,8 @@ versions seen elsewhere, but are restricted to the selected host.
       <option name="link.visible">false</option>
       <option name="field">RAbytes</option>
       <searchString>| rest /services/admin/summarization splunk_server=$host$
-| stats sum(summary.size) AS RAbytes
+| stats count, sum(summary.size) AS RAbytes
+| fillnull value=0 RAbytes
 | `_fb_bytes_pretty(RAbytes)`
       </searchString>
     </single>
