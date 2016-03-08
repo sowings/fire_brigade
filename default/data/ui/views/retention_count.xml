@@ -6,6 +6,7 @@
 state="hot" OR state="warm"
 `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
+| eval state=mvappend(state, if(endEpoch>now(), "ballast", null()))
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index, state
   </searchTemplate>
 
@@ -38,7 +39,7 @@ buckets within the index. Only buckets in the <i>hot</i> and
   </fieldset>
 
 <!-- VALIDATE THIS IN CLUSTERED V6 -->
-  <row grouping="2,2">
+  <row grouping="2,3">
     <single id="retention_count_hot_label">
 <!--      <title>Hot Bucket Count</title> -->
       <option name="link.visible">false</option>
@@ -62,6 +63,12 @@ buckets within the index. Only buckets in the <i>hot</i> and
       <option name="underLabel">Count</option>
       <searchPostProcess>`_fb_where_today` AND state="warm"
 | stats count</searchPostProcess>
+    </single>
+    <single>
+      <option name="link.visble">false</option>
+      <option name="underLabel">Ballast</option>
+      <option name="field">ballast</option>
+      <searchPostProcess>search state="ballast" | stats count, sum(count) AS ballast</searchPostProcess>
     </single>
     <single>
 <!--      <title>Warm Bucket Limit</title> -->
@@ -89,11 +96,14 @@ buckets within the index. Only buckets in the <i>hot</i> and
 state="hot" OR state="warm"
 `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
+| eval state=mvappend(state, if(endEpoch>now(), "ballast", null()))
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index, state
 | join type=left index
  [ | `_fb_rest_index_config($host$, $index$)` ]
 | eval limit=if(state=="hot", maxHotBuckets, if(state=="warm", maxWarmDBCount, 0))
 | timechart span=1d dc(path) AS "Count", first(limit) AS Limit by state
+| rename comment AS "Just in case..."
+| fields - "Limit: ballast"
       </searchString>
     </chart>
   </row>
