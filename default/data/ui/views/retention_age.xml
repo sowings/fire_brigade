@@ -203,8 +203,10 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | eval max_back=if(now() > startEpoch, distance, "+ " . distance . " (FUTURE)")
 | convert ctime(endEpoch)
 | convert ctime(startEpoch)
+| eval minted=round(strptime(modTime, "%m/%d/%Y:%H:%M:%S"), 0)
+| convert ctime(minted)
 | eval pathLoc=case(state="cold", "coldPath", state="thawed", "thawedPath", 1=1, "homePath")
-| table host, index, id, state, pathLoc, eventCount, sizeOnDiskMB, startEpoch, endEpoch, max_back, bucket_age
+| table host, index, id, state, pathLoc, eventCount, sizeOnDiskMB, startEpoch, max_back, endEpoch, bucket_age, minted
 | `_fb_mbytes_pretty(sizeOnDiskMB)`
 | rename endEpoch AS "Latest Time",
     startEpoch AS "Earliest Time",
@@ -216,6 +218,7 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
     host AS "Source Server"
     pathLoc AS "Path Setting"
     bucket_age AS "Bucket Age"
+    minted AS "Last Mod. Time"
     max_back AS "Furthest Event Back"</searchString>
     </table>
   </row>
