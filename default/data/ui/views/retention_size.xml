@@ -128,7 +128,45 @@ managed manually.
   </row>
 
   <row>
-    <chart>
+    <chart id="retention_size_home_ballast_gauge">
+      <title>Ballast in Home Path (Hot + Warm)</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">fillerGauge</option>
+      <searchString>state="hot" OR state="warm" `fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB, endEpoch
+| bucket _time span=1d
+| dedup _time, path
+| eval title="$index$", state=if(endEpoch > now(), "ballast", "home")
+| search state="ballast"
+| join index [| `_fb_rest_index_config($host$, $index$)`
+   | fields index homePath.maxDataSizeMB, maxTotalDataSizeMB ]
+| eval limit=if('homePath.maxDataSizeMB' = 0, maxTotalDataSizeMB, 'homePath.maxDataSizeMB')
+| stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
+| fillnull value=0 limit, size
+| eval percent=if(limit=0, 0, round(size / limit * 100, 2))
+| gauge percent 0 20 40 60 80 100</searchString>
+    </chart>
+    <chart id="retention_size_cold_ballast_gauge">
+      <title>Ballast in Cold Path</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">fillerGauge</option>
+      <searchString>state="cold" `fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB, endEpoch
+| bucket _time span=1d
+| dedup _time, path
+| eval title="$index$", state=if(endEpoch > now(), "ballast", "cold")
+| search state="ballast"
+| join index [| `_fb_rest_index_config($host$, $index$)`
+   | fields index homePath.maxDataSizeMB, maxTotalDataSizeMB ]
+| eval limit=if('homePath.maxDataSizeMB' = 0, maxTotalDataSizeMB, 'homePath.maxDataSizeMB')
+| stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
+| fillnull value=0 limit, size
+| eval percent=if(limit=0, 0, round(size / limit * 100, 2))
+| gauge percent 0 20 40 60 80 100</searchString>
+    </chart>
+    <chart id="retention_size_usage_vs_max">
       <title>Usage vs. Configured Maximum Size</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">line</option>
@@ -142,14 +180,16 @@ managed manually.
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
       <searchString>state!="thawed" `_fb_summary_recs($host$, $index$)`
-| fields _time, index, path, state, sizeOnDiskMB
+| fields _time, index, path, state, sizeOnDiskMB, endEpoch
 | bucket _time span=1d
 | dedup _time, path
 | eval state=if(state=="hot" OR state=="warm", "homePath", if(state=="cold", "coldPath", state))
+| eval state=mvappend(state, if(endEpoch > now(), "ballast", null()))
 | join type=left index
  [ | `_fb_rest_index_config($host$, $index$)` ]
 | eval limit=if(state=="homePath", coalesce('homePath.maxDataSizeMB', maxTotalDataSizeMB), if(state=="coldPath", coalesce('coldPath.maxDataSizeMB', maxTotalDataSizeMB), 0))
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage", first(limit) AS Limit by state
+| fields - "Limit*ballast"
       </searchString>
     </chart>
   </row>
