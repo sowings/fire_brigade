@@ -1,12 +1,13 @@
 <form class="formsearch" script="cluster_detail.js">
   <label>Replicated Index Detail</label>
 
-  <searchTemplate>
+  <searchTemplate><![CDATA[
 `fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
-| fields _time, sizeOnDiskMB, path, bucket_type, bucket_primary_guid, guId
 | bucket _time span=1d
+| rex field=bucketId "^(?<idx_name>[^~]+)~(?<bid>\d+)~(?<bucket_primary_guid>[-A-F0-9]+)$"
+| eval bucket_type=if(guId=bucket_primary_guid, "db", "rb")
+| fields _time, sizeOnDiskMB, path, bucket_type, bucket_primary_guid, guId]]>
   </searchTemplate>
 
   <row>
@@ -68,7 +69,7 @@ other members of the cluster.
 <!--      <title>Global Replication Factor</title> -->
       <option name="link.visible">false</option>
       <option name="field">replication_factor</option>
-      <option name="underLabel">Global</option>
+      <option name="underLabel">Global Copies</option>
       <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
     </single>
     <single>
@@ -76,12 +77,15 @@ other members of the cluster.
       <option name="link.visible">false</option>
       <option name="underLabel">This index</option>
       <option name="field">repFactor</option>
-      <searchString>| `_fb_rest_index_config($index$)`</searchString>
+      <searchString>| `_fb_rest_index_config($index$)`
+| replace 0 with "NO" in repFactor
+| replace auto with "YES" in repFactor</searchString>
     </single>
     <single>
       <title>Search Factor for This Index</title>
       <option name="link.visible">false</option>
       <option name="field">search_factor</option>
+      <option name="underLabel">Global Searchable Copies</option>
       <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
     </single>
   </row>
@@ -94,7 +98,7 @@ other members of the cluster.
       <searchPostProcess>`_fb_where_today`
 | search NOT bucket_type="rb"
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
-| stats sum(sizeOnDiskMB) AS indexed
+| stats count, sum(sizeOnDiskMB) AS indexed | fillnull value=0 indexed
 | `_fb_mbytes_pretty(indexed)`
       </searchPostProcess>
     </single>
@@ -130,6 +134,7 @@ other members of the cluster.
 | extract auto=f fb_extract_hot_bucket
 | eval guid=coalesce(bucket_primary_guid, guId)
 | join type=left guid [ | rest /services/server/info | rename splunk_server AS host ]
+| fillnull value="Missing Indexer" host
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by host, path
 | stats sum(sizeOnDiskMB) AS MBytes by host
       </searchPostProcess>
