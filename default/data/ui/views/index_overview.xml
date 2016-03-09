@@ -106,7 +106,7 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
       <searchPostProcess>stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
-  sum(rawSize) AS rawSize
+  sum(eval(if(state!="ballast", rawSize, 0))) AS rawSize
   sum(eval(if(state!="thawed", sizeOnDiskMB, 0))) AS ratedUsage
   sum(eval(if(state="ballast", sizeOnDiskMB, 0))) AS ballast
   first(maxTotalDataSizeMB) AS max_limit
