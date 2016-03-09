@@ -268,4 +268,28 @@ versions seen elsewhere, but are restricted to the selected host.
     </chart>
   </row>
 
+  <row>
+    <chart>
+      <title>Report Acceleration Usage by (Search Head) Host</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">pie</option>
+      <searchString>| rest /services/data/summaries search="type=report_acceleration"
+| fields search_head_guid total_size
+| rename search_head_guid AS guid
+| join type=left guid [| rest /services/server/info splunk_server=* | fields guid, serverName ]
+| eval serverName=coalesce(serverName, guid)
+| fields - guid</searchString>
+    </chart>
+    <chart>
+      <title>Data Model Acceleration Usage by (Search Head) Host</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">pie</option>
+      <searchString>| rest /services/data/summaries search="type=data_model_acceleration"
+| fields search_head_guid total_size
+| rename search_head_guid AS guid
+| join type=left guid [| rest /services/server/info splunk_server=* | fields guid, serverName ]
+| eval serverName=coalesce(serverName, guid)
+| table serverName, total_size</searchString>
+    </chart>
+  </row>
 </form>
