@@ -4,6 +4,7 @@
   <searchTemplate>`fb_data_from_today` `_fb_summary_recs($index$)`
 | bucket _time span=1d
 | eventstats avg(sizeOnDiskMB) AS global_avgBucket
+| eval state=mvappend(state, if(endEpoch > now(), "ballast", null()))
 | stats
   min(startEpoch) AS startEpoch
   max(endEpoch) AS endEpoch
@@ -92,6 +93,7 @@ The chart on the bottom is mostly aimed at environments utilizing <i>Index Repli
       <option name="field">total</option>
       <option name="underLabel">Total Usage</option>
       <searchPostProcess>
+search state!="ballast" |
 stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
 | `_fb_mbytes_pretty(total)`
       </searchPostProcess>
@@ -103,9 +105,10 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
       <title>Index Size and Capacity by Host</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchPostProcess>stats sum(sizeOnDiskMB) AS sizeOnDiskMB
+      <searchPostProcess>stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
   sum(rawSize) AS rawSize
   sum(eval(if(state!="thawed", sizeOnDiskMB, 0))) AS ratedUsage
+  sum(eval(if(state="ballast", sizeOnDiskMB, 0))) AS ballast
   first(maxTotalDataSizeMB) AS max_limit
   first(homePath.maxDataSizeMB) AS home_limit
   first(coldPath.maxDataSizeMB) AS cold_limit
@@ -119,10 +122,12 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
 | `_fb_mbytes_pretty(sizeOnDiskMB)`
 | `_fb_bytes_pretty(rawSize)`
 | `_fb_mbytes_pretty(maxTotalDataSizeMB)`
-| table host, rawSize, comp_ratio, comp_percent, sizeOnDiskMB, percentage, limit
+| `_fb_mbytes_pretty(ballast)`
+| table host, rawSize, comp_ratio, comp_percent, ballast, sizeOnDiskMB, percentage, limit
 | rename
   host AS Host
   sizeOnDiskMB AS "Total Usage"
+  ballast AS "Ballast Usage"
   rawSize AS "Total Raw Usage"
   limit AS "Disk Usage Limit"
   comp_ratio AS "Compression Ratio"
@@ -142,7 +147,7 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
       <title>Total Bucket Count</title>
       <option name="link.visible">false</option>
       <option name="field">buckets</option>
-      <searchPostProcess>stats sum(buckets) AS buckets</searchPostProcess>
+      <searchPostProcess>search state!="ballast" | stats sum(buckets) AS buckets</searchPostProcess>
     </single>
     <single>
       <title>Median Bucket Size</title>
@@ -163,7 +168,8 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
       <title>Index Span By Earliest, Latest</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchPostProcess>stats min(startEpoch) AS startEpoch
+      <searchPostProcess>search state!="ballast" 
+| stats min(startEpoch) AS startEpoch
   max(endEpoch) AS endEpoch
   sum(eventCount) AS eventCount
   sum(buckets) AS buckets
