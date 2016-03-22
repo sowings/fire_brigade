@@ -54,7 +54,7 @@ percentage) appears in a filler gauge titled <em>Ballast in Home Path
 ballast found in the cold path. The time chart showing <em>Usage
 vs. Configured Maximum Size</em> will display usage for the home path, cold
 path, and the limits for each. If ballast is present in either state,
-it will be shown as a time-trend as well.
+it will be shown as a line in the time trend as well.
 </div>
     </html>
   </row>
