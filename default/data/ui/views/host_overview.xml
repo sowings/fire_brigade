@@ -39,7 +39,10 @@ Usage</i>.
 <p/>
 The left-hand table below, titled <em>Indexes by Size and
 Capacity</em>, shows the list of all indexes on the host, with the
-amount of disk space they are using. The "Retention Usage" column
+amount of disk space they are using. The "Ballast" column refers to
+buckets that have time stamps in the future (and therefore may not be
+migrated through the bucket lifecycle normally).
+The "Retention Usage" column
 reflects the amount of disk space in the combination of
 <code>homePath</code> and <code>coldPath</code>. Buckets that are
 "thawed" are not subject to any retention policies, but are included
