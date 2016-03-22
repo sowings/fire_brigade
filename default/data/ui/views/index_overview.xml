@@ -41,7 +41,10 @@ not factor into retention policies.
 <p/>
 The top table, titled <em>Index Size and Capacity by Host</em> presents several quantities per index, in a single-line summary. The columns of data from left to right is intended to flow naturally.
 First, 
-the raw usage is shown, followed by two ways of calculating the compression. The compression factors (both as a ratio, and as a percentage of the total raw size) necessarily link the total raw size with the on-disk usage for the index. The limit of the raw usage is in the final column, with the percentage of capacity as a bridge between current usage and the configured limit.
+the raw usage is shown, followed by two ways of calculating the compression. The compression factors (both as a ratio, and as a percentage of the total raw size) necessarily link the total raw size with the on-disk usage for the index.
+The column titled "Ballast Usage" indicates the amount of space taken
+up by buckets (if any) that have future dates.
+The limit of the raw usage is in the final column, with the percentage of capacity as a bridge between current usage and the configured limit.
 <p/>
 Below the first table are a series of single value panels again showing cumulative values over all hosts. Shown here are the <em>Total Bucket Count</em>, the <em>Median Bucket Size</em> and the <em>Total Event Count</em>. Note that the event count is given as a snapshot, from the accumulated buckets. A more up-to-date value for this can be obtained from the REST endpoint.
 <p/>
