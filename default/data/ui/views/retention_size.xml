@@ -46,6 +46,15 @@ buckets which have been restored from the archive path. These
 <strong>are not</strong> subject to any retention policy, and must be
 managed manually.
 <p />
+The next row of panels are visual representations of various states of
+the data. If there are ballast buckets (buckets with future time
+stamps) within the home path, the amount of that path usage (as a
+percentage) appears in a filler gauge titled <em>Ballast in Home Path
+(Hot + Warm)</em>. To the right is a similar representation of any
+ballast found in the cold path. The time chart showing <em>Usage
+vs. Configured Maximum Size</em> will display usage for the home path, cold
+path, and the limits for each. If ballast is present in either state,
+it will be shown as a time-trend as well.
 </div>
     </html>
   </row>
