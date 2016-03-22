@@ -23,6 +23,17 @@ href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Setaretirementa
 This dashboard is focused on limits based upon the <i>count</i> of
 buckets within the index. Only buckets in the <i>hot</i> and
 <i>warm</i> states can be limited by count.
+<p />
+Within the <em>Warm Buckets</em> panel, three quantities are shown. The first
+is the current count of buckets in this state. The second, labeled "Ballast"
+represents the counts of buckets which have time stamps in the future. These
+buckets may not pass through the bucket lifecyle in a normal way. The third
+value shown within this panel is the current limit, as provided in
+<code>indexes.conf</code>.
+<p />
+The chart below, titled <em>Usage vs. Configured Maximum Count (Hot / Warm
+Only)</em>, shows "Count:" and "Limit:" values over the hot and warm
+states. If there are ballast buckets, a count of these will be shown as well.
 </div>
     </html>
   </row>
