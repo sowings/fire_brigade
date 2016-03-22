@@ -59,6 +59,12 @@ To give administrators an indication of which buckets are the oldest
 in the index, a table of the ten oldest buckets is shown. These
 represent the candidates for archival, when an archival policy
 (whether <em>time-based</em> or <em>size-based</em>) is enacted.
+Any buckets that have events (<em>Earliest Time</em> or <em>Latest
+Time</em>) that are ahead of the curent time, the marker "(FUTURE)"
+will be appended to the vaulues in the <em>Furthest Event Back</em>
+and/or <em>Bucket Age</em> fields. <strong>Note: These
+"(FUTURE)" markers may indicate problems parsing time stamps of
+incoming events.</strong>
 For a <em>time-based</em> policy, buckets will not be frozen until
 their latest event is further back than the
 <code>frozenTimePeriodInSecs</code>, represented on this dashboard as
@@ -66,6 +72,15 @@ the <em>Cutoff Time</em>. For a <em>size-based</em> policy, the oldest
 buckets are culled until the size of the index is once again under the
 limit.
 <p />
+Below the <em>Ten Oldest...</em> table is one titled <em>Ballast
+Buckets in This Group</em>. These are buckets which have a latest
+event (against which the "age" of the bucket is evaluated) that is in
+the future. This means that the bucket in question is likely to be
+skipped (it will not be the "oldest") when selecting which bucket to
+move to satisfy the retention policy. This bucket will then take up
+space that won't be recycled for use by new data. The table also calls
+out the last time that the bucket was written to, to highlight the
+possible disconnect with time stamps of ingested data.
 </div>
     </html>
   </row>
@@ -75,6 +90,9 @@ limit.
       <label>Host</label>
       <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
     </input>
+    <!-- pre-process a macro with a tag for volume: -->
+    <!-- populate the search with volume: in the value, select valid
+	 volumes for host -->
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
       <choice value="*">All indexes</choice>
