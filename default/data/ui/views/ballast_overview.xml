@@ -1,225 +1,128 @@
-<form class="formsearch" script="retention_age.js">
-  <label>Bucket Age vs. Age Limit</label>
+<dashboard>
+  <label>Index "Ballast" Overview</label>
 
-<!-- These search commands, inserted after the bucket call, seem to
-     break the overall search. 
-| extract auto=f fb_extract_bucket_type_time_source
-| search [| rest /services/server/info splunk_server=$host$ | rename guid AS bucket_primary_guid | return bucket_primary_guid ]
--->
-
-  <searchTemplate>
-`fb_data_from_today`
-state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
-| bucket _time span=1d
-| fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id, bucketId
-  </searchTemplate>
+  <search id="ballast_cumulative">
+    <query>
+`fb_data_from_today` `_fb_summary_recs(*)`
+| eval state=case(state="hot", "home", state="warm", "home", 1=1, state)
+|  stats sum(sizeOnDiskMB) AS total, sum(eval(if(endEpoch>now(), sizeOnDiskMB, 0))) AS ballast by state, splunk_server, index 
+| fillnull value=0 ballast | eval live=total-ballast
+    </query>
+  </search>
 
   <row>
     <html>
 <div id="fire_brigade_help">
-The family of views in the Retention menu is aimed at helping
-administrators visualize and thereby tune various retention parameters
-for their indexed data. General information about retention settings
-can be found in the Splunk documentation for <a
-href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Setaretirementandarchivingpolicy">version
-6.0.x here</a>.
+As described in the help for the <a
+href="/app/fire_brigade/bucket_lifecycle">Bucket Lifecycle</a> dashboard,
+indexing buckets typically move through several phases in their life span. The
+mechanisms which work to tranition these buckets do so based upon the age of
+the events in the bucket (as measured by the most recent <em>event
+time</em>). This is true even for size-based retention rules.
 <p />
-The time limit settings to force archival for Splunk data are values
-given in seconds. Human readable forms of the current archival limit
-(known as <code>frozenTimePeriodInSecs</code>) are provided. If the
-value is shown with a plus sign (+), the number to the left of the plus
-sign indicates a number of days. The right-hand panel in the top row
-(titled <em>Cutoff Time</em>) shows the time which is
-<code>frozenTimePeriodInSecs</code> ago. Buckets with their latest
-events <b>before</b> this time are subject to freezing. If the
-selected index is "All Indexes", this row will be empty.
+The concept of index ballast is a bucket or set of buckets that have events
+from the future. Since Splunk is not a time machine, the origin of these
+"future" events typically lies in misconfiguration. Time stamps may be
+incorrectly parsed, or time zones improperly identified. When retention rules
+require that a bucket be moved, these "ballast" buckets won't be selected,
+since they are not the oldest buckets in the collection (unless of course
+<em>all</em> of the buckets in the index have future time stamps). For
+space-based rules, these buckets become more problematic, since they're taking
+up room that might be recycled for use by other (newly arrived) data. The
+impact of these buckets is greater the further into the future their events
+occur.
 <p />
-For the "oldest bucket" panels, 
-the "age" of the bucket is taken to represent the span of time from
-the <i>latest</i> event in the bucket to "now".
-In these panels, the age of the oldest bucket is shown
-in seconds (caculated from the time the dashboard loads), and a
-human-readable form is also provided. On the right, the oldest
-bucket's most recent event (sometimes known as the "latest time") is
-shown. This allows easy comparison to 
-the cutoff time from the panel above. 
-The latest time serves as the
-endpoint of the bucket boundary, and dictates when this bucket would
-be eligible for freezing (archival) with a time-based retention
-policy.
-If the original indexer where the data was indexed has been retired or
-gone missing, the host field will read as <em>Missing Indexer</em>. In
-rows where the <em>Event Count</em> field is zero (0), this represents
-a non-searchable "replica" bucket copy.
-<strong>For the "Oldest Bucket"
-group, thawed buckets are expressly excluded, as they are not governed
-by any retention policy.</strong>
+Another source of "ballast" is buckets in the thawed state. These arise from
+administrative action (deliberately restoring frozen buckets into a searchable
+state) and further, <em>require</em> adminstrative action to remove them once
+they're no longer needed. They do not count against the index's space
+allocation (as far as Splunk is concerned), but they do take up space on the
+partition.
 <p />
-To give administrators an indication of which buckets are the oldest
-in the index, a table of the ten oldest buckets is shown. These
-represent the candidates for archival, when an archival policy
-(whether <em>time-based</em> or <em>size-based</em>) is enacted.
-For a <em>time-based</em> policy, buckets will not be frozen until
-their latest event is further back than the
-<code>frozenTimePeriodInSecs</code>, represented on this dashboard as
-the <em>Cutoff Time</em>. For a <em>size-based</em> policy, the oldest
-buckets are culled until the size of the index is once again under the
-limit.
+This dashboard attempts to call out the amount of disk space occupied by
+ballast buckets of either kind. The Home path (hot and warm states) is shown
+separately from the Cold path. This is for sites that may be making use of
+mixed media for index storage. A separate tally appears for buckets in the
+thawed state, and finally a combined tally across all indexers.
 <p />
+The two charts in the bottom section of the page break out the ballast
+sums. The first, <em>Ballast by Indexer</em>, is divided by splunk_sever
+(indexing host). On the right is a split by index name in the chart titled
+<em>Ballast by Index</em>. Each of these provide drilldown functionality to
+pages that will provide more detail.
 </div>
     </html>
   </row>
 
-  <fieldset>
-    <input type="dropdown" token="host" searchWhenChanged="true">
-      <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
-    </input>
-    <!-- pre-process a macro with a tag for volume: -->
-    <!-- populate the search with volume: in the value, select valid
-	 volumes for host -->
-    <input type="dropdown" token="index" searchWhenChanged="true">
-      <label>Index</label>
-      <choice value="*">All indexes</choice>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
-    </input>
-  </fieldset>
-
-  <row grouping="2,1">
-    <single id="retention_age_freeze_label">
-<!--      <title>Frozen Time Limit Setting (Raw)</title> -->
-      <option name="link.visible">false</option>
-      <option name="underLabel">Seconds</option>
-      <option name="field">frozenTimePeriodInSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "commas")
-      </searchString>
-    </single>
-
-    <single>
-<!--      <title>Frozen Time Limit (Human Readable)</title> -->
-      <option name="link.visible">false</option>
-      <option name="field">strf</option>
-      <option name="underLabel">Human-Readable</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| eval strf=tostring(frozenTimePeriodInSecs, "duration")</searchString>
-    </single>
-
-    <single>
-      <title>Cutoff Time</title>
-      <option name="link.visible">false</option>
-      <option name="field">cutoff</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| eval cutoff=now() - frozenTimePeriodInSecs | convert ctime(cutoff)
-      </searchString>
-    </single>
-  </row>
-
-  <row grouping="2,1">  
-    <single id="retention_age_oldest_label">
-<!--      <title>Oldest Bucket's Age in Seconds</title> -->
-      <option name="link.visible">false</option>
-      <option name="field">age</option>
-      <option name="underLabel">Seconds</option>
-      <searchPostProcess>`_fb_where_today`
-| stats min(endEpoch) AS bucket_lt
-| eval age=tostring(now() - bucket_lt, "commas")
-      </searchPostProcess>
-    </single>
-    <single>
-<!--      <title>Oldest Bucket's Age in Seconds</title> -->
-      <option name="link.visible">false</option>
-      <option name="field">age</option>
-      <option name="underLabel">Human-Readable</option>
-      <searchPostProcess>`_fb_where_today`
-| stats min(endEpoch) AS bucket_lt
-| eval age=tostring(now() - bucket_lt, "duration")
-      </searchPostProcess>
-    </single>
-
-    <single>
-      <title>Oldest Bucket in This Group</title>
-      <option name="link.visible">false</option>
-      <option name="field">bucket_lt</option>
-      <searchPostProcess>`_fb_where_today`
-| stats min(endEpoch) AS bucket_lt | convert ctime(bucket_lt)
-      </searchPostProcess>
-    </single>
-  </row>
-
   <row>
-    <table>
-      <title>Ten Oldest (Neither Thawed nor Hot) Monitored Buckets in This Group</title>
+    <single>
+      <title>Home Path (Hot + Warm) Ballast</title>
       <option name="link.visible">false</option>
-      <option name="drilldown">row</option>
-      <searchPostProcess><![CDATA[`_fb_where_today`
-| stats values(endEpoch) AS bucket_lt,
-    values(startEpoch) AS bucket_et,
-    first(eventCount) AS eventCount,
-    max(sizeOnDiskMB) AS sizeOnDiskMB
-    first(index) AS index
-    first(id) AS id
-    by bucketId
-| sort 10 bucket_lt
-| rex field=bucketId "^[^~]+~[^~]+~(?<guId>[^~]+)$"
-| eval bucket_age=tostring(now() - bucket_lt, "duration")
-| eval max_back=tostring(now() - bucket_et, "duration")
-| convert ctime(bucket_lt)
-| convert ctime(bucket_et)
-| `_fb_mbytes_pretty(sizeOnDiskMB)`
-| join type=left guId [ | rest /services/server/info | fields - id
-    | rename splunk_server AS host,
-        guid AS guId ]
-| fillnull host value="Missing Indexer"
-| table host, index, id, eventCount, sizeOnDiskMB, bucket_et, max_back, bucket_lt, bucket_age
-| rename bucket_lt AS "Latest Time",
-    bucket_et AS "Earliest Time",
-    index AS Index,
-    id AS "Bucket ID",
-    eventCount AS "Event Count",
-    sizeOnDiskMB AS "Bucket Size",
-    host AS "Source Server"
-    bucket_age AS "Bucket Age"
-    max_back AS "Furthest Event Back"]]>
-      </searchPostProcess>
-      <drilldown>
-        <link><![CDATA[
-/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
-	</link>
-      </drilldown>
-    </table>
+      <search base="ballast_cumulative">
+	<query>search state="home" | stats sum(ballast) AS ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+
+    <single>
+      <title>Cold Path Ballast</title>
+      <option name="link.visible">false</option>
+      <option name="field">ballast</option>
+      <search base="ballast_cumulative">
+	<query>search state="cold" | stats count, sum(ballast) AS ballast
+| fillnull value=0 ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+
+    <single>
+      <title>Thawed Data</title>
+      <option name="link.visible">false</option>
+      <search base="ballast_cumulative">
+	<query>search state="thawed" | stats sum(ballast) AS ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+
+    <single>
+      <title>Total Burden</title>
+      <option name="link.visible">false</option>
+      <option name="underLabel">Ballast + Thawed</option>
+      <search base="ballast_cumulative">
+	<query>stats sum(eval(if(state="thawed", total, ballast))) AS ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
   </row>
 
+  <!-- slice and dice -->
   <row>
     <chart>
-      <title>Maximal Span (in Days) in This Group</title>
+      <title>Ballast by Indexer</title>
       <option name="link.visible">false</option>
-      <option name="charting.chart">line</option>
-      <option name="charting.chart.nullValueMode">connect</option>
-      <option name="charting.axisTitleX.text">Time</option>
-      <!-- Plots showing long term trends don't need to worry too much
-           about the @d part; we may only get 29 days for a time-zone
-	   shifted environment, but that's still good enough to show
-	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
-      <searchString>
-state!=hot `_fb_summary_recs($host$, $index$)`
-| bucket _time span=1d
-| fields _time, startEpoch, earliestTime, endEpoch, latestTime, state
-| `_fb_startEpoch_from_earliestTime`
-| `_fb_endEpoch_from_latestTime`
-| eval state=if(state="thawed", "Thawed", "Normal")
-| stats min(startEpoch) AS startEpoch,
-        max(endEpoch) AS endEpoch
-        by _time, state
-| eventstats max(endEpoch) AS abs_latest, min(startEpoch) AS abs_earliest by _time
-| eval bucket_days=round((endEpoch - startEpoch) / 86400, 2)
-| eval outside_days=round((abs_latest - abs_earliest) / 86400, 2)
-| eval bucket_span=if(state="Thawed", outside_days, bucket_days)
-| timechart span=1d first(bucket_span) AS "Bucket Days" by state
-      </searchString>
+      <option name="charting.chart">column</option>
+      <option name="charting.legend.placement">none</option>
+      <search base="ballast_cumulative">
+	<query>stats sum(ballast) AS ballast by splunk_server</query>
+      </search>
+      <drilldown>
+	<link><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]>
+	</link>
+      </drilldown>
+    </chart>
+    <chart>
+      <title>Ballast by Index</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">column</option>
+      <option name="charting.legend.placement">none</option>
+      <search base="ballast_cumulative">
+	<query>stats sum(ballast) AS ballast by index</query>
+      </search>
+      <drilldown>
+	<link><![CDATA[/app/fire_brigade/index_overview?form.index=$click.value$]]>  
+	</link>
+      </drilldown>
     </chart>
   </row>
 
-</form>
+</dashboard>
