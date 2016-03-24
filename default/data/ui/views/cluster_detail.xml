@@ -127,7 +127,7 @@ other members of the cluster.
 
   <row>
     <chart>
-      <title>Source of Indexed Data</title>
+      <title>Indexer of Origin</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
       <searchPostProcess>`_fb_where_today`
