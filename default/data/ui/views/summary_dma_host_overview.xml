@@ -1,0 +1,95 @@
+<form class="formsearch">
+
+  <search id="dma_details">
+    <query><![CDATA[| rest /services/data/models search="acceleration=1"
+| fields eai:acl.app, title, acceleration.earliest_time
+| rename eai:acl.app AS app, title AS model, acceleration.earliest_time AS aet
+| map maxsearches=40 search="| rest /services/admin/summarization/tstats:DM_$$app$$_$$model$$/details | eval model_name=\"$$model$$\" | eval aet=\"$$aet$$\"
+| search splunk_server=$host$
+| rename comment AS \" fields bucket_et, bucket_lt, index, bucket_id, bucket_is_hot, bucket_path, bucket_size, eai:acl.app, model_name, splunk_server, summary_complete, summary_hot_done, summary_path, summary_size, title \" "
+| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
+| join type=left splunk_server, index [| rest /services/data/indexes | fields splunk_server, title, tstatsHomePath, tstatsHomePath_expanded, frozenTimePeriodInSecs | rename title AS index ]
+| rex field=tstatsHomePath "^volume:(?<tstats_volume>[^/\\\\]+)[/\\\\]"]]></query>
+  </search>
+  <search id="dma_overview">
+    <query>| rest /services/data/summaries search="type=data_model_acceleration" splunk_server=$host$
+| join type=left search_head_guid [| rest /services/server/info | rename guid AS search_head_guid | fields splunk_server, search_head_guid ]
+| eval server_name=coalesce(splunk_server, search_head_guid)
+    </query>
+  </search>
+  
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | stats count by orig_host</populatingSearch>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Relative Size of Summary Data by SH</title>
+	<option name="charting.chart">pie</option>
+	<search base="dma_overview">
+	  <query>| stats sum(total_size) by server_name</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Summary Data by SH</title>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+	<search base="dma_overview">
+	  <query>stats sum(total_size), sum(total_bucket_count) AS count by server_name</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+	<title>Usage Per Index / Model for this SH</title>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+	<search base="dma_details">
+	  <query>chart sum(summary_size) AS MBytes OVER model_name by Index</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Retention Times by Affected Index, Model</title>
+	<option name="charting.chart">column</option>
+	<search base="dma_details">
+	  <query>| eval aet_sec=now() - round(relative_time(now(), aet), 0)
+| appendpipe [| stats max(aet_sec) AS model_time by model_name ]
+| eval index=if(isnotnull(model_time), "Model Retention", index), seconds=coalesce(model_time, frozenTimePeriodInSecs)
+| eval days=round(seconds / 86400, 0)
+| chart max(days) OVER model_name BY index</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+	<title>Output</title>
+	<search base="dma_details" />
+      </table>
+    </panel>
+  </row>
+</form>

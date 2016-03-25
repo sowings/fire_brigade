@@ -1,0 +1,164 @@
+<form class="formsearch">
+  <!-- The label here indicates a minimum requirement for either Simple XML
+       options, OR REST API endpoints, OR BOTH -->
+  <label>Data Model Acceleration Summary (6.3+)</label>
+
+  <search id="no_detail">
+    <query>
+| rest /services/admin/summarization/tstats:$dm_full_name$
+    </query>
+  </search>
+  <search id="yes_detail">
+    <query>
+| rest /services/admin/summarization/tstats:$dm_full_name$/details	    
+    </query>
+  </search>
+
+  <fieldset>
+    <input type="dropdown" token="dm_full_name" searchWhenChanged="true">
+      <label>Data Model</label>
+      <fieldForValue>dm_full_name</fieldForValue>
+      <fieldForLabel>app_model_name</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+	<query>| rest /services/data/models | search acceleration=1 | fields title, eai:acl.app | eval app_model_name='eai:acl.app' .  " / " . title | eval dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+        <title>Source Bucket Count</title>
+        <option name="link.visible">false</option>
+        <option name="field">summary.buckets</option>
+        <search base="no_detail">
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Source Data Size</title>
+        <option name="link.visible">false</option>
+        <option name="field">size</option>
+        <search base="no_detail">
+	  <query>rename summary.buckets_size AS size | `_fb_mbytes_pretty(size)`</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Summary Size</title>
+        <option name="link.visible">false</option>
+        <option name="field">size</option>
+        <search base="no_detail">
+	  <query>rename summary.size AS size | `_fb_bytes_pretty(size)`</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Summary Completion (%)</title>
+        <option name="link.visible">false</option>
+        <option name="field">percent</option>
+        <search base="no_detail">
+	  <query>eval percent=round('summary.complete' * 100, 2)</query>
+        </search>
+      </single>
+    </panel>
+
+  </row>
+      
+<!--
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+-->
+
+  <row>
+    <panel>
+      <table>
+	<title>Size Comparison, Summary to Raw</title>
+        <option name="link.visible">false</option>
+<!-- Figure out rendering options, units (bucket size in bytes) -->
+	<search base="yes_detail">
+	  <query>| stats sum(summary_size) AS Summary, sum(bucket_size) AS Raw
+| transpose
+| rename "row 1" AS Size, column AS "Usage Type"
+| eval Size=tostring(Size, "commas")</query>
+	</search>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+	<title>States</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">pie</option>
+	<search base="yes_detail">
+	  <query>| eval state=case(summary_complete=1, "Done", summary_hot_done=1, "Hot Done", bucket_is_hot=1, "Hot (Pending)", 1=1, "Pending")
+| stats count by state</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Summary Usage, Count by Indexer</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+	<search base="yes_detail">
+	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
+| stats count, sum(summary_size) AS summary_size by Indexer]]></query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Summary Usage, Count by Index</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+	<search base="yes_detail">
+	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
+| stats count, sum(summary_size) AS summary_size by Index
+]]></query>
+	</search>
+      </chart>
+    </panel>
+<!--
+    <panel>
+      <table>
+	<title>Paths</title>
+        <option name="link.visible">true</option>
+	<search base="yes_detail">
+	  <query>| fields title, bucket_path, summary_path</query>
+	</search>
+      </table>
+    </panel>
+-->
+  </row>
+</form>
