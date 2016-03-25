@@ -33,8 +33,10 @@
     <view name="retention_ballast" />
   </collection>
   <collection label="Summary Data">
+<!--
     <view name="summary_overview" />
     <divider />
+-->
     <view name="summary_dma_summary_detail" />
     <view name="summary_dma_host_detail" />
     <divider />
