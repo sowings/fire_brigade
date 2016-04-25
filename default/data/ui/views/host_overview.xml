@@ -118,15 +118,11 @@ versions seen elsewhere, but are restricted to the selected host.
 -->
     <single>
       <title>Data Model Acceleration Usage</title>
-      <option name="field">modelBytes</option>
-      <option name="underLabel">Serving this SH</option>
-      <searchString><![CDATA[| rest /servicesNS/-/-/data/models splunk_server=local | search acceleration=1 | fields eai:acl.app, title | rename eai:acl.app AS app title AS model
-| map maxsearches=99 search="
-| rest /servicesNS/-/-/admin/summarization/tstats:DM_$$app$$_$$model$$/details splunk_server=local
-| rex field=title \"^details_(?<Indexer>[^\:]+)\:(?<Index>[^\:]+)\:(?<bid_again>.*)$\"
-| search Indexer=$host$"
-| stats sum(summary_size) AS summary_size
-| `_fb_bytes_pretty(summary_size)`]]>
+      <option name="field">modelUsage</option>
+<!--      <option name="underLabel">Serving this SH</option> -->
+      <searchString><![CDATA[| rest /services/data/summaries search="type=data_model_acceleration" splunk_server=$host$
+| stats sum(total_size) AS modelUsage
+| `_fb_mbytes_pretty(modelUsage)`]]>
       </searchString>
     </single>
   </row>
