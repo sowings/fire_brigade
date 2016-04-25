@@ -20,6 +20,7 @@
       <choice value="cool">Hot -> Warm</choice>
       <choice value="chill">Warm -> Cold</choice>
       <choice value="freeze">Cold -> Frozen</choice>
+      <choice value="minify">Shrink Bucket</choice>
       <choice value="*">All State Transitions</choice>
     </input>
     <input type="time" />

@@ -86,7 +86,6 @@ old buckets.
 | `_fb_figure_idx_name_from_home_or_cold_path`
 | search idx=$index$ bucket_id=$bucket_id$
 | `fb_bucket_transition_pp`
-| sort _time
   </searchTemplate>
 
   <row>
