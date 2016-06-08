@@ -104,6 +104,14 @@ leaving behind only the journaled raw data. This raw data allows the
 bucket to be rebuilt if needed, see the Splunk Documentation <a
 href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/RestoreArchivedData">here</a>
 for more info.
+<p/>
+<h3>Minify</h3>
+This state transition relates to new features provided in the 6.4 release of
+Splunk. This feature, called <a href="docs.splunk.com/Documentation/Splunk/latest/Indexer/Reducetsidxdiskusage">TSIDX reduction</a>, replaces the TSIDX files
+in indexing buckets with "minified" versions that provide space savings in
+exchange for reduced performance. This enables Splunk administrators to make
+better use of their storage for long-term search access. Either	<i>warm</i> or
+<i>cold</i> buckets are eligible to be reduced in this way.
 </div>
     </html>
   </row>
