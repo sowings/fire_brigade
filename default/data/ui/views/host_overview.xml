@@ -63,8 +63,21 @@ is used to store "df" information, the <code>macros.conf</code> of the
 Fire Brigade application will have to be updated to name the
 appropriate index.
 <p/>
-The charts on the bottom of the view are similar to the cumulative
-versions seen elsewhere, but are restricted to the selected host.
+The two charts below the tables (identifiable by having <em>30 days</em> in
+their titles) are similar to the cumulative versions seen elsewhere, but are
+restricted to the selected host. If the indexer is not part of an indexing
+cluster, the <em>Local vs. Replicated Data Over Time (last 30 days)</em> chart
+will indicate that all of the data is "Indexed".
+<p/>
+Hosts running Splunk 6.4 or later will provide additional information in two
+pie charts at the bottom of the page. The left-hand panel is devoted to Report
+Acceleration data (these summary searches trade <i>space</i> for <i>time</i>
+by providing cached results to specially configured searches). The right
+displays information about Data Model Acceleration usage for the indexer. Both
+plots divide their usage out by the search head which implements the summary
+search (or accelerated model). If the search head requesting the summary is a
+search peer to this host, its hostname will be displayed. Else, the server
+GUID will be displayed instead.
 </div>
     </html>
   </row>
