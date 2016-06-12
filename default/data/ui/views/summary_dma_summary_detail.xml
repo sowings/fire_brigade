@@ -57,6 +57,13 @@ percentage representation of the <i>completion</i> of the model's
 acceleration. It shows the percentage of the number of buckets already
 summarized out of the total number matching the model's search.
 <p/>
+On the second row, the three panels break out the usage of the summary
+across the environment. The first panel <em>Summary Usage, Count by
+Indexer</em> can help spot data imbalance by showing which indexers
+are particpating in the model the most. The middle panel, titled
+<em>Summary Usage, Count by Index</em> shows which indexes contain
+data matching the model. Finally, the pie chart indicates the
+<i>summary state</i> of the buckets, by count.
 </div>
     </html>
   </row>
