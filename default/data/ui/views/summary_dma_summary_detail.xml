@@ -113,33 +113,6 @@ summarized out of the total number matching the model's search.
 
   <row>
     <panel>
-      <table>
-	<title>Size Comparison, Summary to Raw</title>
-        <option name="link.visible">false</option>
-<!-- Figure out rendering options, units (bucket size in bytes) -->
-	<search base="yes_detail">
-	  <query>| stats sum(summary_size) AS Summary, sum(bucket_size) AS Raw
-| transpose
-| rename "row 1" AS Size, column AS "Usage Type"
-| eval Size=tostring(Size, "commas")</query>
-	</search>
-      </table>
-    </panel>
-    <panel>
-      <chart>
-	<title>States</title>
-        <option name="link.visible">false</option>
-	<option name="charting.chart">pie</option>
-	<search base="yes_detail">
-	  <query>| eval state=case(summary_complete=1, "Done", summary_hot_done=1, "Hot Done", bucket_is_hot=1, "Hot (Pending)", 1=1, "Pending")
-| stats count by state</query>
-	</search>
-      </chart>
-    </panel>
-  </row>
-
-  <row>
-    <panel>
       <chart>
 	<title>Summary Usage, Count by Indexer</title>
         <option name="link.visible">false</option>
@@ -151,6 +124,8 @@ summarized out of the total number matching the model's search.
         <option name="charting.axisY2.minimumNumber">0</option>
         <option name="charting.axisY2.scale">linear</option>
         <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
 	<search base="yes_detail">
 	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
 | stats count, sum(summary_size) AS summary_size by Indexer]]></query>
@@ -170,6 +145,8 @@ summarized out of the total number matching the model's search.
         <option name="charting.axisY2.minimumNumber">0</option>
         <option name="charting.axisY2.scale">linear</option>
         <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
 	<search base="yes_detail">
 	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
 | stats count, sum(summary_size) AS summary_size by Index
@@ -177,16 +154,17 @@ summarized out of the total number matching the model's search.
 	</search>
       </chart>
     </panel>
-<!--
     <panel>
-      <table>
-	<title>Paths</title>
-        <option name="link.visible">true</option>
+      <chart>
+	<title>States</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">pie</option>
 	<search base="yes_detail">
-	  <query>| fields title, bucket_path, summary_path</query>
+	  <query>| eval state=case(summary_complete=1, "Done", summary_hot_done=1, "Hot Done", bucket_is_hot=1, "Hot (Pending)", 1=1, "Pending")
+| stats count by state</query>
 	</search>
-      </table>
+      </chart>
     </panel>
--->
   </row>
+
 </form>
