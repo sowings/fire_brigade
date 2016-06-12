@@ -29,6 +29,34 @@
   <row>
     <html>
 <div id="fire_brigade_help">
+The data model acceleration feature of Splunk caches data from an
+event-based search to provide faster results for the model's
+data. This view is intended to provide visibility into the size of
+this data and where it is located on disk. <b>Note:</b> Retention of
+data model acceleration data is managed separately, and this usage
+does not impact the retention of the regular indexed data.
+<p/>
+The selector builds up a list of the accelerated models. The label is
+a combination of the app containing the model and the name of the
+model itself. Data model acceleration data is tightly bound to the
+search head on which the model is contained, so this will only produce
+results on search heads where the model is accelerated.
+<p/>
+Shown below in the first row are some summary numbers about the state
+of the model's acceleration. Data model acceleration works in parallel
+with the raw data <i>buckets</i>, and the first quantity shown in this
+row indicates the number of buckets touched (read: containing
+applicable data) by the model. In the second panel, titled <em>Source
+Data Size</em>, the total volume of data stored in the <i>raw</i> data
+buckets counted in the leftmost panel. To the right of center, the
+panel titled <em>Summary Size</em> contains a total of the size of the
+summarized data. Only the relevant fields for the model are saved in
+the summary store, so it's likely that the summary size is
+significantly smaller than the raw size. Finally, on the right, is a
+percentage representation of the <i>completion</i> of the model's
+acceleration. It shows the percentage of the number of buckets already
+summarized out of the total number matching the model's search.
+<p/>
 </div>
     </html>
   </row>
