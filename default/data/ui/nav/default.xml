@@ -28,7 +28,9 @@
     <view name="retention_age" />
     <divider />
     <view name="retention_volume" />
+<!--
     <view name="retention_summary" />
+-->
     <divider />
     <view name="retention_ballast" />
   </collection>
