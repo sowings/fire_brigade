@@ -36,7 +36,7 @@ app_package: build_number
 	@rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README*.txt
 	rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/data/ui/views/summary_overview.xml
 	cp -p README.${APP_NAME}.txt ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README.txt
-	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && tar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf --exclude *.diff --exclude sparklines.xml ${APP_NAME})
+	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && tar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf --exclude *.diff --exclude sparklines.xml --exclude msft_* --exclude hollfelder.xml --exclude dbinspect_samples ${APP_NAME})
 
 change_list:
 	$(eval TAG_HASH := $(shell git rev-list v2.0.3 | head -1))
