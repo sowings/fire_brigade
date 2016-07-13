@@ -1,0 +1,105 @@
+<form>
+  <label>Diag Style</label>
+
+  <fieldset>
+    <input type="dropdown" token="dbinspect_data" searchWhenChanged="true">
+      <label>Select the "dbinspect" lookup</label>
+      <populatingSearch fieldForValue="title" fieldForLabel="title">| rest /servicesNS/-/-/data/lookup-table-files | search eai:acl.app=fire_brigade</populatingSearch>
+    </input>
+    <input type="dropdown" token="rest_indexes_data" searchWhenChanged="true">
+      <label>Select the "indexes" lookup</label>
+      <populatingSearch fieldForValue="title" fieldForLabel="title">| rest /servicesNS/-/-/data/lookup-table-files | search eai:acl.app=fire_brigade</populatingSearch>
+    </input>
+  </fieldset>
+
+
+  <search id="dbinspect_lookup">
+    <query>| inputlookup $dbinspect_data$
+| fillnull value="full" tsidxState
+| eval _time=now(),
+    orig_host=if(isnotnull(host), host, "test_host"),
+    index=if(isnotnull(orig_index), orig_index, "unknown_index")
+</query>
+  </search>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Monitored Indexes by Host</title>
+	<option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+	<option name="charting.chart.stackMode">stacked</option>
+	<option name="charting.axisTitleX.text">Host</option>
+	<option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+	<option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+	<option name="charting.axisTitleY.text">MBytes</option>
+	<option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+	<search base="dbinspect_lookup">
+	  <query>`_fb_where_today`
+	  | chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
+	  </query>
+	</search>
+	<drilldown>
+          <link><![CDATA[
+	  /app/fire_brigade/index_detail?form.host=$click.value$&form.index=$click.name2$]]></link>
+	</drilldown>
+      </chart>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <input type="dropdown" token="host" searchWhenChanged="true">
+        <label>Select the host</label>
+	<fieldForLabel>orig_host</fieldForLabel>
+	<fieldForValue>orig_host</fieldForValue>
+        <search base="dbinspect_lookup">
+	  <query>| stats count by orig_host</query>
+	</search>
+      </input>
+      <table id="host_overview_index_table">
+        <title>Indexes by Size and Capacity</title>
+        <option name="link.visible">false</option>
+        <search base="dbinspect_lookup">
+          <query>`_fb_where_today`
+| stats
+    sum(sizeOnDiskMB) AS diskTotalinMB
+    max(endEpoch) AS endEpoch
+    by index, state
+| join type=left index
+[ | rest /services/data/indexes splunk_server=$host$* count=0
+  | rename title AS index ]
+| `_fb_null_hot_cold_max`
+| stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
+    sum(diskTotalinMB) AS totalUsage
+    first(maxTotalDataSizeMB) AS max_limit
+    first(homePath.maxDataSizeMB) AS home_limit
+    first(coldPath.maxDataSizeMB) AS cold_limit
+    by index
+| rename comment AS "No coalesce because a home / cold limit alone results in max taking over"
+| eval limit=min(home_limit + cold_limit, max_limit)
+| eval percentage=round(ratedUsage * 100 / limit, 1)
+| sort - ratedUsage
+| eventstats max(totalUsage) AS top_total
+| eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval ratedUsage=round(ratedUsage, 2)
+| eval totalUsage=round(totalUsage, 2)
+| eval Ballast=round(Ballast, 2)
+| rename ratedUsage AS "\"Retention\" Usage"
+    totalUsage AS "Total Usage" 
+    rel_size AS "Relative Size"
+    percentage AS "% of Capacity"
+    index AS Index
+    | table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+	</query>
+      </search>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+
+      </table>
+    </panel>
+  </row>
+</form>
