@@ -52,7 +52,10 @@
   <collection label="Troubleshooting">
     <view name="index_configs" />
     <view name="volume_configs" />
+<!--
     <view name="qtine_overview" />
+-->
+    
   </collection>
   <view name="search" />
 </nav>
