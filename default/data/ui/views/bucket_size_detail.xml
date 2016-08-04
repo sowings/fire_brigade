@@ -1,11 +1,13 @@
 <form script="bucket_size_detail.js">
   <label>Bucket Size Detail</label>
 
-  <searchTemplate>
+  <search id="size_detail">
+    <query>
 `fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | fields id, sizeOnDiskMB, path, index
-  </searchTemplate>
+    </query>
+  </search>
 
   <row>
     <html>
@@ -31,11 +33,21 @@ value labeled "Applied".
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
@@ -44,16 +56,20 @@ value labeled "Applied".
       <title>Bucket Count for This Index</title>
       <option name="link.visible">false</option>
       <option name="field">count</option>
-      <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path | stats count</searchPostProcess>
+      <search base="size_detail">
+	<query>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path | stats count</query>
+      </search>
     </single>
     <single>
       <title>Average Bucket Size</title>
       <option name="link.visible">false</option>
       <option name="field">average</option>
-      <searchPostProcess>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
+      <search base="size_detail">
+	<query>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
 | stats avg(sizeOnDiskMB) AS average
 | `_fb_mbytes_pretty(average)`
-      </searchPostProcess>
+        </query>
+      </search>
     </single>
 
     <single id="bucket_size_detail_max_size_label">
@@ -61,21 +77,24 @@ value labeled "Applied".
       <option name="link.visible">false</option>
       <option name="field">maxDataSize</option>
       <option name="underLabel">Setting</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <search base="rest_bucket_config">
+      </search>
     </single>
     <single>
 <!--      <title>Applied Max Bucket Size</title> -->
       <option name="link.visible">false</option>
       <option name="field">bucket_max</option>
       <option name="underLabel">Applied</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
+      <search id="rest_bucket_config">
+	<query>| `_fb_rest_index_config($host$, $index$)`
 | join type=left splunk_server
    [ | rest /services/server/info splunk_server=$host$ ]
 | eval bucket_max=if(maxDataSize=="auto", 750,
     if(maxDataSize=="auto_high_volume",
         case(cpu_arch=="x86_64", 10000, cpu_arch=="x64", 10000, 1==1, 1000), maxDataSize))
 | `_fb_mbytes_pretty(bucket_max)`
-</searchString>
+        </query>
+      </search>
     </single>
   </row>
 
@@ -89,7 +108,8 @@ value labeled "Applied".
 
       <option name="charting.seriesColors">[0x6BB7C8,0x999999,0xD85E3D]</option>
 
-      <searchPostProcess>
+      <search base="size_detail">
+	<query>
 extract auto=f fb_extract_bucket_type_time_source
 | search NOT bucket_type="rb"
 | eventstats avg(sizeOnDiskMB) AS average
@@ -102,7 +122,8 @@ extract auto=f fb_extract_bucket_type_time_source
 | table id, sizeOnDiskMB, average, bucket_max
 | rename sizeOnDiskMB AS "Bucket Size", average AS "Average Size",
 bucket_max AS "Size Limit"
-      </searchPostProcess>
+        </query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/lolrus?form.host=$form.host$&form.index=$form.index$&form.bucket_id=$click.value$]]>
