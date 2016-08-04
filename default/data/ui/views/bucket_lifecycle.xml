@@ -1,17 +1,27 @@
 <form class="formsearch">
   <label>Bucket Lifecycle</label>
 
-  <searchTemplate>`fb_bucket_transitions($host$, $stage$)` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</searchTemplate>
+  <search id="lifecycle_events">
+    <query>`fb_bucket_transitions($host$, $stage$)` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</query>
+  </search>
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
       <choice value="*">All indexes</choice>
       <default>*</default>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
     <input type="dropdown" token="stage" searchWhenChanged="true">
       <label>State Transition</label>
@@ -121,6 +131,8 @@ better use of their storage for long-term search access. Either	<i>warm</i> or
       <title>Summary of Bucket Events</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
+      <search base="lifecycle_events">
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
@@ -134,6 +146,8 @@ better use of their storage for long-term search access. Either	<i>warm</i> or
       <title>Matching Raw Events</title>
       <option name="link.visible">false</option>
       <option name="type">raw</option>
+      <search base="lifecycle_events">
+      </search>
     </event>
   </row>
 
