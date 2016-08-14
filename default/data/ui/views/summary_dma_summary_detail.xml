@@ -29,6 +29,41 @@
   <row>
     <html>
 <div id="fire_brigade_help">
+The data model acceleration feature of Splunk caches data from an
+event-based search to provide faster results for the model's
+data. This view is intended to provide visibility into the size of
+this data and where it is located on disk. <b>Note:</b> Retention of
+data model acceleration data is managed separately, and this usage
+does not impact the retention of the regular indexed data.
+<p/>
+The selector builds up a list of the accelerated models. The label is
+a combination of the app containing the model and the name of the
+model itself. Data model acceleration data is tightly bound to the
+search head on which the model is contained, so this will only produce
+results on search heads where the model is accelerated.
+<p/>
+Shown below in the first row are some summary numbers about the state
+of the model's acceleration. Data model acceleration works in parallel
+with the raw data <i>buckets</i>, and the first quantity shown in this
+row indicates the number of buckets touched (read: containing
+applicable data) by the model. In the second panel, titled <em>Source
+Data Size</em>, the total volume of data stored in the <i>raw</i> data
+buckets counted in the leftmost panel. To the right of center, the
+panel titled <em>Summary Size</em> contains a total of the size of the
+summarized data. Only the relevant fields for the model are saved in
+the summary store, so it's likely that the summary size is
+significantly smaller than the raw size. Finally, on the right, is a
+percentage representation of the <i>completion</i> of the model's
+acceleration. It shows the percentage of the number of buckets already
+summarized out of the total number matching the model's search.
+<p/>
+On the second row, the three panels break out the usage of the summary
+across the environment. The first panel <em>Summary Usage, Count by
+Indexer</em> can help spot data imbalance by showing which indexers
+are particpating in the model the most. The middle panel, titled
+<em>Summary Usage, Count by Index</em> shows which indexes contain
+data matching the model. Finally, the pie chart indicates the
+<i>summary state</i> of the buckets, by count.
 </div>
     </html>
   </row>
@@ -85,33 +120,6 @@
 
   <row>
     <panel>
-      <table>
-	<title>Size Comparison, Summary to Raw</title>
-        <option name="link.visible">false</option>
-<!-- Figure out rendering options, units (bucket size in bytes) -->
-	<search base="yes_detail">
-	  <query>| stats sum(summary_size) AS Summary, sum(bucket_size) AS Raw
-| transpose
-| rename "row 1" AS Size, column AS "Usage Type"
-| eval Size=tostring(Size, "commas")</query>
-	</search>
-      </table>
-    </panel>
-    <panel>
-      <chart>
-	<title>States</title>
-        <option name="link.visible">false</option>
-	<option name="charting.chart">pie</option>
-	<search base="yes_detail">
-	  <query>| eval state=case(summary_complete=1, "Done", summary_hot_done=1, "Hot Done", bucket_is_hot=1, "Hot (Pending)", 1=1, "Pending")
-| stats count by state</query>
-	</search>
-      </chart>
-    </panel>
-  </row>
-
-  <row>
-    <panel>
       <chart>
 	<title>Summary Usage, Count by Indexer</title>
         <option name="link.visible">false</option>
@@ -123,6 +131,8 @@
         <option name="charting.axisY2.minimumNumber">0</option>
         <option name="charting.axisY2.scale">linear</option>
         <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
 	<search base="yes_detail">
 	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
 | stats count, sum(summary_size) AS summary_size by Indexer]]></query>
@@ -142,6 +152,8 @@
         <option name="charting.axisY2.minimumNumber">0</option>
         <option name="charting.axisY2.scale">linear</option>
         <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
 	<search base="yes_detail">
 	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
 | stats count, sum(summary_size) AS summary_size by Index
@@ -149,16 +161,17 @@
 	</search>
       </chart>
     </panel>
-<!--
     <panel>
-      <table>
-	<title>Paths</title>
-        <option name="link.visible">true</option>
+      <chart>
+	<title>States</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">pie</option>
 	<search base="yes_detail">
-	  <query>| fields title, bucket_path, summary_path</query>
+	  <query>| eval state=case(summary_complete=1, "Done", summary_hot_done=1, "Hot Done", bucket_is_hot=1, "Hot (Pending)", 1=1, "Pending")
+| stats count by state</query>
 	</search>
-      </table>
+      </chart>
     </panel>
--->
   </row>
+
 </form>

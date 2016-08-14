@@ -6,7 +6,7 @@
       <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
-      <searchString>| stats count | eval label="Current State"</searchString>
+      <searchString>| makeresults | eval label="Current State"</searchString>
       <drilldown>
         <set token="current">yes</set>
         <unset token="time_based"/>
@@ -18,7 +18,7 @@
       <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
-      <searchString>| stats count | eval label="Time-Based"</searchString>
+      <searchString>| makeresults | eval label="Time-Based"</searchString>
       <drilldown>
         <unset token="current"/>
         <set token="time_based">yes</set>
@@ -30,7 +30,7 @@
       <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
-      <searchString>| stats count | eval label="Size-Based"</searchString>
+      <searchString>| makeresults | eval label="Size-Based"</searchString>
       <drilldown>
         <unset token="current"/>
         <unset token="time_based"/>
@@ -42,7 +42,7 @@
       <option name="link.visible">false</option>
       <option name="field">label</option>
       <option name="underLabel">click here</option>
-      <searchString>| stats count | eval label="Count-Based"</searchString>
+      <searchString>| makeresults | eval label="Count-Based"</searchString>
       <drilldown>
         <unset token="current"/>
         <unset token="time_based"/>

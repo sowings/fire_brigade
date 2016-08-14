@@ -1,6 +1,6 @@
 ################################################################################
 #                                                                              #
-#		      	 Fire Brigade app 2.0                                  #
+#		      	 Fire Brigade app 2.1                                  #
 #	   A Splunk app to provide insight into index state                    #
 #                                                                              #
 ################################################################################
@@ -21,6 +21,30 @@ TA should be installed on all indexing nodes, and *not* on the search head.
 The TA (and a saved search within the full app) collects data using the
 dbinspect search command. This detail of the constituent buckets in the index
 is used to drive several visualizations about the state of the index.
+
+
+				 Installation
+
+This app provides the display and visualization functionalty, and, as such, it
+should be installed on nodes acting in the search head role. Distributed
+environments with multiple search heads accessing the same indexer pool can
+install the Fire Brigade app on any of the search heads. The TA (for data
+collection) would only need to be installed once per indexer.
+
+
+
+				Configuration
+
+This version of the app features "host group" functionality, allowing
+administrators to subdivide their indexer pool into smaller groups (e.g. per
+data center) to allow for easier management. The navigation menu shows the
+views that are broken out into host group versions. The hosts that make up the
+groups are defined within a lookup table. This definition goes by the symbolic
+name of "fb_host_groups", backed by a filename of "fb_host_groups.csv". The
+fields in the lookup are "orig_host" (to match the summary-indexed data from
+the TA), and host_group, the label which will appear in the dropdown
+menus. This list can be edited with the lookup editor app (link below) or by
+a standard search piped to "outputlookup".
 
 
 				Compatibility

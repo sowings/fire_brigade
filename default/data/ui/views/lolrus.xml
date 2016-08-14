@@ -66,14 +66,17 @@ old buckets.
 | extract auto=f fb_extract_hot_bucket
 | search bucket_type!="rb"
 | bucket _time span=1d
+| fillnull tsidxState value="full"
 | stats max(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot,
-    max(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm,
-    max(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold,
+     max(eval(if(state="warm" AND tsidxState="full", sizeOnDiskMB, 0))) AS warm,
+     max(eval(if(state="warm" AND tsidxState="mini", sizeOnDiskMB, 0))) AS warm_minified,
+     max(eval(if(state="cold" AND tsidxState="full", sizeOnDiskMB, 0))) AS cold,
+     max(eval(if(state="cold" AND tsidxState="mini", sizeOnDiskMB, 0))) AS cold_minified,
     max(eval(if(state="thawed", sizeOnDiskMB, 0))) AS thawed,
     by _time
       </searchString>
 
-      <option name="charting.seriesColors">[0xA04558,0xE0A93B,0x5479AF,0x6B8930]</option>
+      <option name="charting.seriesColors">[0xA04558,0xC07749,0xE0A93B,0x6B8930,0x5479AF,0xB000B0]</option>
 
     </chart>
   </row>
@@ -82,11 +85,10 @@ old buckets.
   <!-- This will drive the table and the event set -->
   <searchTemplate>
 `fb_bucket_transitions($host$, *)`
-| fields + timestamped, bucket_parent, bucket, bucket_id, idx, from, isinit, tag::eventtype, now, latest, frozenTimePeriodInSecs
+| `_fb_bucket_lifecycle_required_fields`
 | `_fb_figure_idx_name_from_home_or_cold_path`
 | search idx=$index$ bucket_id=$bucket_id$
 | `fb_bucket_transition_pp`
-| sort _time
   </searchTemplate>
 
   <row>

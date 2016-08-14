@@ -28,7 +28,9 @@
     <view name="retention_age" />
     <divider />
     <view name="retention_volume" />
+<!--
     <view name="retention_summary" />
+-->
     <divider />
     <view name="retention_ballast" />
   </collection>
@@ -39,8 +41,10 @@
 -->
     <view name="summary_dma_summary_detail" />
     <view name="summary_dma_host_detail" />
+<!--
     <divider />
     <view name="retention_summary" />
+-->
   </collection>
   <collection label="Log Activity">
     <view name="bucket_lifecycle" />
@@ -48,7 +52,10 @@
   <collection label="Troubleshooting">
     <view name="index_configs" />
     <view name="volume_configs" />
+<!--
     <view name="qtine_overview" />
+-->
+    
   </collection>
   <view name="search" />
 </nav>

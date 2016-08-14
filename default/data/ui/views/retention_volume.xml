@@ -15,12 +15,15 @@
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
 state!="thawed" `_fb_summary_recs_host($host$)`
 | bucket span=1d _time
+| rex field=path mode=sed "s/\\\\/\\//g"
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
 | eval bookkeeping="$volume_title$"
 | join type=left bookkeeping
 [ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$host$*
   | fields title, path, maxVolumeDataSizeMB
-  | rename title AS bookkeeping, path AS wanted_path]
+  | rename title AS bookkeeping, path AS wanted_path
+  | rex field=wanted_path mode=sed "s/\\\\/\\//g" 
+  | replace "$SPLUNK_DB" with [ | rest /services/server/settings splunk_server=$host$* | return $SPLUNK_DB ] in wanted_path]
 | rename comment AS "Set state to null for rows we don't want, stats will ignore."
 | eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
 | stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
@@ -47,23 +50,50 @@ state!="thawed" `_fb_summary_recs_host($host$)`
   <row>
     <html>
 <div id="fire_brigade_help">
-A <i>volume</i> definition in Splunk is used to set a cap on the total
-amount of disk space used by several distinct indexes. Rather than
-being a per-index cutoff, it represents a restriction which spans
-several indexes at once. Think of it as a "per-partition" limit.
+A <i>volume</i> definition in Splunk is used to set a cap on the total amount
+of disk space used by several grouped indexes. Rather than being a per-index
+cutoff, it represents a restriction which spans several indexes at once. It's
+common to think of it as a "per-partition" limit, but it can group any number
+of indexes together.
 <p/>
 The dashboard presented here aims to demonstrate how much of a
 volume's defined space is being used. In order to determine whether an
-index lives within a volume, the <code>indexes.conf</code> <em>on the system
-running the search</em> is examined for <code>volume:</code> tags. If
+index lives within a volume, the <code>indexes.conf</code> 
+is examined for <code>volume:</code> tags. If
 any are found, the list of indexes is examined for any which are using
 the same disk path. The usage of the indexes found are then totted up
-and displayed in the table below.
+and displayed in the table titled <em>Indexes Utilizing This Volume, by Data
+State</em>.
 <p/>
-<b>Note:</b> Because it is the <code>indexes.conf</code> of the local
-system which is examined for any <code>volume:</code> space limit
-specifications, this might result in a blank value for the
-"Volume-Wide Retention Limit" panel.
+The single value panels across the top of the page show some quick metrics
+about the volume and the indexes contained therein. In the leftmost panel, the
+value tagged as <em>Disk Space Limits</em> (with the tag
+<code>maxVolumeDataSizeMB</code> beneath) is the configured maximum limit for
+the tagged volume. To the right of that panel (tagged as <em>Filesystem</em>),
+is shown the filesystem limit for the partition containing the volume. The
+center panel in the top row shows the combined size of the indexes contained
+within the volume. Note that if the <i>volume</i> limit has been breached, the
+oldest data from any of the contained indexes will be expelled
+<em>regardless</em> of whether or not that index's own limit has been
+exceeded. The rightmost panel shows two quantities: the number of indexes
+participating in that volume, and the amount of space those are currently
+using (combined).
+<p/>
+The table on the left-hand side of the second row, titled <em>Indexes
+Utilizing This Volume, by Data State</em> lays out the usage of the indexes
+participating by volume. Having the data sizes broken out by state can
+illustrate situations where a shared volume finds its usage. Naturally,
+installations where the <code>homePath</code> and <code>coldPath</code>
+utilize separate volumes, can expect a lot of zeroes for the opposite data
+state (e.g. home data in the coldPath). The pie chart will show the relative
+usage of the participating volumes. In addition, it has a slice called
+"AVAILABLE" which illustrates the amount of space remaining (free) in the
+total volume allocation.
+<p/>
+The time-trend plots in the bottom row break out the index usage trend over
+the past thirty days. On the left, the plot is broken out by index. On the
+right, the index usage is cumulative, and plotted against the size limit of
+the volume.
 </div>
     </html>
   </row>
@@ -180,7 +210,8 @@ state!="thawed" `_fb_summary_recs_host($host$)`
 | join type=left bookkeeping
 [ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$host$*
   | fields title, path, maxVolumeDataSizeMB
-  | rename title AS bookkeeping, path AS wanted_path]
+  | rename title AS bookkeeping, path AS wanted_path
+  | replace "$SPLUNK_DB" with [ | rest /services/server/settings splunk_server=$host$* | return $SPLUNK_DB ] in wanted_path]
 | rename comment AS "Set state to null for rows we don't want, stats will ignore."
 | eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
 | stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
@@ -218,7 +249,8 @@ state!="thawed" `_fb_summary_recs_host($host$)`
 | join type=left bookkeeping
 [ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$host$*
   | fields title, path, maxVolumeDataSizeMB
-  | rename title AS bookkeeping, path AS wanted_path]
+  | rename title AS bookkeeping, path AS wanted_path
+  | replace "$SPLUNK_DB" with [ | rest /services/server/settings splunk_server=so-splunky.local* | return $SPLUNK_DB ] in wanted_path]
 | rename comment AS "Set state to null for rows we don't want, stats will ignore."
 | eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
 | stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
