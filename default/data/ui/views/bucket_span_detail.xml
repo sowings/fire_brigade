@@ -1,15 +1,17 @@
 <form script="bucket_span_detail.js">
   <label>Bucket Span Detail</label>
 
-  <searchTemplate>
-`fb_data_from_today`
-`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
-| search NOT bucket_type="rb"
-| dedup path
-| fields id, eventCount, startEpoch, endEpoch, bucket_et, bucket_lt
-| eval bucket_span=endEpoch - startEpoch
-  </searchTemplate>
+  <search id="summary_bucket_detail">
+    <query>
+      `fb_data_from_today`
+      `_fb_summary_recs($host$, $index$)`
+      | extract auto=f fb_extract_bucket_type_time_source
+      | search NOT bucket_type="rb"
+      | dedup path
+      | fields id, eventCount, startEpoch, endEpoch, bucket_et, bucket_lt
+      | eval bucket_span=endEpoch - startEpoch
+    </query>
+  </search>
 
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
@@ -59,7 +61,9 @@ More information about index configuration can be found <a href="http://docs.spl
       <title>Local Bucket Count</title>
       <option name="link.visible">false</option>
       <option name="field">count</option>
-      <searchPostProcess>stats count</searchPostProcess>
+      <search base="summary_bucket_detail">
+	<query>stats count</query>
+      </search>
     </single>
 
     <single id="bucket_span_detail_avg_span_label">
@@ -67,19 +71,23 @@ More information about index configuration can be found <a href="http://docs.spl
       <option name="link.visible">false</option>
       <option name="field">average</option>
       <option name="underLabel">seconds</option>
-      <searchPostProcess>
-| stats avg(bucket_span) AS average | eval average=round(average, 0)
-      </searchPostProcess>
+      <search base="summary_bucket_detail">
+	<query>
+	  | stats avg(bucket_span) AS average | eval average=round(average, 0)
+	</query>
+      </search>
     </single>
     <single>
 <!--      <title>Average Local Bucket Span (Human-Readable)</title> -->
       <option name="link.visible">false</option>
       <option name="field">average</option>
       <option name="underLabel">Human-Readable</option>
-      <searchPostProcess>
-| stats avg(bucket_span) AS average
-| eval average=tostring(round(average, 0), "duration")
-      </searchPostProcess>
+      <search base="summary_bucket_detail">
+	<query>
+	  | stats avg(bucket_span) AS average
+	  | eval average=tostring(round(average, 0), "duration")
+	</query>
+      </search>
     </single>
 
     <single id="bucket_span_detail_hot_limits_label">
@@ -87,14 +95,17 @@ More information about index configuration can be found <a href="http://docs.spl
       <option name="link.visible">false</option>
       <option name="field">maxHotSpanSecs</option>
       <option name="underLabel">maxHotSpanSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <search id="rest_index_config">
+	<query>| `_fb_rest_index_config($host$, $index$)`</query>
+      </search>
     </single>
     <single>
 <!--      <title>Configured Hot Idle Limit</title> -->
       <option name="link.visible">false</option>
       <option name="field">maxHotIdleSecs</option>
       <option name="underLabel">maxHotIdleSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <search base="rest_index_config">
+      </search>
     </single>
   </row>
 
@@ -106,18 +117,22 @@ More information about index configuration can be found <a href="http://docs.spl
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">Hours</option>
       <option name="charting.legend.placement">none</option>
-      <searchPostProcess>sort 0 id
+      <search base="summary_bucket_detail">
+	<query>sort 0 id
 | rename comment AS "This was in seconds, convert to hours for display"
 | eval bucket_span=bucket_span / 3600 
 | chart max(bucket_span) by id
-      </searchPostProcess>
+	</query>
+      </search>
     </chart>
   </row>
 
  <row>
       <chart>
         <title>Bucket Event Count vs. Time Span</title>
-        <searchPostProcess>sort 0 id | table id, eventCount, bucket_span</searchPostProcess>
+        <search base="summary_bucket_detail">
+	  <query>sort 0 id | table id, eventCount, bucket_span</query>
+	</search>
         <option name="charting.chart">scatter</option>
         <option name="charting.chart.nullValueMode">gaps</option>
         <option name="charting.axisTitleX.text">Events</option>
