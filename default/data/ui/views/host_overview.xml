@@ -1,7 +1,8 @@
 <form class="formsearch" script="host_overview.js,host_overview_table_bars.js" stylesheet="host_overview_table_bars.css">
   <label>Indexer Host Overview</label>
 
-  <searchTemplate>
+  <search id="host_overview_summary">
+    <query>
 `fb_data_from_today` `_fb_summary_recs($host$, "*")`
 | bucket _time span=1d
 | extract auto=f fb_extract_bucket_type_time_source
@@ -9,13 +10,35 @@
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB
    max(endEpoch) AS endEpoch
    by _time, state, index, bucket_type, path
-  </searchTemplate>
+    </query>
+  </search>
 
+  <search id="host_overview_time_trend">
+    <earliest>-30d@d</earliest>
+    <latest>now</latest>
+    <query>`_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| eval bucket_type=if(bid_guid!=guId, "Replicated", "Indexed")
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type, index
+    </query>
+  </search>
+
+  <search id="rest_summary_data">
+    <query>| rest /services/data/summaries splunk_server=$host$
+| fields type search_head_guid total_size
+| join type=left search_head_guid [| rest /services/server/info | fields guid, serverName | rename guid AS search_head_guid ]
+| eval serverName=coalesce(serverName, search_head_guid)
+    </query>
+  </search>
 
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
   </fieldset>
 
@@ -90,39 +113,47 @@ GUID will be displayed instead.
 <!--      <title>Usage Affected by Retention Policies</title> -->
       <option name="field">homeUsage</option>
       <option name="underLabel">Home Path</option>
-      <searchPostProcess>`_fb_where_today` AND (state="hot" OR state="warm")
+      <search base="host_overview_summary">
+	<query>`_fb_where_today` AND (state="hot" OR state="warm")
 | dedup path | stats sum(sizeOnDiskMB) AS homeUsage
 | `_fb_mbytes_pretty(homeUsage)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
       <option name="link.visible">false</option>
       <option name="field">coldUsage</option>
       <option name="underLabel">Cold Path</option>
-      <searchPostProcess>`_fb_where_today` AND (state="cold")
+      <search base="host_overview_summary">
+	<query>`_fb_where_today` AND (state="cold")
 | stats count, sum(sizeOnDiskMB) AS coldUsage | fillnull value=0 coldUsage
 | `_fb_mbytes_pretty(coldUsage)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
       <title>Thawed Path Usage</title>
       <option name="link.visible">false</option>
       <option name="field">thawedUsage</option>
-      <searchPostProcess>`_fb_where_today` AND (state="thawed")
+      <search base="host_overview_summary">
+	<query>`_fb_where_today` AND (state="thawed")
 | dedup path
 | stats count, sum(sizeOnDiskMB) AS thawedUsage | fillnull value=0 thawedUsage
 | `_fb_mbytes_pretty(thawedUsage)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
       <title>Report Acceleration Usage</title>
       <option name="link.visible">false</option>
       <option name="field">RAbytes</option>
-      <searchString>| rest /services/admin/summarization splunk_server=$host$
-| stats count, sum(summary.size) AS RAbytes
+      <search base="rest_summary_data">
+	<query>search type="report_acceleration"
+| stats count, sum(total_size) AS RAbytes
 | fillnull value=0 RAbytes
 | `_fb_bytes_pretty(RAbytes)`
-      </searchString>
+	</query>
+      </search>
     </single>
 <!-- Punt on this; the map command won't run if there are no matching
      models. So while we could run this search to get data, in most
@@ -133,10 +164,12 @@ GUID will be displayed instead.
       <title>Data Model Acceleration Usage</title>
       <option name="field">modelUsage</option>
 <!--      <option name="underLabel">Serving this SH</option> -->
-      <searchString><![CDATA[| rest /services/data/summaries search="type=data_model_acceleration" splunk_server=$host$
+      <search base="rest_summary_data">
+        <query>search type="data_model_acceleration"
 | stats sum(total_size) AS modelUsage
-| `_fb_mbytes_pretty(modelUsage)`]]>
-      </searchString>
+| `_fb_mbytes_pretty(modelUsage)`
+	</query>
+      </search>
     </single>
   </row>
 
@@ -144,7 +177,8 @@ GUID will be displayed instead.
     <table id="host_overview_index_table">
       <title>Indexes by Size and Capacity</title>
       <option name="link.visible">false</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="host_overview_summary">
+	<query>`_fb_where_today`
 | stats
     sum(sizeOnDiskMB) AS diskTotalinMB
     max(endEpoch) AS endEpoch
@@ -175,7 +209,8 @@ GUID will be displayed instead.
     percentage AS "% of Capacity"
     index AS Index
 | table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
-      </searchPostProcess>
+	</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
@@ -186,20 +221,9 @@ GUID will be displayed instead.
     <table id="host_overview_disk_table">
       <title>Disk Usage Information</title>
       <option name="link.visible">false</option>
-<!-- This version of the search is for Splunk_TA_nix 5.0 -->
-<!-- | eval Size=TotalMBytes | eval Avail=FreeMBytes -->
-
-<!-- Keep this around for users who might not yet have 6.1+ -->
-<!--
-      <searchString>index=`os_index` sourcetype="df" host=$host$ | head 15
-| eventstats max(_time) AS latest | where _time=latest
-| eval Size=TotalMBytes | eval Avail=FreeMBytes
-| `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
-| table MountedOn, Size, Avail, UsePct
-| sort MountedOn
-      </searchString>
--->
-      <searchString>| rest /services/server/status/partitions-space splunk_server=$host$*
+      <search>
+	<query>
+| rest /services/server/status/partitions-space splunk_server=$host$*
 | fields mount_point, available, capacity
 | eval UsePct=round((capacity - available) * 100 / capacity, 1)
 | rename capacity AS Size, available AS Avail
@@ -207,7 +231,8 @@ GUID will be displayed instead.
 | rename mount_point AS MountedOn
 | table MountedOn, Size, Avail, UsePct
 | sort MountedOn
-      </searchString>
+	</query>
+      </search>
     </table>
 
   </row>
@@ -228,19 +253,11 @@ GUID will be displayed instead.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
       <!-- Maybe something like this
 	   | eventstats max(rawSize) AS largestRaw by bucketId -->
-      <searchString>`_fb_summary_recs($host$, "*")`
-| bucket _time span=1d
-| extract auto=f fb_extract_bucket_type_time_source
-| extract auto=f fb_extract_hot_bucket
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, state, index, bucket_type, path
-| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type
-| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
-      </searchString>
+      <search base="host_overview_time_trend">
+	<query>timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/index_detail?form.host=$form.host$&form.index=$click.name2$]]></link>
@@ -265,14 +282,11 @@ GUID will be displayed instead.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
-      <searchString>
-`_fb_summary_recs($host$, "*")`
-| bucket _time span=1d
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index
+      <search base="host_overview_time_trend">
+	<query>
 | timechart sum(sizeOnDiskMB) AS MBytes by index
-</searchString>
+        </query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/cluster_detail?form.host=$form.host$]]></link>
@@ -285,23 +299,19 @@ GUID will be displayed instead.
       <title>Report Acceleration Usage by (Search Head) Host</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
-      <searchString>| rest /services/data/summaries splunk_server=$host$ search="type=report_acceleration"
-| fields search_head_guid total_size
-| rename search_head_guid AS guid
-| join type=left guid [| rest /services/server/info splunk_server=* | fields guid, serverName ]
-| eval serverName=coalesce(serverName, guid)
-| stats sum(total_size) AS total_size by serverName</searchString>
+      <search base="rest_summary_data">
+	<query>search type="report_acceleration"
+| stats sum(total_size) AS total_size by serverName</query>
+      </search>
     </chart>
     <chart>
       <title>Data Model Acceleration Usage by (Search Head) Host</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
-      <searchString>| rest /services/data/summaries splunk_server=$host$ search="type=data_model_acceleration"
-| fields search_head_guid total_size
-| rename search_head_guid AS guid
-| join type=left guid [| rest /services/server/info splunk_server=* | fields guid, serverName ]
-| eval serverName=coalesce(serverName, guid)
-| stats sum(total_size) AS total_size by serverName</searchString>
+      <search base="rest_summary_data">
+	<query>search type="data_model_acceleration"
+| stats sum(total_size) AS total_size by serverName</query>
+      </search>
     </chart>
   </row>
 </form>
