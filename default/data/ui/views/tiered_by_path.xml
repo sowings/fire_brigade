@@ -4,7 +4,11 @@
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
   </fieldset>
 
@@ -32,7 +36,8 @@ desired SLA.
     <table>
       <title>Indexes by Time Span and Path</title>
       <option name="link.visible">false</option>
-      <searchString>`fb_data_from_today` `_fb_summary_recs_host($host$)`
+      <search>
+	<query>`fb_data_from_today` `_fb_summary_recs_host($host$)`
 | fields _time, index, startEpoch, earliestTime, endEpoch, latestTime, path, state, sizeOnDiskMB
 | `_fb_startEpoch_from_earliestTime`
 | `_fb_endEpoch_from_latestTime`
@@ -58,7 +63,8 @@ desired SLA.
   thawed_earliest AS "Earliest Time (thawedPath)"
   thawed_delta AS "thawedPath Data Span"
   thawed_latest AS "Latest Time (thawedPath)"
-      </searchString>
+	</query>
+      </search>
 
       <drilldown>
         <link><![CDATA[
