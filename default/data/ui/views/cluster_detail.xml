@@ -6,7 +6,7 @@
 `fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
-| eval bucket_type=if(guId=bid_guid, "db", "rb")
+| eval bucket_type=if(guId=bid_guid, "db", "rb"), bucket_primary_guid=bid_guid
 | fields _time, sizeOnDiskMB, path, bucket_type, bucket_primary_guid, guId]]>
     </query>
   </search>
