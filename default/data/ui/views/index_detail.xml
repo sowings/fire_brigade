@@ -1,23 +1,35 @@
 <form class="formsearch" script="index_detail.js">
   <label>Index Detail</label>
 
-  <searchTemplate>
+  <search id="index_detail_summary">
+    <query>
 earliest=-30d@d `_fb_summary_recs($host$, $index$)`
 | bucket _time span=d
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB, max(rawSize) AS rawSize by _time, path
 | stats sum(sizeOnDiskMB) AS diskTotalinMB, sum(rawSize) AS rawSize by _time
 | eval rawTotalinMB=rawSize / 1024 / 1024
 | `_fb_get_comp_percent`
-  </searchTemplate>
+    </query>
+  </search>
 
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
  
@@ -77,27 +89,33 @@ shown over a thirty-day trend.
       <title>Total On-Disk Size</title>
       <option name="link.visible">false</option>
       <option name="field">diskTotalinMB</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="index_detail_summary">
+        <query>`_fb_where_today`
 | `_fb_mbytes_pretty(diskTotalinMB)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
       <title>Total Raw Size</title>
       <option name="link.visible">false</option>
       <option name="field">rawSize</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="index_detail_summary">
+        <query>`_fb_where_today`
 | `_fb_bytes_pretty(rawSize)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
       <title>Compression Percentage</title>
       <option name="link.visible">false</option>
       <option name="field">comp_percent</option>
       <option name="underLabel">of raw size</option>
-      <searchPostProcess>
+      <search base="index_detail_summary">
+        <query>
 | rename sizeOnDiskMB AS diskTotalinMB
 | eval rawTotalinMB=round(rawSize / 1024 / 1024, 0)
-| `_fb_get_comp_percent`</searchPostProcess>
+| `_fb_get_comp_percent`</query>
+      </search>
     </single>
   </row>
 
@@ -108,7 +126,8 @@ shown over a thirty-day trend.
       <option name="charting.chart">fillerGauge</option>
       <option name="charting.axisTitleY.text">Percentage</option>
       <option name="charting.chart.showLabels">false</option>
-      <searchString>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
+      <search>
+	<query>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
 | join type=left index
 [ | `_fb_rest_index_config($host$, $index$)` ]
   | stats
@@ -118,7 +137,8 @@ shown over a thirty-day trend.
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage, first(limit) AS limit
 | eval percentage=round(ratedUsage * 100 / limit, 1)
 | gauge percentage 0 20 40 60 80 100
-      </searchString>
+	</query
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/retention_size?form.host=$form.host$&form.index=$form.index$]]>
@@ -129,9 +149,11 @@ shown over a thirty-day trend.
       <title>Sourcetype Proportions</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
-      <searchString>| metadata type=sourcetypes index=$index$ splunk_server=$host$*
+      <search>
+        <query>| metadata type=sourcetypes index=$index$ splunk_server=$host$*
 | table sourcetype totalCount
-</searchString>
+	</query>
+      </search>
     </chart>
     <chart id="index_detail_bucket_sizes">
       <title>Sizes of Buckets by ID</title>
@@ -140,12 +162,14 @@ shown over a thirty-day trend.
       <option name="charting.legend.placement">none</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <searchString>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
+      <search>
+	<query>`fb_data_from_today` `_fb_summary_recs($host$, $index$)`
+| eval bucket_type=if(guId=bid_guid, "db", "rb")
 | search NOT bucket_type="rb"
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path, id
 | sort 0 id | table id, sizeOnDiskMB
-      </searchString>
+	</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/bucket_size_detail?form.host=$form.host$&form.index=$form.index$]]>
@@ -167,13 +191,15 @@ shown over a thirty-day trend.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <search>
+        <earliest>-30d@d</earliest>
+	<query>`_fb_summary_recs($host$, $index$)`
 | bucket span=1d _time
 | stats max(rawSize) AS rawSize, max(sizeOnDiskMB) AS sizeOnDiskMB by _time, index, id
 | stats sum(rawSize) AS rawBytes, sum(sizeOnDiskMB) AS diskTotalinMB by _time, index
 | eval rawMB=round(rawBytes / 1024 / 1024, 2)
-| timechart sum(rawMB) AS "Raw (Ingested)", sum(diskTotalinMB) AS "Compressed (On Disk)"</searchString>
+| timechart sum(rawMB) AS "Raw (Ingested)", sum(diskTotalinMB) AS "Compressed (On Disk)"</query>
+      </search>
     </chart>
   </row>
 

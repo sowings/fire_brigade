@@ -1,7 +1,8 @@
 <form>
   <label>Troubleshooting Index Configuration</label>
 
-  <searchTemplate>
+  <search id="index_configs_rest">
+    <query>
 | rest /services/data/indexes count=0 | search disabled=0
 | stats `values_or_list($choice$, maxTotalDataSizeMB)` AS maxTotalDataSizeMB,
    mode(maxTotalDataSizeMB) AS pop_max,
@@ -16,7 +17,8 @@
    dc(splunk_server) AS idx_count
  by title
 | eventstats max(idx_count) AS all_idx_all_server
-  </searchTemplate>
+    </query>
+  </search>
 
   <row>
     <html>
@@ -50,13 +52,17 @@ all of the search peers.
       <title>Count of Indexers</title>
       <option name="link.visible">false</option>
       <option name="field">indexers</option>
-      <searchPostProcess>stats dc(indexers) AS indexers</searchPostProcess>
+      <search base="index_configs_rest">
+        <query>stats dc(indexers) AS indexers</query>
+      </search>
     </single>
     <single>
       <title>Count of Indexes</title>
       <option name="link.visible">false</option>
       <option name="field">indexes</option>
-      <searchPostProcess>stats dc(title) AS indexes</searchPostProcess>
+      <search base="index_configs_rest">
+        <query>stats dc(title) AS indexes</query>
+      </search>
     </single>
   </row>
 
@@ -65,21 +71,25 @@ all of the search peers.
       <title>Number of "Missing" Indexes</title>
       <option name="link.visible">false</option>
       <option name="field">missing</option>
-      <searchPostProcess>
+      <search base="index_configs_rest">
+        <query>
 | where idx_count &lt; all_idx_all_server
 | stats dc(title) AS missing
 | rangemap field=missing foo=0-0 default=severe
-      </searchPostProcess>
+        </query>
+      </search>
       <option name="classField">range</option>
     </single>
     <single>
       <title>Number of Indexes with Mis-Matched Size</title>
       <option name="link.visible">false</option>
       <option name="field">mismatch</option>
-      <searchPostProcess>where mvcount(mvdedup(maxTotalDataSizeMB)) &gt; 1
+      <search base="index_configs_rest">
+        <query>where mvcount(mvdedup(maxTotalDataSizeMB)) &gt; 1
 | stats dc(title) AS mismatch
 | rangemap field=mismatch foo=0-0 default=severe
-      </searchPostProcess>
+        </query>
+      </search>
       <option name="classField">range</option>
     </single>
   </row>
@@ -88,7 +98,8 @@ all of the search peers.
     <table id="index_configs_table">
       <title>Index Configuration Summary</title>
       <option name="link.visible">false</option>
-      <searchPostProcess>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths, all_idx_all_server
+      <search base="index_configs_rest">
+        <query>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths, all_idx_all_server
 | rename title AS Index, pop_max AS "Common Max Size(s)"
     repFactor AS "Rep. Factor",
     pop_home AS "Common Home Size(s)",
@@ -96,7 +107,8 @@ all of the search peers.
     indexers AS "Indexers w/ this Index"
     all_idx_all_server AS "Target Count"
 | `_fb_index_configs_renames_list_only($choice$)`
-      </searchPostProcess>
+        </query>
+      </search>
     </table>
   </row>
 
