@@ -137,7 +137,7 @@ shown over a thirty-day trend.
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage, first(limit) AS limit
 | eval percentage=round(ratedUsage * 100 / limit, 1)
 | gauge percentage 0 20 40 60 80 100
-	</query
+	</query>
       </search>
       <drilldown>
         <link><![CDATA[
