@@ -1,12 +1,14 @@
 <dashboard script="cumulative_overview.js">
   <label>Quick Overview</label>
 
-  <searchTemplate>
+  <search id="summary_one_day">
+    <query>
 `fb_data_from_today` `_fb_summary_recs(*)`
 | bucket _time span=1d
 | fields _time, orig_host, index, sizeOnDiskMB, rawSize
 | stats sum(*) AS * by _time, orig_host, index
-  </searchTemplate>
+    </query>
+  </search>
 
   <row>
     <html>
@@ -68,8 +70,9 @@ graph shows a thirty-day trend of the overall usage.
       <option name="link.visible">false</option>
       <option name="field">count</option>
       <option name="underLabel">Non-Empty</option>
-      <searchPostProcess>`_fb_where_today`
-| stats dc(index) AS count</searchPostProcess>
+      <search base="summary_one_day">
+	<query>`_fb_where_today` | stats dc(index) AS count</query>
+      </search>
     </single>
 
     <single id="cumulative_overview_disk_usage_label">
@@ -77,10 +80,12 @@ graph shows a thirty-day trend of the overall usage.
       <option name="link.visible">false</option>
       <option name="field">dbinspect_size</option>
       <option name="underLabel">Snapshot (dbinspect)</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="summary_one_day">
+	<query>`_fb_where_today`
 | stats sum(sizeOnDiskMB) AS dbinspect_size
 | `_fb_mbytes_pretty(dbinspect_size)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
 
     <single>
@@ -101,10 +106,12 @@ graph shows a thirty-day trend of the overall usage.
       <option name="link.visible">false</option>
       <option name="field">rawBytes</option>
       <option name="underLabel">From dbinspect</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="summary_one_day">
+	<query>`_fb_where_today`
 | stats sum(rawSize) AS rawBytes
 | `_fb_bytes_pretty(rawBytes)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
 
     <single>
@@ -112,10 +119,12 @@ graph shows a thirty-day trend of the overall usage.
       <option name="link.visible">false</option>
       <option name="field">comp_percent</option>
       <option name="underLabel">Of Raw Size</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="summary_one_day">
+	<query>`_fb_where_today`
 | stats sum(rawSize) AS rawBytes, sum(sizeOnDiskMB) AS diskTotalinMB
 | eval rawTotalinMB=round(rawBytes / 1024 / 1024, 0)
-| `_fb_get_comp_percent`</searchPostProcess>
+| `_fb_get_comp_percent`</query>
+      </search>
     </single>
 
   </row>
@@ -131,9 +140,11 @@ graph shows a thirty-day trend of the overall usage.
       <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
       <option name="charting.axisTitleY.text">MBytes</option>
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="summary_one_day">
+	<query>`_fb_where_today`
 | chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
-      </searchPostProcess>
+	</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/index_detail?form.host=$click.value$&form.index=$click.name2$]]></link>
@@ -154,7 +165,9 @@ graph shows a thirty-day trend of the overall usage.
 	   shifted environment, but that's still good enough to show
 	   the trend -->
       <earliestTime>-30d@d</earliestTime>
-      <searchString>`_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
+      <search>
+	<query>`_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</query>
+      </search>
       <drilldown>
         <link>/app/fire_brigade/retention_size</link>
       </drilldown>
