@@ -237,12 +237,14 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.axisTitleX.text">Host</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <searchString>`fb_data_from_today` `_fb_summary_recs($index$)`
+      <search>
+	<query>`fb_data_from_today` `_fb_summary_recs($index$)`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, path, guId
 | join type=left guId [ | rest /services/server/info | fields - id 
   | rename guid as guId ]
 | chart sum(sizeOnDiskMB) AS Total by orig_host, splunk_server
-      </searchString>
+	</query>
+      </search>
       <!-- Maybe this?
 	   `fb_data_from_today` `_fb_summary_recs(_internal)`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, path, bid_guid
