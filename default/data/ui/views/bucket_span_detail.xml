@@ -16,11 +16,21 @@
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
