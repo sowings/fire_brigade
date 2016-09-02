@@ -7,7 +7,7 @@
 | search [| rest /services/server/info splunk_server=$host$ | rename guid AS bucket_primary_guid | return bucket_primary_guid ]
 -->
 
-  <search id="bucket_age_summary">
+  <search id="retention_age_summary">
     <query>
 `fb_data_from_today`
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
@@ -15,7 +15,7 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id, bucketId
     </query>
   </search>
-  <search id="bucket_age_rest">
+  <search id="retention_age_rest">
     <query>
 | `_fb_rest_index_config($host$, $index$)`
 | eval fts=tostring(frozenTimePeriodInSecs, "commas")
@@ -124,7 +124,7 @@ possible disconnect with time stamps of ingested data.
       <option name="link.visible">false</option>
       <option name="underLabel">Seconds</option>
       <option name="field">fts</option>
-      <search base="bucket_age_rest">
+      <search base="retention_age_rest">
       </search>
     </single>
 
@@ -133,7 +133,7 @@ possible disconnect with time stamps of ingested data.
       <option name="link.visible">false</option>
       <option name="field">strf</option>
       <option name="underLabel">Human-Readable</option>
-      <search base="bucket_age_rest">
+      <search base="retention_age_rest">
       </search>
     </single>
 
@@ -141,7 +141,7 @@ possible disconnect with time stamps of ingested data.
       <title>Cutoff Time</title>
       <option name="link.visible">false</option>
       <option name="field">cutoff</option>
-      <search base="bucket_age_rest">
+      <search base="retention_age_rest">
       </search>
     </single>
   </row>
