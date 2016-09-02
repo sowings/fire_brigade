@@ -1,5 +1,5 @@
 <form script="cumulative_overview.js">
-  <label>Quick Overview</label>
+  <label>Quick Overview (with Host Groups)</label>
 
   <fieldset>
     <input type="dropdown" token="host_group" searchWhenChanged="true">
