@@ -190,7 +190,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
     <table id="retention_overview_bucket_states">
       <title>Bucket States</title>
       <option name="link.visible">false</option>
-      <search base="retention_overview_summary">
+      <search base="retention_overview_base">
 	<query>table orig_host, count, hot, hotbkt, warm, warmbkt, cold
 | rename 
     orig_host AS Host
