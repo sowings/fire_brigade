@@ -1,12 +1,19 @@
 <form script="volume_configs.js">
   <label>Troubleshooting Volume Configuration</label>
 
+  <search id="volume_configs_rest">
+    <query>
+| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
+    </query>
+  </search>
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <default>*</default>
-      <choice value="*">Any</choice>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
   </fieldset>
 
@@ -62,14 +69,17 @@ this, the subsequent restart will "clear" the warning shown in this panel.
         <option name="link.visible">false</option>
         <option name="field">count</option>
         <option name="underLabel">using volumes</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
-| search coldPath=volume:* OR homePath=volume:* | stats dc(title) AS count</searchString>
+        <search base="volume_configs_rest">
+	  <query>| search coldPath=volume:* OR homePath=volume:* | stats dc(title) AS count</query>
+	</search>
       </single>
       <single>
         <option name="link.visible">false</option>
         <option name="field">count</option>
         <option name="underLabel">total</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)` | stats dc(title) AS count</searchString>
+        <search base="volume_configs_rest">
+	  <query>| stats dc(title) AS count</query>
+	</search>
       </single>
     </panel>
   </row>
@@ -83,7 +93,8 @@ this, the subsequent restart will "clear" the warning shown in this panel.
 | fields splunk_server, title, path, maxVolumeDataSizeMB
 | rename splunk_server AS Indexer, title AS "Volume Label", path as "Path", maxVolumeDataSizeMB AS "Size Limit (MB)"</searchString>
 -->
-        <searchString>| rest /servicesNS/-/-/configs/conf-indexes `_fb_use_or_ignore(splunk_server, $host$)`
+        <search>
+          <query>| rest /servicesNS/-/-/configs/conf-indexes `_fb_use_or_ignore(splunk_server, $host$)`
 | search title=volume:* | fields splunk_server, title, path, maxVolumeDataSizeMB
 | join type=left
   [| rest /services/server/status/partitions-space `_fb_use_or_ignore(splunk_server, $host$)`
@@ -93,7 +104,8 @@ this, the subsequent restart will "clear" the warning shown in this panel.
 | eval pct_subscribed=round(maxVolumeDataSizeMB * 100 / round(capacity), 2)
 | fillnull value="N/A" pct_subscribed
 | fields splunk_server, title, path, volume_mount, maxVolumeDataSizeMB, capacity, pct_subscribed
-| rename splunk_server AS Indexer, title AS Volume, path AS Path, volume_mount AS "Filesystem", maxVolumeDataSizeMB AS Limit, capacity AS "Filesystem Capacity", pct_subscribed AS "Subscription Percentage"</searchString>
+| rename splunk_server AS Indexer, title AS Volume, path AS Path, volume_mount AS "Filesystem", maxVolumeDataSizeMB AS Limit, capacity AS "Filesystem Capacity", pct_subscribed AS "Subscription Percentage"</query>
+	</search>
       </table>
     </panel>
   </row>
@@ -103,20 +115,22 @@ this, the subsequent restart will "clear" the warning shown in this panel.
       <table>
         <title>Indexes Using Volumes</title>
         <option name="link.visible">false</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
-| search coldPath=volume:* OR homePath=volume:*
+        <search base="volume_configs_rest">
+	  <query>| search coldPath=volume:* OR homePath=volume:*
 | fields splunk_server, title, homePath, coldPath
-| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</searchString>
+| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</query>
+	</search>
       </table>
     </panel>
     <panel>
       <table>
         <title>Indexes Not Using Volumes</title>
         <option name="link.visible">false</option>
-        <searchString>| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
-| search coldPath!=volume:* homePath!=volume:*
+        <search base="volume_configs_rest">
+	  <query>search coldPath!=volume:* homePath!=volume:*
 | fields splunk_server, title, homePath, coldPath
-| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</searchString>
+| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</query>
+	</search>
       </table>
     </panel>
   </row>
@@ -128,7 +142,8 @@ this, the subsequent restart will "clear" the warning shown in this panel.
       <option name="link.visible">false</option>
       <!-- Things that make this start over: 
             loader - Starting splunkd (build ...) -->
-      <searchString><![CDATA[index=_internal source=*splunkd.log* host=$host$
+      <search>
+	<query><![CDATA[index=_internal source=*splunkd.log* host=$host$
 (component=IndexConfig idx inside config error) OR (component=loader starting)
 | rex "volume=(?<volume>\w+)\s" | eval volume="volume:" . volume 
 | rex "homePath='(?<homePath_expanded>.+?)'" | rex "coldPath='(?<coldPath_expanded>.+?)'" 
@@ -143,7 +158,8 @@ this, the subsequent restart will "clear" the warning shown in this panel.
     by host, idx
 | eventstats max(last_start) AS host_restart by host
 | where mytime>host_restart
-| fields - mytime last_start host_restart]]></searchString>
+| fields - mytime last_start host_restart]]></query>
+      </search>
     </table>
   </row>
 

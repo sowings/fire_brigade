@@ -4,11 +4,18 @@
   <fieldset>
     <input type="dropdown" token="dbinspect_data" searchWhenChanged="true">
       <label>Select the "dbinspect" lookup</label>
-      <populatingSearch fieldForValue="title" fieldForLabel="title">| rest /servicesNS/-/-/data/lookup-table-files | search eai:acl.app=fire_brigade</populatingSearch>
+      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>title</fieldForLabel>
+      <search id="hollfelder_lookup_rest">
+	<query>| rest /servicesNS/-/-/data/lookup-table-files | search eai:acl.app=fire_brigade</query>
+      </search>
     </input>
     <input type="dropdown" token="rest_indexes_data" searchWhenChanged="true">
       <label>Select the "indexes" lookup</label>
-      <populatingSearch fieldForValue="title" fieldForLabel="title">| rest /servicesNS/-/-/data/lookup-table-files | search eai:acl.app=fire_brigade</populatingSearch>
+      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>title</fieldForLabel>
+      <search base="hollfelder_lookup_rest">
+      </search>
     </input>
   </fieldset>
 

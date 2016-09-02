@@ -4,11 +4,21 @@
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
@@ -49,15 +59,17 @@ time format, and can be made easier to read with <code>convert</code> or
       <title>Quarantine Past Seconds</title>
       <option name="link.visible">false</option>
       <option name="field">quarantinePastSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-      </searchString>
+      <search id="qtine_overview_rest">
+	<query>| `_fb_rest_index_config($host$, $index$)`
+	</query>
+      </search>
     </single>
     <single>
       <title>Quarantine Future Seconds</title>
       <option name="link.visible">false</option>
       <option name="field">quarantineFutureSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-      </searchString>
+      <search base="qtine_overview_rest">
+      </search>
     </single>
   </row>
 
@@ -68,7 +80,8 @@ time format, and can be made easier to read with <code>convert</code> or
       <title>Buckets Originally Created As Quarantine</title>
       <option name="link.visible">false</option>
       <earliestTime>@d</earliestTime>
-      <searchString>
+      <search>
+	<query>
 [ search earliest=0 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
     | fields host, idx, bucket_id
     | rename idx AS orig_index, bucket_id AS id
@@ -82,7 +95,8 @@ index=summary search_name="DB inspection"
    latestTime AS "Latest Time",
    eventCount AS "Event Count"
 | table host Index "Bucket ID" "Bucket State" "Event Count" "Earliest Time" "Latest Time" rawSize sourceCount sourceTypeCount hostCount sizeOnDiskMB 
-      </searchString>
+	</query>
+      </search>
     </table>
   </row>
 
@@ -92,9 +106,11 @@ index=summary search_name="DB inspection"
     <event>
       <title>Quarantine Bucket Creation Events</title>
       <option name="link.visible">false</option>
-      <searchString>
+      <search>
+	<query>
 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
-      </searchString>
+	</query>
+      </search>
     </event>
   </row>
 
