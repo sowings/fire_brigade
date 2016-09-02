@@ -1,14 +1,19 @@
 <form class="formsearch" script="retention_count.js">
   <label>Bucket Count vs. Maximum Count</label>
 
-  <searchTemplate>
+  <search id="retention_count_summary">
+    <query>
 `fb_data_from_today`
 state="hot" OR state="warm"
 `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | eval state=mvappend(state, if(endEpoch>now(), "ballast", null()))
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index, state
-  </searchTemplate>
+    </query>
+  </search>
+  <search id="retention_count_rest">
+    <query>| `_fb_rest_index_config($host$, $index$)`</query>
+  </search>
 
   <row>
     <html>
@@ -41,11 +46,21 @@ states. If there are ballast buckets, a count of these will be shown as well.
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
@@ -56,15 +71,17 @@ states. If there are ballast buckets, a count of these will be shown as well.
       <option name="link.visible">false</option>
       <option name="field">count</option>
       <option name="underLabel">Count</option>
-      <searchPostProcess>`_fb_where_today` AND state="hot"
-| stats count</searchPostProcess>
+      <search base="retention_count_summary">
+	<query>`_fb_where_today` AND state="hot" | stats count</query>
+      </search>
     </single>
     <single>
 <!--      <title>Hot Bucket Limit</title> -->
       <option name="link.visible">false</option>
       <option name="underLabel">Limit</option>
       <option name="field">maxHotBuckets</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <search base="retention_count_rest">
+      </search>
     </single>
 
     <single id="retention_count_warm_label">
@@ -72,21 +89,25 @@ states. If there are ballast buckets, a count of these will be shown as well.
       <option name="link.visible">false</option>
       <option name="field">count</option>
       <option name="underLabel">Count</option>
-      <searchPostProcess>`_fb_where_today` AND state="warm"
-| stats count</searchPostProcess>
+      <search base="retention_count_summary">
+	<query>`_fb_where_today` AND state="warm" | stats count</query>
+      </search>
     </single>
     <single>
       <option name="link.visble">false</option>
       <option name="underLabel">Ballast</option>
       <option name="field">ballast</option>
-      <searchPostProcess>search state="ballast" | stats count, sum(count) AS ballast</searchPostProcess>
+      <search base="retention_count_summary">
+	<query>search state="ballast" | stats count, sum(count) AS ballast</query>
+      </search>
     </single>
     <single>
 <!--      <title>Warm Bucket Limit</title> -->
       <option name="link.visible">false</option>
       <option name="underLabel">Limit</option>
       <option name="field">maxWarmDBCount</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <search base="retention_count_rest">
+      </search>
     </single>
   </row>
 
@@ -101,9 +122,10 @@ states. If there are ballast buckets, a count of these will be shown as well.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
-      <searchString>
+      <search>
+	<earliest>-30d@d</earliest>
+        <latest>now</latest>
+        <query>
 state="hot" OR state="warm"
 `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
@@ -115,7 +137,8 @@ state="hot" OR state="warm"
 | timechart span=1d dc(path) AS "Count", first(limit) AS Limit by state
 | rename comment AS "Just in case..."
 | fields - "Limit: ballast"
-      </searchString>
+	</query>
+      </search>
     </chart>
   </row>
 </form>

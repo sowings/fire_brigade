@@ -133,8 +133,11 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   <fieldset submitButton="false">
     <input type="dropdown" token="host_group" searchWhenChanged="true">
       <label>Host Group</label>
-      <choice value="All">All hosts</choice>
-      <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup fb_host_groups | dedup host_group | sort host_group</populatingSearch>
+      <fieldForValue>host_group</fieldForValue>
+      <fieldForLabel>host_group</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_host_groups | stats count by host_group</query>
+      </search>
     </input>
     <input type="text" token="bucket_host" searchWhenChanged="true" />
     <input type="text" token="disk_host" searchWhenChanged="true" />
@@ -143,7 +146,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
     <input type="text" token="time_host" searchWhenChanged="true" />
   </fieldset>
 
-  <searchTemplate>
+  <search id="retention_overview_base">
+    <query>
 <![CDATA[`fb_data_from_today` host_group="$host_group$" `_fb_summary_recs("*")`
 | stats sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk, 
   sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS colddisk,
@@ -187,13 +191,15 @@ Note: As always the <i>most restrictive</i> retention policy wins!
                      timewarn=1, "quar",
                      1=1, null())
 | table orig_host, count, hot, warm, cold, hotbkt, warmbkt, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn, timewarn]]>
-  </searchTemplate>
+    </query>
+  </search>
 
   <row>
     <table id="retention_overview_bucket_states">
       <title>Bucket States</title>
       <option name="link.visible">false</option>
-      <searchPostProcess>table orig_host, count, hot, hotbkt, warm, warmbkt, cold
+      <search base="retention_overview_summary">
+	<query>table orig_host, count, hot, hotbkt, warm, warmbkt, cold
 | rename 
     orig_host AS Host
     count AS Indexes
@@ -201,8 +207,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
     hotbkt AS "Hot Status"
     warm AS "Warm Buckets"
     warmbkt AS "Warm Status"
-    cold AS "Cold Buckets"
-</searchPostProcess>
+    cold AS "Cold Buckets"</query>
+      </search>
     </table>
   </row>
 
@@ -217,7 +223,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 /app/fire_brigade/retention_count?form.host=$form.bucket_host$&form.index=$row.Index$]]>
 	</link>
       </drilldown>
-      <searchString><![CDATA[
+      <search>
+	<query><![CDATA[
 `fb_data_from_today` `_fb_summary_recs($bucket_host$, "*")`
 | stats 
   dc(eval(if(state="hot", path, null()))) AS hot
@@ -238,7 +245,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   maxWarmDBCount AS "Warm Limit"
   warmbkt AS "Warm Status"
   cold AS "Cold Buckets"]]>
-      </searchString>
+        </query>
+      </search>
     </table>
   </row>
 
@@ -246,7 +254,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
     <table id="retention_overview_disk_states">
       <title>Disk States</title>
       <option name="link.visible">false</option>
-      <searchPostProcess><![CDATA[table orig_host, count, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn
+      <search base="retention_overview_base">
+	<query><![CDATA[table orig_host, count, homedisk, homewarn, colddisk, coldwarn, totaldisk, totalwarn
 | foreach *disk [ `_fb_mbytes_pretty(<<FIELD>>)` ]
 | rename
     orig_host AS Host
@@ -257,7 +266,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
     coldwarn AS "Cold Status"
     totaldisk AS "Total Disk"
     totalwarn AS "Total Space Status"]]>
-      </searchPostProcess>
+	</query>
+      </search>
     </table>
   </row>
 
@@ -272,7 +282,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 /app/fire_brigade/retention_size?form.host=$form.disk_host$&form.index=$row.Index$]]>
 	</link>
       </drilldown>
-      <searchString><![CDATA[
+      <search>
+	<query><![CDATA[
 `fb_data_from_today` `_fb_summary_recs($disk_host$, "*")`
 | stats 
   sum(eval(if(state="hot" OR state="warm", sizeOnDiskMB, 0))) AS homedisk
@@ -304,7 +315,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   totallimit AS "Total Space Limit"
   totalwarn AS "Total Space Status"
 ]]>
-      </searchString>
+	</query>
+      </search>
     </table>
   </row>
 
@@ -313,7 +325,8 @@ Note: As always the <i>most restrictive</i> retention policy wins!
       <title>Volume Usage</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchString><![CDATA[
+      <search>
+	<query><![CDATA[
 `fb_data_from_today` 
 [| rest /services/data/indexes search="totalEventCount!=0"
    | search homePath="volume:*" OR coldPath="volume:*"
@@ -327,11 +340,11 @@ state!="thawed" host_group="$host_group$" `_fb_summary_recs("*")`
   [| rest /services/data/indexes
    | fields homePath, coldPath, title, splunk_server
    | rename title AS index, splunk_server AS orig_host ]
-| rex field=homePath "^(?<home_vol>volume:\w+)"
-| rex field=coldPath "^(?<cold_vol>volume:\w+)"
+| rex field=homePath "^(?<home_vol>volume:[-\w]+)"
+| rex field=coldPath "^(?<cold_vol>volume:[-\w]+)"
 | eval volume=if(state="cold", cold_vol, home_vol)
 | join type=left volume, orig_host
-  [ | rest /services/configs/conf-indexes
+  [ | rest /servicesNS/-/-/configs/conf-indexes
     | search title="volume:*"
     | fields title, maxVolumeDataSizeMB, splunk_server
     | rename title AS volume, splunk_server AS orig_host ]
@@ -349,18 +362,20 @@ state!="thawed" host_group="$host_group$" `_fb_summary_recs("*")`
   maxVolumeDataSizeMB AS "Volume Limit"
   vol_pct AS "% of Capacity"
 ]]>
-      </searchString>
+	</query>
+      </search>
     </table>
 
     <table id="retention_overview_time_states">
       <title>Time-Based Retention State</title>
       <option name="link.visible">false</option>
-      <searchPostProcess>table orig_host, count, timewarn
+      <search base="retention_overview_base">
+	<query>table orig_host, count, timewarn
 | rename
     orig_host AS Host
     count AS Indexes
-    timewarn AS "Time-Based Status" 
-      </searchPostProcess>
+    timewarn AS "Time-Based Status"</query>
+      </search>
     </table>
 
   </row>
@@ -379,14 +394,15 @@ state!="thawed" host_group="$host_group$" `_fb_summary_recs("*")`
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
 	</link>
       </drilldown>
-      <searchString>
+      <search>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+	<query>
 [| rest /services/data/indexes splunk_server=$volume_host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
@@ -408,7 +424,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
     by _time, index
 | eventstats sum(sizeOnDiskMB) AS daily_usage by _time
 | eventstats dc(index) AS idx_count, max(_time) AS latest
-| timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchString>
+| timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</query>
+      </search>
     </chart>
 
     <chart id="retention_overview_volume_limit_detail">
@@ -430,7 +447,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 /app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
 	</link>
       </drilldown>
-      <searchString>
+      <search>
+	<query>
 [| rest /services/data/indexes splunk_server=$volume_host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
@@ -452,7 +470,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
     by _time, index
 | eventstats sum(sizeOnDiskMB) AS daily_usage by _time
 | eventstats dc(index) AS idx_count, max(_time) AS latest
-| timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</searchString>
+| timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</query>
+      </search>
     </chart>
   </row>
 
@@ -466,7 +485,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 /app/fire_brigade/retention_age?form.host=$form.time_host$&form.index=$row.Index$]]>
 	</link>
       </drilldown>
-      <searchString><![CDATA[
+      <search>
+	<query><![CDATA[
 `fb_data_from_today` `_fb_summary_recs($time_host$, "*")`
 | stats 
   sum(sizeOnDiskMB) AS totaldisk
@@ -505,7 +525,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
   cutoff AS "Retention Cutoff"
   timewarn AS "Time-Based Status"
   span_back AS "Available Data Span"]]>
-      </searchString>
+        </query>
+      </search>
     </table>
   </row>
 

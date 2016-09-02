@@ -7,12 +7,21 @@
 | search [| rest /services/server/info splunk_server=$host$ | rename guid AS bucket_primary_guid | return bucket_primary_guid ]
 -->
 
-  <searchTemplate>
+  <search id="bucket_age_summary">
+    <query>
 `fb_data_from_today`
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, eventCount, sizeOnDiskMB, guId, index, state, id, bucketId
-  </searchTemplate>
+    </query>
+  </search>
+  <search id="bucket_age_rest">
+    <query>
+| `_fb_rest_index_config($host$, $index$)`
+| eval fts=tostring(frozenTimePeriodInSecs, "commas")
+| eval strf=tostring(frozenTimePeriodInSecs, "duration")
+| eval cutoff=now() - frozenTimePeriodInSecs | convert ctime(cutoff)</query>
+  </search>
 
   <row>
     <html>
@@ -88,7 +97,11 @@ possible disconnect with time stamps of ingested data.
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <!-- pre-process a macro with a tag for volume: -->
     <!-- populate the search with volume: in the value, select valid
@@ -96,7 +109,12 @@ possible disconnect with time stamps of ingested data.
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
       <choice value="*">All indexes</choice>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
@@ -105,10 +123,9 @@ possible disconnect with time stamps of ingested data.
 <!--      <title>Frozen Time Limit Setting (Raw)</title> -->
       <option name="link.visible">false</option>
       <option name="underLabel">Seconds</option>
-      <option name="field">frozenTimePeriodInSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "commas")
-      </searchString>
+      <option name="field">fts</option>
+      <search base="bucket_age_rest">
+      </search>
     </single>
 
     <single>
@@ -116,17 +133,16 @@ possible disconnect with time stamps of ingested data.
       <option name="link.visible">false</option>
       <option name="field">strf</option>
       <option name="underLabel">Human-Readable</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| eval strf=tostring(frozenTimePeriodInSecs, "duration")</searchString>
+      <search base="bucket_age_rest">
+      </search>
     </single>
 
     <single>
       <title>Cutoff Time</title>
       <option name="link.visible">false</option>
       <option name="field">cutoff</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| eval cutoff=now() - frozenTimePeriodInSecs | convert ctime(cutoff)
-      </searchString>
+      <search base="bucket_age_rest">
+      </search>
     </single>
   </row>
 
@@ -136,29 +152,35 @@ possible disconnect with time stamps of ingested data.
       <option name="link.visible">false</option>
       <option name="field">age</option>
       <option name="underLabel">Seconds</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="retention_age_summary">
+	<query>`_fb_where_today`
 | stats min(endEpoch) AS bucket_lt
 | eval age=tostring(now() - bucket_lt, "commas")
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
       <option name="link.visible">false</option>
       <option name="field">age</option>
       <option name="underLabel">Human-Readable</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="retention_age_summary">
+	<query>`_fb_where_today`
 | stats min(endEpoch) AS bucket_lt
 | eval age=tostring(now() - bucket_lt, "duration")
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
 
     <single>
       <title>Oldest Bucket in This Group</title>
       <option name="link.visible">false</option>
       <option name="field">bucket_lt</option>
-      <searchPostProcess>`_fb_where_today`
+      <search base="retention_age_summary">
+	<query>`_fb_where_today`
 | stats min(endEpoch) AS bucket_lt | convert ctime(bucket_lt)
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
   </row>
 
@@ -167,7 +189,8 @@ possible disconnect with time stamps of ingested data.
       <title>Ten Oldest (Neither Thawed nor Hot) Monitored Buckets in This Group</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchPostProcess><![CDATA[`_fb_where_today`
+      <search base="retention_age_summary">
+	<query><![CDATA[`_fb_where_today`
 | stats values(endEpoch) AS bucket_lt,
     values(startEpoch) AS bucket_et,
     first(eventCount) AS eventCount,
@@ -198,7 +221,8 @@ possible disconnect with time stamps of ingested data.
     host AS "Source Server"
     bucket_age AS "Bucket Age"
     max_back AS "Furthest Event Back"]]>
-      </searchPostProcess>
+	</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
@@ -211,7 +235,8 @@ possible disconnect with time stamps of ingested data.
     <table>
       <title>Ballast Buckets in This Group</title>
       <option name="link.visible">false</option>
-      <searchString>`fb_data_from_today`
+      <search>
+	<query>`fb_data_from_today`
 state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 | dedup bucketId
 | where endEpoch > now()
@@ -237,7 +262,8 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
     pathLoc AS "Path Setting"
     bucket_age AS "Bucket Age"
     minted AS "Last Mod. Time"
-    max_back AS "Furthest Event Back"</searchString>
+    max_back AS "Furthest Event Back"</query>
+      </search>
     </table>
   </row>
 
@@ -254,7 +280,8 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
 	   the trend -->
       <earliestTime>-30d@d</earliestTime>
       <latestTime>now</latestTime>
-      <searchString>
+      <search>
+	<query>
 state!=hot `_fb_summary_recs($host$, $index$)`
 | bucket _time span=1d
 | fields _time, startEpoch, earliestTime, endEpoch, latestTime, state
@@ -268,8 +295,8 @@ state!=hot `_fb_summary_recs($host$, $index$)`
 | eval bucket_days=round((endEpoch - startEpoch) / 86400, 2)
 | eval outside_days=round((abs_latest - abs_earliest) / 86400, 2)
 | eval bucket_span=if(state="Thawed", outside_days, bucket_days)
-| timechart span=1d first(bucket_span) AS "Bucket Days" by state
-      </searchString>
+| timechart span=1d first(bucket_span) AS "Bucket Days" by state</query>
+      </search>
     </chart>
   </row>
 
