@@ -36,7 +36,7 @@ total_size AS "Cumulative Usage (MB)"
       <table>
         <title>Report Acceleration Usage by Search Name</title>
 	<search base="summary_overview_rest">
-          <query>search type!=data_model_acceleration
+          <query>search type=report_acceleration
 | fields name, total_bucket_count, total_size
 | rename name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"
 	  </query>
@@ -61,7 +61,7 @@ total_size AS "Cumulative Usage (MB)"
       <chart>
 	<title>Report Acceleration Summary Usage by Indexer Host</title>
         <search base="summary_overview_rest">
-          <query>search type!=data_model_acceleration
+          <query>search type=report_acceleration
 | stats sum(total_size) AS Usage by splunk_server
 | rename splunk_server AS Indexer</query>
 	</search>
@@ -88,10 +88,12 @@ total_size AS "Cumulative Usage (MB)"
       <chart>
 	<title>Report Acceleration Summary Usage by Search Head</title>
         <search base="summary_overview_rest">
-          <query>search type!=data_model_acceleration
+          <query>search type=report_acceleration
 | stats sum(total_size) AS Usage by search_head_guid
 | join type=left search_head_guid [| rest /services/server/info | rename guid AS search_head_guid ]
-| rename search_head_guid AS "Search Head"</query>
+| eval shead=coalesce(splunk_server, search_head_guid)
+| rename shead AS "Search Head"
+| fields "Search Head", Usage</query>
 	</search>
       </chart>
       
