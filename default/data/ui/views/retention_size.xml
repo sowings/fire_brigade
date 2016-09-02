@@ -1,13 +1,15 @@
 <form class="formsearch" script="retention_size.js">
   <label>Usage vs. Size Limit(s)</label>
 
-  <searchTemplate>
+  <search id="retention_size_summary">
+    <query>
 `fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB
 | bucket _time span=1d
 | dedup _time, path
-  </searchTemplate>
+    </query>
+  </search>
 
   <row>
     <html>
@@ -62,11 +64,21 @@ it will be shown as a line in the time trend as well.
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host=$host$ | dedup orig_index | sort orig_index</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
@@ -76,21 +88,28 @@ it will be shown as a line in the time trend as well.
       <option name="link.visible">false</option>
       <option name="field">homeUsage</option>
       <option name="underLabel">Usage</option>
-      <searchPostProcess>`_fb_where_today` AND (state="hot" OR state="warm")
+      <search base="retention_size_summary">
+	<query>`_fb_where_today` AND (state="hot" OR state="warm")
 | stats count, sum(sizeOnDiskMB) AS homeUsage
 | fillnull homeUsage value=0
 | `_fb_mbytes_pretty(homeUsage)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
 <!--      <title>Configured Home Space Limit</title> -->
       <option name="link.visible">false</option>
       <option name="field">homeMax</option>
       <option name="underLabel">Limit</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| rename homePath.maxDataSizeMB AS homeMax
+      <search id="retention_size_rest">
+	<query>
+| `_fb_rest_index_config($host$, $index$)`
+| rename homePath.maxDataSizeMB AS homeMax, coldPath.maxDataSizeMB AS coldMax
 | `_fb_mbytes_pretty(homeMax)`
-      </searchString>
+| `_fb_mbytes_pretty(coldMax)`
+| `_fb_mbytes_pretty(maxTotalDataSizeMB)`
+	</query>
+      </search>
     </single>
 
     <single id="retention_size_cold_label">
@@ -98,41 +117,42 @@ it will be shown as a line in the time trend as well.
       <option name="link.visible">false</option>
       <option name="field">coldUsage</option>
       <option name="underLabel">Usage</option>
-      <searchPostProcess>`_fb_where_today` AND state="cold"
+      <search base="retention_size_summary">
+	<query>`_fb_where_today` AND state="cold"
 | stats count, sum(sizeOnDiskMB) AS coldUsage
 | fillnull coldUsage value=0
 | `_fb_mbytes_pretty(coldUsage)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
     <single>
 <!--      <title>Configured Cold Space Limit</title> -->
       <option name="link.visible">false</option>
       <option name="field">coldMax</option>
       <option name="underLabel">Limit</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| rename coldPath.maxDataSizeMB AS coldMax
-| `_fb_mbytes_pretty(coldMax)`
-      </searchString>
+      <search base="retention_size_rest">
+      </search>
     </single>
 
     <single>
       <title>Configured Total Space Limit</title>
       <option name="link.visible">false</option>
       <option name="field">maxTotalDataSizeMB</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| `_fb_mbytes_pretty(maxTotalDataSizeMB)`
-      </searchString>
+      <search base="retention_size_rest">
+      </search>
     </single>
 
     <single>
       <title>Thawed Path Usage</title>
       <option name="link.visible">false</option>
       <option name="field">thawedUsage</option>
-      <searchPostProcess>`_fb_where_today` AND state="thawed"
+      <search base="retention_size_summary">
+	<query>`_fb_where_today` AND state="thawed"
 | stats count, sum(sizeOnDiskMB) AS thawedUsage
 | fillnull thawedUsage value=0
 | `_fb_mbytes_pretty(thawedUsage)`
-      </searchPostProcess>
+	</query>
+      </search>
     </single>
   </row>
 
@@ -141,7 +161,8 @@ it will be shown as a line in the time trend as well.
       <title>Ballast in Home Path (Hot + Warm)</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">fillerGauge</option>
-      <searchString>state="hot" OR state="warm" `fb_data_from_today`
+      <search>
+	<query>state="hot" OR state="warm" `fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB, endEpoch
 | bucket _time span=1d
@@ -154,13 +175,15 @@ it will be shown as a line in the time trend as well.
 | stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
 | fillnull value=0 limit, size
 | eval percent=if(limit=0, 0, round(size / limit * 100, 2))
-| gauge percent 0 20 40 60 80 100</searchString>
+| gauge percent 0 20 40 60 80 100</query>
+      </search>
     </chart>
     <chart id="retention_size_cold_ballast_gauge">
       <title>Ballast in Cold Path</title>
       <option name="link.visible">false</option>
       <option name="charting.chart">fillerGauge</option>
-      <searchString>state="cold" `fb_data_from_today`
+      <search>
+	<query>state="cold" `fb_data_from_today`
 `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB, endEpoch
 | bucket _time span=1d
@@ -173,7 +196,8 @@ it will be shown as a line in the time trend as well.
 | stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
 | fillnull value=0 limit, size
 | eval percent=if(limit=0, 0, round(size / limit * 100, 2))
-| gauge percent 0 20 40 60 80 100</searchString>
+| gauge percent 0 20 40 60 80 100</query>
+      </search>
     </chart>
     <chart id="retention_size_usage_vs_max">
       <title>Usage vs. Configured Maximum Size</title>
@@ -186,9 +210,10 @@ it will be shown as a line in the time trend as well.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
-      <searchString>state!="thawed" `_fb_summary_recs($host$, $index$)`
+      <search>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+	<query>state!="thawed" `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB, endEpoch
 | bucket _time span=1d
 | dedup _time, path
@@ -199,7 +224,8 @@ it will be shown as a line in the time trend as well.
 | eval limit=if(state=="homePath", coalesce('homePath.maxDataSizeMB', maxTotalDataSizeMB), if(state=="coldPath", coalesce('coldPath.maxDataSizeMB', maxTotalDataSizeMB), 0))
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage", first(limit) AS Limit by state
 | fields - "Limit*ballast"
-      </searchString>
+	</query>
+      </search>
     </chart>
   </row>
 
@@ -215,9 +241,10 @@ it will be shown as a line in the time trend as well.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
-      <searchString>
+      <search>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+	<query>
 `_fb_summary_recs($host$, $index$)`
 | fields _time, index, path, state, sizeOnDiskMB
 | bucket _time span=1d
@@ -226,7 +253,8 @@ it will be shown as a line in the time trend as well.
 | delta Usage AS Growth
 | eventstats avg(Growth) AS avg
 | timechart span=1d first(Growth) AS "Daily Growth", first(avg) AS "Average Daily Growth"
-      </searchString>
+	</query>
+      </search>
     </chart>
   </row>
 
