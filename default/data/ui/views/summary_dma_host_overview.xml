@@ -21,7 +21,11 @@
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | stats count by orig_host</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
   </fieldset>
 
