@@ -7,7 +7,9 @@ TA_PACKAGE_ID=TA-${APP_ID}
 TA_PACKAGE_NAME=${TA_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.tar.gz
 APP_PACKAGE_BASE=splunk_app_${APP_NAME}
 APP_PACKAGE_NAME=${APP_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.spl
-APP_VERSION=2.1.0
+# This has the 'v' in front of it per the tags laid down in git.
+PRIOR_VERSION_TAG=v2.1.0
+APP_VERSION=2.1.1
 
 TA_FILES = default/macros.conf default/savedsearches.conf default/app.conf default/transforms.conf default/inputs.conf bin/ftr_update_list.py
 
@@ -39,7 +41,7 @@ app_package: build_number
 	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && gnutar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf --exclude *.diff --exclude sparklines.xml --exclude msft_* --exclude hollfelder.xml --exclude dbinspect_samples ${APP_NAME})
 
 change_list:
-	$(eval TAG_HASH := $(shell git rev-list v2.0.3 | head -1))
+	$(eval TAG_HASH := $(shell git rev-list ${PRIOR_VERSION_TAG} | head -1))
 	$(eval HEAD_HASH := $(shell git rev-list HEAD | head -1))
 
 	git log -p --name-only --pretty=format:"%s" --no-color ${TAG_HASH}..${HEAD_HASH}
