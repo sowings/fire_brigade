@@ -21,7 +21,7 @@
       <fieldForLabel>app_model_name</fieldForLabel>
       <selectFirstChoice>true</selectFirstChoice>
       <search>
-	<query>| rest /services/data/models | search acceleration=1 | fields title, eai:acl.app | eval app_model_name='eai:acl.app' .  " / " . title | eval dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
+	<query>| rest /servicesNS/-/-/data/models | search acceleration=1 | fields title, eai:acl.app | eval app_model_name='eai:acl.app' .  " / " . title | eval dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
       </search>
     </input>
   </fieldset>
