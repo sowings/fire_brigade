@@ -1,12 +1,12 @@
-<dashboard>
+<form>
   <label>Clustered Buckets Status</label>
   <search id="cluster_master_buckets">
-    <query>| rest /services/cluster/master/buckets splunk_server=local</query>
+    <query>| rest /services/cluster/master/buckets splunk_server=$host$</query>
     <earliest></earliest>
     <latest></latest>
   </search>
   <search id="multisite">
-    <query>| rest /services/cluster/config | search mode="master" | fields multisite | eval range=if(multisite="true", 1, 0) | rangemap None=0-0 severe=1-1 field=range</query>
+    <query>| rest /services/cluster/config splunk_server=$host$ | search mode="master" | fields multisite | eval range=if(multisite="true", 1, 0) | rangemap None=0-0 severe=1-1 field=range</query>
     <earliest>0</earliest>
     <latest></latest>
     <done>
@@ -21,6 +21,18 @@
 </div>
     </html>
   </row>
+  
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Cluster Master</label>
+      <fieldForValue>splunk_server</fieldForValue>
+      <fieldForLabel>host</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+	<query>| rest /services/server/info splunk_server=* | search server_roles=cluster_master</query>
+      </search>
+    </input>
+  </fieldset>
   
   <row>
     <panel depends="$show_multisite$">
@@ -42,6 +54,7 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
+	<option name="link.visible">false</option>
         <option name="drilldown">none</option>
       </single>
     </panel>
@@ -53,6 +66,7 @@
           <earliest>0</earliest>
           <latest></latest>
         </search>
+	<option name="link.visible">false</option>
         <option name="drilldown">none</option>
       </single>
     </panel>
@@ -137,4 +151,4 @@
       </chart>
     </panel>
   </row>
-</dashboard>
+</form>
