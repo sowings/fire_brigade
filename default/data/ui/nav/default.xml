@@ -1,15 +1,30 @@
 <nav>
   <collection label="Overview">
     <view name="cumulative_overview" default="true"/>
+    <view name="cumulative_overview_hg" />
     <view name="host_overview" />
     <view name="index_overview" />
+    <view name="index_overview_hg" />
     <view name="matrix_overview" />
     <view name="cluster_overview" />
+    <divider />
+    <view name="retention_overview" />
+    <view name="retention_overview_hg" />
   </collection>
+<!-- Uncomment this group (to the first </collection below> to restore
+     this top-level menu 
   <collection label="Host Group Overviews">
     <view name="cumulative_overview_hg" />
     <view name="index_overview_hg" />
     <view name="retention_overview_hg" />
+  </collection>
+-->
+  <collection label="Clustering">
+    <view name="cluster_overview" />
+    <divider />
+    <view name="dmccm_cluster_bucket_lifecycle" />
+    <view name="dmccm_cluster_master_buckets" />
+    <view name="dmccm_multisite_cluster_master_buckets" />
   </collection>
   <collection label="Detail">
     <view name="index_detail" />
