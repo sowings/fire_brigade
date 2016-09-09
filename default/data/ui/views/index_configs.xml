@@ -21,6 +21,7 @@
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 Occasionally, when managing multiple indexers (particularly if doing
@@ -36,6 +37,7 @@ list of "Indexers w/ This Index" should include the search head, and
 all of the search peers.
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset submitButton="false">
@@ -48,6 +50,7 @@ all of the search peers.
   </fieldset>
 
   <row>
+    <panel>
     <single>
       <title>Count of Indexers</title>
       <option name="link.visible">false</option>
@@ -56,6 +59,8 @@ all of the search peers.
         <query>stats dc(indexers) AS indexers</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Count of Indexes</title>
       <option name="link.visible">false</option>
@@ -64,9 +69,11 @@ all of the search peers.
         <query>stats dc(title) AS indexes</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Number of "Missing" Indexes</title>
       <option name="link.visible">false</option>
@@ -80,6 +87,8 @@ all of the search peers.
       </search>
       <option name="classField">range</option>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Number of Indexes with Mis-Matched Size</title>
       <option name="link.visible">false</option>
@@ -92,9 +101,11 @@ all of the search peers.
       </search>
       <option name="classField">range</option>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="index_configs_table">
       <title>Index Configuration Summary</title>
       <option name="link.visible">false</option>
@@ -110,6 +121,7 @@ all of the search peers.
         </query>
       </search>
     </table>
+    </panel>
   </row>
 
 </form>

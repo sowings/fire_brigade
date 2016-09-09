@@ -2,6 +2,7 @@
   <label>Data Movement Summary</label>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard provides visibility into the flow of data through the
@@ -21,9 +22,11 @@ day, and can signal archival or state transition (hot to warm, warm to
 cold, etc).
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Data Movement Per-Host</title>
       <option name="link.visible">false</option>
@@ -54,6 +57,7 @@ earliest=-1d@d `_fb_summary_recs_host("*")`
   cold_today AS "Current Cold Usage"
   cold_delta AS "Cold Delta"]]></searchString>
     </table>
+    </panel>
   </row>
 
 </form>

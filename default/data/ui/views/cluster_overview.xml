@@ -13,6 +13,7 @@
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p />
@@ -30,9 +31,11 @@ display by indexer. This can highlight indexers which are
 disproportionately loaded.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Locally Indexed Data</title>
       <option name="link.visible">false</option>
@@ -44,6 +47,8 @@ disproportionately loaded.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Replicated Data</title>
       <option name="link.visible">false</option>
@@ -55,6 +60,8 @@ disproportionately loaded.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Total (Local + Replicated)</title>
       <option name="link.visible">false</option>
@@ -66,9 +73,11 @@ disproportionately loaded.
 	</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Proportion of Replicated Data</title>
       <option name="link.visible">false</option>
@@ -84,6 +93,8 @@ disproportionately loaded.
 	</query>
       </search>
     </chart>
+    </panel>
+    <panel>
     <chart>
       <title>Local vs. Replicated Data Over Time (last 30 days)</title>
       <option name="link.visible">false</option>
@@ -108,5 +119,6 @@ disproportionately loaded.
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 </dashboard>

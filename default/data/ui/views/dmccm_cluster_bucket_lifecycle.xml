@@ -35,6 +35,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 During the normal course of operation, Splunk will transition index
@@ -122,9 +123,11 @@ better use of their storage for long-term search access. Either	<i>warm</i> or
 <i>cold</i> buckets are eligible to be reduced in this way.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Summary of Bucket Events</title>
       <option name="link.visible">false</option>
@@ -137,9 +140,11 @@ better use of their storage for long-term search access. Either	<i>warm</i> or
 	</link>
       </drilldown>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <event>
       <title>Matching Raw Events</title>
       <option name="link.visible">false</option>
@@ -147,6 +152,7 @@ better use of their storage for long-term search access. Either	<i>warm</i> or
       <search base="lifecycle_events">
       </search>
     </event>
+    </panel>
   </row>
 
 </form>

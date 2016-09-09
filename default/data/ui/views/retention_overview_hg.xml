@@ -2,6 +2,7 @@
   <label>Retention Overview (with Host Groups)</label>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p/>
@@ -128,6 +129,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 </table>
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset submitButton="false">
@@ -195,6 +197,7 @@ Note: As always the <i>most restrictive</i> retention policy wins!
   </search>
 
   <row>
+    <panel>
     <table id="retention_overview_bucket_states">
       <title>Bucket States</title>
       <option name="link.visible">false</option>
@@ -210,9 +213,11 @@ Note: As always the <i>most restrictive</i> retention policy wins!
     cold AS "Cold Buckets"</query>
       </search>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="retention_overview_bucket_detail">
       <title>Bucket information for $bucket_host$</title>
       <option name="link.visible">false</option>
@@ -248,9 +253,11 @@ Note: As always the <i>most restrictive</i> retention policy wins!
         </query>
       </search>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="retention_overview_disk_states">
       <title>Disk States</title>
       <option name="link.visible">false</option>
@@ -269,9 +276,11 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 	</query>
       </search>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="retention_overview_disk_detail">
       <title>Disk information for $disk_host$</title>
       <option name="link.visible">false</option>
@@ -318,9 +327,11 @@ Note: As always the <i>most restrictive</i> retention policy wins!
 	</query>
       </search>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="retention_overview_volume_states">
       <title>Volume Usage</title>
       <option name="link.visible">false</option>
@@ -365,7 +376,8 @@ state!="thawed" host_group="$host_group$" `_fb_summary_recs("*")`
 	</query>
       </search>
     </table>
-
+    </panel>
+    <panel>
     <table id="retention_overview_time_states">
       <title>Time-Based Retention State</title>
       <option name="link.visible">false</option>
@@ -377,9 +389,10 @@ state!="thawed" host_group="$host_group$" `_fb_summary_recs("*")`
     timewarn AS "Time-Based Status"</query>
       </search>
     </table>
-
+    </panel>
   </row>
   <row>
+    <panel>
     <chart id="retention_overview_volume_index_detail">
       <title>Combined Volume Usage by Index Over Time for $volume_host$</title>
       <option name="link.visible">false</option>
@@ -427,7 +440,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 | timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</query>
       </search>
     </chart>
-
+    </panel>
+    <panel>
     <chart id="retention_overview_volume_limit_detail">
       <title>Combined Data Usage vs. Limit Over Time for $volume_host$</title>
       <option name="link.visible">false</option>
@@ -473,9 +487,11 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 | timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</query>
       </search>
     </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="retention_overview_time_detail">
       <title>Time-Based Retention Status for $time_host$</title>
       <option name="link.visible">false</option>
@@ -528,6 +544,7 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
         </query>
       </search>
     </table>
+    </panel>
   </row>
 
 </form>

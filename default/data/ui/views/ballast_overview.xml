@@ -11,6 +11,7 @@
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 As described in the help for the <a
@@ -52,9 +53,11 @@ sums. The first, <em>Ballast by Indexer</em>, is divided by splunk_sever
 pages that will provide more detail.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Home Path (Hot + Warm) Ballast</title>
       <option name="link.visible">false</option>
@@ -63,7 +66,8 @@ pages that will provide more detail.
 | `_fb_mbytes_pretty(ballast)`</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Cold Path Ballast</title>
       <option name="link.visible">false</option>
@@ -74,7 +78,8 @@ pages that will provide more detail.
 | `_fb_mbytes_pretty(ballast)`</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Thawed Data</title>
       <option name="link.visible">false</option>
@@ -83,7 +88,8 @@ pages that will provide more detail.
 | `_fb_mbytes_pretty(ballast)`</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Total Burden</title>
       <option name="link.visible">false</option>
@@ -93,10 +99,12 @@ pages that will provide more detail.
 | `_fb_mbytes_pretty(ballast)`</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <!-- slice and dice -->
   <row>
+    <panel>
     <chart>
       <title>Ballast by Indexer</title>
       <option name="link.visible">false</option>
@@ -110,6 +118,8 @@ pages that will provide more detail.
 	</link>
       </drilldown>
     </chart>
+    </panel>
+    <panel>
     <chart>
       <title>Ballast by Index</title>
       <option name="link.visible">false</option>
@@ -123,6 +133,7 @@ pages that will provide more detail.
 	</link>
       </drilldown>
     </chart>
+    </panel>
   </row>
 
 </dashboard>

@@ -34,6 +34,7 @@ earliest=-30d@d `_fb_summary_recs($host$, $index$)`
   </fieldset>
  
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p />
@@ -82,9 +83,11 @@ size and the raw data size of the data in the index. This plot is
 shown over a thirty-day trend.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Total On-Disk Size</title>
       <option name="link.visible">false</option>
@@ -95,6 +98,8 @@ shown over a thirty-day trend.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Total Raw Size</title>
       <option name="link.visible">false</option>
@@ -105,6 +110,8 @@ shown over a thirty-day trend.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Compression Percentage</title>
       <option name="link.visible">false</option>
@@ -117,9 +124,11 @@ shown over a thirty-day trend.
 | `_fb_get_comp_percent`</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart id="index_detail_capacity_gauge">
       <title>Index Capacity</title>
       <option name="link.visible">false</option>
@@ -145,6 +154,8 @@ shown over a thirty-day trend.
 	</link>
       </drilldown>
     </chart>
+    </panel>
+    <panel>
     <chart id="index_detail_sourcetype_proportions">
       <title>Sourcetype Proportions</title>
       <option name="link.visible">false</option>
@@ -155,6 +166,8 @@ shown over a thirty-day trend.
 	</query>
       </search>
     </chart>
+    </panel>
+    <panel>
     <chart id="index_detail_bucket_sizes">
       <title>Sizes of Buckets by ID</title>
       <option name="link.visible">false</option>
@@ -176,9 +189,11 @@ shown over a thirty-day trend.
 	</link>
       </drilldown>
     </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Compressed Usage vs. Raw Volume (last 30 days)</title>
       <option name="link.visible">false</option>
@@ -201,6 +216,7 @@ shown over a thirty-day trend.
 | timechart sum(rawMB) AS "Raw (Ingested)", sum(diskTotalinMB) AS "Compressed (On Disk)"</query>
       </search>
     </chart>
+    </panel>
   </row>
 
 </form>

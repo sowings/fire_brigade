@@ -23,6 +23,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This view is focused on identifying buckets which are <i>quarantine</i>
@@ -51,10 +52,12 @@ types of buckets are created. The <code>timestamped</code> field is in epoch
 time format, and can be made easier to read with <code>convert</code> or 
 </div>
     </html>
+    </panel>
   </row>
 
   <!-- Quarantine settings -->
   <row>
+    <panel>
     <single>
       <title>Quarantine Past Seconds</title>
       <option name="link.visible">false</option>
@@ -64,6 +67,8 @@ time format, and can be made easier to read with <code>convert</code> or
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Quarantine Future Seconds</title>
       <option name="link.visible">false</option>
@@ -71,11 +76,13 @@ time format, and can be made easier to read with <code>convert</code> or
       <search base="qtine_overview_rest">
       </search>
     </single>
+    </panel>
   </row>
 
   <!-- Buckets that were quarantine buckets -->
   <!-- Show span, number of events, etc -->
   <row>
+    <panel>
     <table>
       <title>Buckets Originally Created As Quarantine</title>
       <option name="link.visible">false</option>
@@ -98,11 +105,13 @@ index=summary search_name="DB inspection"
 	</query>
       </search>
     </table>
+    </panel>
   </row>
 
   <!-- Quarantine events generating new hot buckets -->
   <!-- Highlight sourcetypes with bad time stamp parsing? -->
   <row>
+    <panel>
     <event>
       <title>Quarantine Bucket Creation Events</title>
       <option name="link.visible">false</option>
@@ -112,6 +121,7 @@ eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
 	</query>
       </search>
     </event>
+    </panel>
   </row>
 
 

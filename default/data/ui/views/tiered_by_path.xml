@@ -13,6 +13,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard can be used to help understand how much data (by its
@@ -30,9 +31,11 @@ desired SLA.
 
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Indexes by Time Span and Path</title>
       <option name="link.visible">false</option>
@@ -71,6 +74,7 @@ desired SLA.
 /app/fire_brigade/retention_age?form.host=$form.host$&form.index=$row.Index$]]></link>
       </drilldown>
     </table>
+    </panel>
   </row>
 
 </form>

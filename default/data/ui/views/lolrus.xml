@@ -26,6 +26,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p/>
@@ -47,6 +48,7 @@ events are stored) is only 30 days, so these panels may be empty for
 old buckets.
 </div>
     </html>
+    </panel>
   </row>
 
 <!--
@@ -63,6 +65,7 @@ old buckets.
   </row>
 -->
   <row>
+    <panel>
     <chart>
       <title>Bucket State and Size Over Time</title>
       <option name="link.visible">false</option>
@@ -91,6 +94,7 @@ old buckets.
       <option name="charting.seriesColors">[0xA04558,0xC07749,0xE0A93B,0x6B8930,0x5479AF,0xB000B0]</option>
 
     </chart>
+    </panel>
   </row>
 
 
@@ -106,21 +110,25 @@ old buckets.
   </search>
 
   <row>
+    <panel>
     <table>
       <title>Bucket State Transitions</title>
       <option name="link.visible">false</option>
       <search base="lolrus_lifecycle">
       </search>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <event>
       <title>Bucket Transition Events</title>
       <option name="link.visible">false</option>
       <search base="lolrus_lifecycle">
       </search>
     </event>
+    </panel>
   </row>
 
 </form>
