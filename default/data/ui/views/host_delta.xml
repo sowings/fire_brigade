@@ -24,14 +24,17 @@ earliest=-1d@d `_fb_summary_recs($host$, "*")`
   </fieldset>
   
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 Help goes here.
 </div>
     </html>
+    </panel>
   </row>
   
-  <row grouping="3,3">
+  <row>
+    <panel>
     <single id="host_delta_hot_sum">
       <!--      <title>Overall Hot Bucket Usage</title> -->
       <option name="field">Usage</option>
@@ -63,7 +66,8 @@ Help goes here.
 	</query>
       </search>
     </single>
-    
+    </panel>
+    <panel>
     <single id="host_delta_warm_sum">
       <!--      <title>Overall Warm Bucket Usage</title> -->
       <option name="field">Usage</option>
@@ -95,9 +99,11 @@ Help goes here.
         </query>
       </search>
     </single>
+    </panel>
   </row>
   
-  <row grouping="3,3">
+  <row>
+    <panel>
     <single id="host_delta_cold_sum">
       <!--      <title>Overall Cold Bucket Usage</title> -->
       <option name="field">Usage</option>
@@ -129,7 +135,8 @@ Help goes here.
 	</query>
       </search>
     </single>
-    
+    </panel>
+    <panel>
     <single id="host_delta_thawed_sum">
       <!--      <title>Overall Thawed Bucket Usage</title> -->
       <option name="field">Usage</option>
@@ -161,24 +168,29 @@ Help goes here.
 	</query>
       </search>
     </single>
+    </panel>
   </row>
   
   <row>
+    <panel>
     <table>
       <title>Bucket Creation (New Hot) Activity</title>
       <search>
 	<query>`fb_bucket_transitions($host$, kindle)` | `fb_bucket_transition_pp`</query>
       </search>
     </table>
+    </panel>
   </row>
   
   <row>
+    <panel>
     <table>
       <title>Bucket Expiration (Freeze) Activity</title>
       <search>
 	<query>`fb_bucket_transitions($host$, freeze)` | `fb_bucket_transition_pp`</query>
       </search>
     </table>
+    </panel>
   </row>
 
 </form>

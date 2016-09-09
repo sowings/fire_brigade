@@ -16,6 +16,7 @@ state="hot" OR state="warm"
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 The family of views in the Retention menu is aimed at helping
@@ -41,6 +42,7 @@ Only)</em>, shows "Count:" and "Limit:" values over the hot and warm
 states. If there are ballast buckets, a count of these will be shown as well.
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
@@ -65,7 +67,8 @@ states. If there are ballast buckets, a count of these will be shown as well.
   </fieldset>
 
 <!-- VALIDATE THIS IN CLUSTERED V6 -->
-  <row grouping="2,3">
+  <row>
+    <panel>
     <single id="retention_count_hot_label">
 <!--      <title>Hot Bucket Count</title> -->
       <option name="link.visible">false</option>
@@ -83,7 +86,8 @@ states. If there are ballast buckets, a count of these will be shown as well.
       <search base="retention_count_rest">
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single id="retention_count_warm_label">
 <!--      <title>Warm Bucket Count</title> -->
       <option name="link.visible">false</option>
@@ -109,9 +113,11 @@ states. If there are ballast buckets, a count of these will be shown as well.
       <search base="retention_count_rest">
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Usage vs. Configured Maximum Count (Hot / Warm Only)</title>
       <option name="link.visible">false</option>
@@ -140,5 +146,6 @@ state="hot" OR state="warm"
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 </form>

@@ -1,7 +1,8 @@
 <form class="formsearch">
   <label>The flower of unfolding - dbinspect</label>
 
-  <row grouping="1,2,1">
+  <row>
+    <panel>
     <single id="dbinspect_lotus_current_state">
       <option name="link.visible">false</option>
       <option name="field">label</option>
@@ -13,6 +14,8 @@
         <unset token="sixty_day"/>
 	</drilldown>
     </single>
+    </panel>
+    <panel>
     <single>
       <option name="link.visible">false</option>
       <option name="field">label</option>
@@ -35,6 +38,8 @@
         <set token="sixty_day">yes</set>
 	</drilldown>
     </single>
+    </panel>
+    <panel>
     <single>
       <option name="link.visible">false</option>
       <option name="field">label</option>
@@ -46,6 +51,7 @@
         <unset token="sixty_day"/>
 	</drilldown>
     </single>
+    </panel>
   </row>
 
 

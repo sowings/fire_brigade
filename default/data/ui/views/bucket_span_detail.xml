@@ -35,6 +35,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 The purpose of this view is to provide a high-level estimate of the
@@ -64,9 +65,11 @@ parameters.
 More information about index configuration can be found <a href="http://docs.splunk.com/Documentation/Splunk/latest/Admin/indexesconf">here</a>.
 </div>
     </html>
+    </panel>
   </row>
 
-  <row grouping="1,2,2">
+  <row>
+    <panel>
     <single id="bucket_span_detail_count_label">
       <title>Local Bucket Count</title>
       <option name="link.visible">false</option>
@@ -75,7 +78,8 @@ More information about index configuration can be found <a href="http://docs.spl
 	<query>stats count</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single id="bucket_span_detail_avg_span_label">
 <!--      <title>Average Local Bucket Span</title> -->
       <option name="link.visible">false</option>
@@ -99,7 +103,8 @@ More information about index configuration can be found <a href="http://docs.spl
 	</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single id="bucket_span_detail_hot_limits_label">
 <!--      <title>Configured Hot Span Limit</title> -->
       <option name="link.visible">false</option>
@@ -117,9 +122,11 @@ More information about index configuration can be found <a href="http://docs.spl
       <search base="rest_index_config">
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Local Bucket Span In Hours</title>
       <option name="link.visible">false</option>
@@ -135,9 +142,11 @@ More information about index configuration can be found <a href="http://docs.spl
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 
- <row>
+  <row>
+    <panel>
       <chart>
         <title>Bucket Event Count vs. Time Span</title>
         <search base="summary_bucket_detail">
@@ -148,6 +157,7 @@ More information about index configuration can be found <a href="http://docs.spl
         <option name="charting.axisTitleX.text">Events</option>
         <option name="charting.axisTitleY.text">Span in Seconds</option>
       </chart>
+    </panel>
   </row>
 
 </form>

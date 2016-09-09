@@ -10,6 +10,7 @@
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard shows the size of buckets within an index. More
@@ -28,6 +29,7 @@ value labeled "Applied".
 <p/>
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
@@ -51,7 +53,8 @@ value labeled "Applied".
     </input>
   </fieldset>
 
-  <row grouping="1,1,2">
+  <row>
+    <panel>
     <single>
       <title>Bucket Count for This Index</title>
       <option name="link.visible">false</option>
@@ -60,6 +63,8 @@ value labeled "Applied".
 	<query>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path | stats count</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Average Bucket Size</title>
       <option name="link.visible">false</option>
@@ -71,7 +76,8 @@ value labeled "Applied".
         </query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single id="bucket_size_detail_max_size_label">
 <!--      <title>Configured Max Bucket Size</title> -->
       <option name="link.visible">false</option>
@@ -96,9 +102,11 @@ value labeled "Applied".
         </query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Bucket Sizes with Overlay, Local Buckets Only</title>
       <option name="link.visible">false</option>
@@ -130,6 +138,7 @@ bucket_max AS "Size Limit"
 	</link>
       </drilldown>
     </chart>
+    </panel>
   </row>
 
 </form>

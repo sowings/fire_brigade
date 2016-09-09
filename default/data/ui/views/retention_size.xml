@@ -12,6 +12,7 @@
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 The family of views in the Retention menu is aimed at helping
@@ -59,6 +60,7 @@ path, and the limits for each. If ballast is present in either state,
 it will be shown as a line in the time trend as well.
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
@@ -82,7 +84,8 @@ it will be shown as a line in the time trend as well.
     </input>
   </fieldset>
 
-  <row grouping="2,2,1,1">
+  <row>
+    <panel>
     <single id="retention_size_home_label">
 <!--      <title>Home Path Usage</title> -->
       <option name="link.visible">false</option>
@@ -111,7 +114,8 @@ it will be shown as a line in the time trend as well.
 	</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single id="retention_size_cold_label">
 <!--      <title>Cold Path Usage</title> -->
       <option name="link.visible">false</option>
@@ -133,7 +137,8 @@ it will be shown as a line in the time trend as well.
       <search base="retention_size_rest">
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Configured Total Space Limit</title>
       <option name="link.visible">false</option>
@@ -141,7 +146,8 @@ it will be shown as a line in the time trend as well.
       <search base="retention_size_rest">
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Thawed Path Usage</title>
       <option name="link.visible">false</option>
@@ -154,9 +160,11 @@ it will be shown as a line in the time trend as well.
 	</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart id="retention_size_home_ballast_gauge">
       <title>Ballast in Home Path (Hot + Warm)</title>
       <option name="link.visible">false</option>
@@ -178,6 +186,8 @@ it will be shown as a line in the time trend as well.
 | gauge percent 0 20 40 60 80 100</query>
       </search>
     </chart>
+    </panel>
+    <panel>
     <chart id="retention_size_cold_ballast_gauge">
       <title>Ballast in Cold Path</title>
       <option name="link.visible">false</option>
@@ -199,6 +209,8 @@ it will be shown as a line in the time trend as well.
 | gauge percent 0 20 40 60 80 100</query>
       </search>
     </chart>
+    </panel>
+    <panel>
     <chart id="retention_size_usage_vs_max">
       <title>Usage vs. Configured Maximum Size</title>
       <option name="link.visible">false</option>
@@ -227,9 +239,11 @@ it will be shown as a line in the time trend as well.
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Day-on-Day Index Growth (Last 30 Days)</title>
       <option name="link.visible">false</option>
@@ -256,6 +270,7 @@ it will be shown as a line in the time trend as well.
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 
 </form>

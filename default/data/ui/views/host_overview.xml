@@ -43,6 +43,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard is aimed at providing a single, holistic view of the
@@ -103,11 +104,13 @@ search peer to this host, its hostname will be displayed. Else, the server
 GUID will be displayed instead.
 </div>
     </html>
+    </panel>
   </row>
 
   <!-- Change this to 2,1,2 when it's time to restore model
        acceleration size -->
-  <row grouping="2,1,1">
+  <row>
+    <panel>
     <single id="host_overview_retention_label">
       <option name="link.visible">false</option>
 <!--      <title>Usage Affected by Retention Policies</title> -->
@@ -131,6 +134,8 @@ GUID will be displayed instead.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Thawed Path Usage</title>
       <option name="link.visible">false</option>
@@ -143,6 +148,8 @@ GUID will be displayed instead.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Report Acceleration Usage</title>
       <option name="link.visible">false</option>
@@ -155,11 +162,13 @@ GUID will be displayed instead.
 	</query>
       </search>
     </single>
+    </panel>
 <!-- Punt on this; the map command won't run if there are no matching
      models. So while we could run this search to get data, in most
      cases it will return nothing, and complain about the search being
      unresolved in the UI. Undesired. Hide this for now.
 -->
+    <panel>
     <single>
       <title>Data Model Acceleration Usage</title>
       <option name="field">modelUsage</option>
@@ -171,9 +180,11 @@ GUID will be displayed instead.
 	</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="host_overview_index_table">
       <title>Indexes by Size and Capacity</title>
       <option name="link.visible">false</option>
@@ -217,7 +228,8 @@ GUID will be displayed instead.
       </drilldown>
 
     </table>
-
+    </panel>
+    <panel>
     <table id="host_overview_disk_table">
       <title>Disk Usage Information</title>
       <option name="link.visible">false</option>
@@ -234,10 +246,11 @@ GUID will be displayed instead.
 	</query>
       </search>
     </table>
-
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Local vs. Replicated Data Over Time (last 30 days)</title>
       <option name="link.visible">false</option>
@@ -263,7 +276,8 @@ GUID will be displayed instead.
 /app/fire_brigade/index_detail?form.host=$form.host$&form.index=$click.name2$]]></link>
       </drilldown>
     </chart>
-
+    </panel>
+    <panel>
     <chart id="host_overview_space_trend">
       <title>Monitored Indexing Space Over Time (last 30 days)</title>
       <option name="link.visible">false</option>
@@ -292,9 +306,11 @@ GUID will be displayed instead.
 /app/fire_brigade/cluster_detail?form.host=$form.host$]]></link>
       </drilldown>
     </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Report Acceleration Usage by (Search Head) Host</title>
       <option name="link.visible">false</option>
@@ -313,5 +329,6 @@ GUID will be displayed instead.
 | stats sum(total_size) AS total_size by serverName</query>
       </search>
     </chart>
+    </panel>
   </row>
 </form>

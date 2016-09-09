@@ -45,6 +45,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard focuses on a single index, but displays values across the selected host group. Cumulative values across all hosts are shown as single values, while tables contain per-host summaries.
@@ -74,9 +75,11 @@ that <b>all</b> of the hosts can provide.
 The chart on the bottom is mostly aimed at environments utilizing <i>Index Replication</i>, but can also be useful in environments which do not. In the former case, however, the <i>source host</i> of each slice of index data is shown.
 </div>
     </html>
+    </panel>
   </row>
 
-  <row grouping="4">
+  <row>
+    <panel>
     <single id="index_overview_cumulative_label">
       <option name="link.visible">false</option>
       <option name="field">home</option>
@@ -124,9 +127,11 @@ stats count, sum(sizeOnDiskMB) AS total | fillnull value=0 total
 	</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Index Size and Capacity by Host</title>
       <option name="link.visible">false</option>
@@ -168,9 +173,11 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
 	</link>
       </drilldown>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Total Bucket Count</title>
       <option name="link.visible">false</option>
@@ -179,6 +186,8 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
 	<query>search state!="ballast" | stats sum(buckets) AS buckets</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Median Bucket Size</title>
       <option name="link.visible">false</option>
@@ -187,6 +196,8 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
 	<query>head 1 | `_fb_mbytes_pretty(global_avgBucket)`</query>
 	</search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Total Event Count</title>
       <option name="link.visible">false</option>
@@ -195,9 +206,11 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
 	<query>stats sum(eventCount) AS events | eval events=tostring(events, "commas")</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Index Span By Earliest, Latest</title>
       <option name="link.visible">false</option>
@@ -233,9 +246,11 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
 	</link>
       </drilldown>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Index Usage by Source Indexer</title>
       <option name="link.visible">false</option>
@@ -253,6 +268,7 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 
 </form>

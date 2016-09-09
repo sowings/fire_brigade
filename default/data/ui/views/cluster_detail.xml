@@ -12,6 +12,7 @@
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p />
@@ -45,6 +46,7 @@ to the amount of data being replicated <i>to</i> this indexer from
 other members of the cluster.
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
@@ -68,7 +70,8 @@ other members of the cluster.
     </input>
   </fieldset>
 
-  <row grouping="1,2,1">
+  <row>
+    <panel>
     <single>
       <title>Clustering Mode for This Host</title>
       <option name="link.visible">false</option>
@@ -77,7 +80,8 @@ other members of the cluster.
 	<query>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single id="cluster_detail_replication_label">
 <!--      <title>Global Replication Factor</title> -->
       <option name="link.visible">false</option>
@@ -97,6 +101,8 @@ other members of the cluster.
 	| replace auto with "YES" in repFactor</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Search Factor for This Index</title>
       <option name="link.visible">false</option>
@@ -106,9 +112,11 @@ other members of the cluster.
 	<query>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Locally Indexed Data</title>
       <option name="link.visible">false</option>
@@ -122,6 +130,8 @@ other members of the cluster.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Replicated Data</title>
       <option name="link.visible">false</option>
@@ -135,6 +145,8 @@ other members of the cluster.
 	</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Total (Local + Replicated)</title>
       <option name="link.visible">false</option>
@@ -147,9 +159,11 @@ other members of the cluster.
 	</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Indexer of Origin</title>
       <option name="link.visible">false</option>
@@ -165,6 +179,8 @@ other members of the cluster.
 	</query>
       </search>
     </chart>
+    </panel>
+    <panel>
     <chart>
       <title>Local vs. Replicated Data Over Time (last 30 days)</title>
       <option name="link.visible">false</option>
@@ -191,5 +207,6 @@ other members of the cluster.
 	</query>
       </search>
     </chart>
+    </panel>
   </row>
 </form>

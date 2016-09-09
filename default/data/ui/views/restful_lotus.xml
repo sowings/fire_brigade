@@ -1,7 +1,8 @@
 <form class="formsearch">
   <label>The flower of unfolding</label>
 
-  <row grouping="1,3">
+  <row>
+    <panel>
     <single id="restful_lotus_current_state">
       <option name="link.visible">false</option>
       <option name="field">label</option>
@@ -14,6 +15,8 @@
         <unset token="count_based"/>
 	</drilldown>
     </single>
+    </panel>
+    <panel>
     <single>
       <option name="link.visible">false</option>
       <option name="field">label</option>
@@ -50,6 +53,7 @@
         <set token="count_based">yes</set>
 	</drilldown>
     </single>
+    </panel>
   </row>
 
 

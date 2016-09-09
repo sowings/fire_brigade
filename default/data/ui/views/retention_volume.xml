@@ -58,6 +58,7 @@ state!="thawed" `_fb_summary_recs_host($host$)`
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 A <i>volume</i> definition in Splunk is used to set a cap on the total amount
@@ -106,9 +107,11 @@ right, the index usage is cumulative, and plotted against the size limit of
 the volume.
 </div>
     </html>
+    </panel>
   </row>
 
-  <row grouping="2,1,2">
+  <row>
+    <panel>
     <single id="retention_volume_limits">
       <option name="link.visible">false</option>
       <option name="field">maxVolumeDataSizeMB</option>
@@ -131,6 +134,8 @@ the volume.
 | fields splunk_server, title, path, volume_mount, capacity</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single id="retention_volume_subscription">
       <title>Subscribed Usage</title>
       <option name="link.visible">false</option>
@@ -152,6 +157,8 @@ the volume.
 | `_fb_mbytes_pretty(volume_sum)`</query>
       </search>
     </single>
+    </panel>
+    <panel>
     <single id="retention_volume_current_usage_panel">
       <option name="link.visible">false</option>
       <option name="field">idx_count</option>
@@ -167,9 +174,11 @@ the volume.
 	<query>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table id="retention_volume_index_table">
       <title>Indexes Utilizing This Volume, by Data State</title>
       <option name="link.visible">false</option>
@@ -187,7 +196,8 @@ the volume.
 	</query>
       </search>
     </table>
-
+    </panel>
+    <panel>
     <chart id="retention_volume_fullness_pie">
       <title>Utilization of Indexes vs. Volume Limit</title>
       <option name="link.visible">false</option>
@@ -203,9 +213,11 @@ the volume.
 	</query>
       </search>  
     </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Combined Volume Usage by Index Over Time</title>
       <option name="link.visible">false</option>
@@ -248,7 +260,8 @@ state!="thawed" `_fb_summary_recs_host($host$)`
 	</query>
       </search>
     </chart>
-
+    </panel>
+    <panel>
     <chart>
       <title>Combined Data Usage vs. Limit Over Time</title>
       <option name="link.visible">false</option>
@@ -288,5 +301,6 @@ state!="thawed" `_fb_summary_recs_host($host$)`
 | timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</query>
       </search>
     </chart>
+    </panel>
   </row>
 </form>

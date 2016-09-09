@@ -24,6 +24,7 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
   </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 The family of views in the Retention menu is aimed at helping
@@ -92,6 +93,7 @@ out the last time that the bucket was written to, to highlight the
 possible disconnect with time stamps of ingested data.
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
@@ -118,7 +120,8 @@ possible disconnect with time stamps of ingested data.
     </input>
   </fieldset>
 
-  <row grouping="2,1">
+  <row>
+    <panel>
     <single id="retention_age_freeze_label">
 <!--      <title>Frozen Time Limit Setting (Raw)</title> -->
       <option name="link.visible">false</option>
@@ -136,7 +139,8 @@ possible disconnect with time stamps of ingested data.
       <search base="retention_age_rest">
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Cutoff Time</title>
       <option name="link.visible">false</option>
@@ -144,9 +148,11 @@ possible disconnect with time stamps of ingested data.
       <search base="retention_age_rest">
       </search>
     </single>
+    </panel>
   </row>
 
-  <row grouping="2,1">  
+  <row>
+    <panel>
     <single id="retention_age_oldest_label">
 <!--      <title>Oldest Bucket's Age in Seconds</title> -->
       <option name="link.visible">false</option>
@@ -171,7 +177,8 @@ possible disconnect with time stamps of ingested data.
 	</query>
       </search>
     </single>
-
+    </panel>
+    <panel>
     <single>
       <title>Oldest Bucket in This Group</title>
       <option name="link.visible">false</option>
@@ -182,9 +189,11 @@ possible disconnect with time stamps of ingested data.
 	</query>
       </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Ten Oldest (Neither Thawed nor Hot) Monitored Buckets in This Group</title>
       <option name="link.visible">false</option>
@@ -229,9 +238,11 @@ possible disconnect with time stamps of ingested data.
 	</link>
       </drilldown>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Ballast Buckets in This Group</title>
       <option name="link.visible">false</option>
@@ -265,9 +276,11 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
     max_back AS "Furthest Event Back"</query>
       </search>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Maximal Span (in Days) in This Group</title>
       <option name="link.visible">false</option>
@@ -298,6 +311,7 @@ state!=hot `_fb_summary_recs($host$, $index$)`
 | timechart span=1d first(bucket_span) AS "Bucket Days" by state</query>
       </search>
     </chart>
+    </panel>
   </row>
 
 </form>
