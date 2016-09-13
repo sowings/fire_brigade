@@ -60,7 +60,7 @@ graph shows a thirty-day trend of the overall usage.
     </panel>
   </row>
 
-  <row grouping="2,2,2">
+  <row>
     <panel>
     <single id="cumulative_overview_index_count_label">
 <!--      <title>Total Discovered Index Count</title> -->
