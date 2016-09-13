@@ -125,7 +125,7 @@
 | mvexpand state_flags
 | eval fields=split(state_flags, ";")
 | eval state=mvindex(fields, 0), flags=mvindex(fields, 1)
-| eval final_state=case(state="Nonsearchable", "Replica", state="Searchable" AND flags!="0x0", "Primary", state="Searchable", "Searchable")
+| eval final_state=case(state="Unsearchable", "Replica", state="Searchable" AND flags!="0x0", "Primary", state="Searchable", "Searchable")
 | stats count by final_state]]></query>
         </search>
         <option name="link.visible">false</option>
