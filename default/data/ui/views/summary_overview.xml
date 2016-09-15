@@ -27,6 +27,7 @@ policy questions.
     <panel>
       <table>
         <title>Datamodel Summary Usage by Model Title</title>
+        <option name="link.visible">false</option>
 	<search base="summary_overview_rest">
           <query>search type=data_model_acceleration
 | fields name, total_bucket_count, total_size
@@ -44,6 +45,7 @@ total_size AS "Cumulative Usage (MB)"
     <panel>
       <table>
         <title>Report Acceleration Usage by Search Name</title>
+        <option name="link.visible">false</option>
 	<search base="summary_overview_rest">
           <query>search type=report_acceleration
 | fields name, total_bucket_count, total_size
@@ -58,6 +60,7 @@ total_size AS "Cumulative Usage (MB)"
     <panel>
       <chart>
 	<title>Datamodel Summary Usage by Indexer Host</title>
+        <option name="link.visible">false</option>
         <search base="summary_overview_rest">
           <query>search type=data_model_acceleration
 | stats sum(total_size) AS Usage by splunk_server
@@ -69,6 +72,7 @@ total_size AS "Cumulative Usage (MB)"
     <panel>
       <chart>
 	<title>Report Acceleration Summary Usage by Indexer Host</title>
+        <option name="link.visible">false</option>
         <search base="summary_overview_rest">
           <query>search type=report_acceleration
 | stats sum(total_size) AS Usage by splunk_server
@@ -82,6 +86,7 @@ total_size AS "Cumulative Usage (MB)"
     <panel>
       <chart>
 	<title>Datamodel Summary Usage by Search Head</title>
+        <option name="link.visible">false</option>
         <search base="summary_overview_rest">
           <query>search type=data_model_acceleration
 | stats sum(total_size) AS Usage by search_head_guid
@@ -96,6 +101,7 @@ total_size AS "Cumulative Usage (MB)"
     <panel>
       <chart>
 	<title>Report Acceleration Summary Usage by Search Head</title>
+        <option name="link.visible">false</option>
         <search base="summary_overview_rest">
           <query>search type=report_acceleration
 | stats sum(total_size) AS Usage by search_head_guid
