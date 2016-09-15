@@ -16,7 +16,7 @@ Splunk environment. These are broken out into two types:
 <em>data_model_acceleration</em> summaries, which represent the
 artifacts built to "accelerate" a Data Model. The other type are
 called <em>report_acceleration</em> summaries, and these represent
-acelerated reports. While the underlying data store is different,
+accelerated reports. While the underlying data store is different,
 both types of artifacts take up space, and may play into retention
 policy questions.
 </div>
