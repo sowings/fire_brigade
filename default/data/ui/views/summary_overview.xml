@@ -31,9 +31,7 @@ policy questions.
 	<search base="summary_overview_rest">
           <query>search type=data_model_acceleration
 | fields name, total_bucket_count, total_size
-| rename name AS "Model Title", total_bucket_count AS "Bucket Count",
-total_size AS "Cumulative Usage (MB)"
-	  </query>
+| rename name AS "Model Title", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage (MB)"</query>
 	</search>
 	<drilldown>
 	  <link><![CDATA[
@@ -49,8 +47,7 @@ total_size AS "Cumulative Usage (MB)"
 	<search base="summary_overview_rest">
           <query>search type=report_acceleration
 | fields name, total_bucket_count, total_size
-| rename name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"
-	  </query>
+| rename name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"</query>
 	</search>
       </table>     
     </panel>
