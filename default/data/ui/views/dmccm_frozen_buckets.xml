@@ -1,0 +1,110 @@
+<form>
+  <label>Frozen Buckets (DMC or CM only)</label>
+  <search id="frozen_cluster_master_buckets">
+    <query>| rest /services/cluster/master/buckets | search frozen=1</query>
+    <earliest></earliest>
+    <latest></latest>
+  </search>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Cluster Master</label>
+      <fieldForValue>splunk_server</fieldForValue>
+      <fieldForLabel>host</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+	<query>| rest /services/server/info splunk_server=* | search server_roles=cluster_master</query>
+      </search>
+    </input>
+  </fieldset>
+  
+  <row>
+    <panel>
+      <single>
+        <title>Total Frozen Buckets</title>
+        <search base="frozen_cluster_master_buckets">
+          <query>stats count</query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="drilldown">none</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Copies of Frozen Buckets by State</title>
+        <search base="frozen_cluster_master_buckets">
+          <query><![CDATA[fields title, peers.*.server_name peers.*.search_state
+| foreach peers.*.server_name [ eval host_state=mvappend(host_state, 'peers.<<MATCHSTR>>.search_state' . ";" . 'peers.<<MATCHSTR>>.server_name') ]
+| rex field=title "^(?<bid_index>.*?)~(?<bid_num>\d+)~(?<bid_guid>[-A-F0-9]+)$"
+| fields bid_index host_state
+| mvexpand host_state
+| eval host=mvindex(split(host_state, ";"), 1), status=mvindex(split(host_state, ";"), 0)
+| stats count, count(eval(if(status="Searchable", host, null()))) AS Searchable, count(eval(if(status="Unsearchable", host, null()))) AS Replica by host | sort - count | fields - count]]></query>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Space Consumed by Frozen Buckets</title>
+        <search base="frozen_cluster_master_buckets">
+          <query><![CDATA[fields title, bucket_size peers.*.server_name peers.*.search_state
+| foreach peers.*.server_name [ eval host_state=mvappend(host_state, bucket_size . ";" . 'peers.<<MATCHSTR>>.server_name') ]
+| rex field=title "^(?<bid_index>.*?)~(?<bid_num>\d+)~(?<bid_guid>[-A-F0-9]+)$"
+| fields title host_state
+| mvexpand host_state
+| eval bytes=mvindex(split(host_state, ";"), 0), host=mvindex(split(host_state, ";"), 1)
+| stats sum(bytes) by  host]]></query>
+          <earliest>0</earliest>
+          <latest></latest>
+        </search>
+        <option name="charting.chart">column</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Copies of Frozen Buckets by Index</title>
+        <search base="frozen_cluster_master_buckets">
+          <query><![CDATA[fields title, peers.*.server_name  | rename peers.*.server_name AS * | untable title guid host | rex field=title "^(?<bid_index>.*?)~(?<bid_num>\d+)~(?<bid_guid>[-A-F0-9]+)$" | chart count over host by bid_index]]></query>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.placement">right</option>
+      </chart>
+    </panel>
+  </row>
+</form>
