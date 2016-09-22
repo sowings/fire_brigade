@@ -1,5 +1,5 @@
 <form>
-  <label>Multi-site Clustered Buckets Status</label>
+  <label>Multi-site Clustered Buckets Status (DMC or CM only)</label>
   <search id="cluster_master_buckets">
     <query>| rest /services/cluster/master/buckets splunk_server=$host$</query>
     <earliest></earliest>
@@ -10,7 +10,9 @@
     <earliest>0</earliest>
     <latest></latest>
     <done>
-      <set token="show_multisite">$result.multisite$</set>
+      <condition match="'$result.multisite$' == 'false'">
+        <set token="show_multisite">$result.multisite$</set>
+      </condition>
     </done>
   </search>
 

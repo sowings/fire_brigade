@@ -1,5 +1,5 @@
 <form>
-  <label>Clustered Buckets Status</label>
+  <label>Clustered Buckets Status (DMC or CM only)</label>
   <search id="cluster_master_buckets">
     <query>| rest /services/cluster/master/buckets splunk_server=$host$</query>
     <earliest></earliest>
