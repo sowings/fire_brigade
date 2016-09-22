@@ -19,6 +19,16 @@ called <em>report_acceleration</em> summaries, and these represent
 accelerated reports. While the underlying data store is different,
 both types of artifacts take up space, and may play into retention
 policy questions.
+<p />
+Within the panel titled <em>Datamodel Summary Usage by Model Title</em>, the
+column titled <i>Model Title</i> may be a bit cryptic. It is a combination of
+the string "DM" (for Data Model), the name of the app in which the model is
+defined, and the model's name, all joined with an underscore character. For
+example, a Model Name like "DM_Splunk_SA_CIM_Authentication" refers to the
+<i>Authentication</i> data model contained within the <i>Splunk_SA_CIM</i>
+application.
+<p />
+
 </div>
     </html>
   </row>
