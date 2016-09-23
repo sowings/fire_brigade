@@ -157,3 +157,9 @@
     </panel>
   </row>
 </form>
+<!-- | loadjob 1474588752.697 | eval site=replace(site,
+     "^primaries_by_site\.", "") | stats values(site) AS sites by
+     bucket, guid | search sites="site2" | stats
+     count(eval(if(match(bucket, "^1;"), bucket, null()))) AS
+     "Single-site" count(eval(if(match(bucket, "^0;"), bucket,
+     null()))) AS "Multi-site" by guid -->
