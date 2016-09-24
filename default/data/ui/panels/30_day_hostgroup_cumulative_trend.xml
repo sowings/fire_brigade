@@ -2,8 +2,11 @@
   <title>Monitored Indexing Space by Host Group Over Time (last 30 days)</title>
   <input type="dropdown" token="host_group" searchWhenChanged="true">
     <label>Host Group</label>
-    <choice value="All">All hosts</choice>
-    <populatingSearch fieldForValue="host_group" fieldForLabel="host_group">| inputlookup fb_host_groups | dedup host_group | sort host_group</populatingSearch>
+    <fieldForValue>host_group</fieldForValue>
+    <fieldForLabel>host_group</fieldForLabel>
+    <search>
+	<query>| inputlookup fb_host_groups | stats count by host_group</query>
+    </search>
   </input>
   <chart>
     <option name="link.visible">false</option>
@@ -13,8 +16,11 @@
     <option name="charting.axisTitleX.text">Time</option>
     <option name="charting.axisTitleY.text">MBytes</option>
     <option name="charting.seriesColors">[0x70A65C]</option>
-    <earliestTime>-30d@d</earliestTime>
-    <searchString>host_group="$host_group$" `_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</searchString>
+    <search>
+      <query>host_group="$host_group$" `_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</query>
+      <earliest>-30d@d</earliest>
+      <latest>now</latest>
+    </search>
     <drilldown>
       <link>/app/fire_brigade/retention_size</link>
     </drilldown>
