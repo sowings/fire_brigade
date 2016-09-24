@@ -448,8 +448,6 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/retention_volume?form.host=$form.volume_host$&form.volume_title=$form.volume_title$]]>
@@ -479,6 +477,8 @@ state!="thawed" `_fb_summary_recs_host($volume_host$)`
 | eventstats sum(sizeOnDiskMB) AS daily_usage by _time
 | eventstats dc(index) AS idx_count, max(_time) AS latest
 | timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
       </search>
     </chart>
     </panel>

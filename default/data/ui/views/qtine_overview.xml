@@ -86,7 +86,6 @@ time format, and can be made easier to read with <code>convert</code> or
     <table>
       <title>Buckets Originally Created As Quarantine</title>
       <option name="link.visible">false</option>
-      <earliestTime>@d</earliestTime>
       <search>
 	<query>
 [ search earliest=0 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
@@ -103,6 +102,8 @@ index=summary search_name="DB inspection"
    eventCount AS "Event Count"
 | table host Index "Bucket ID" "Bucket State" "Event Count" "Earliest Time" "Latest Time" rawSize sourceCount sourceTypeCount hostCount sizeOnDiskMB 
 	</query>
+        <earliest>@d</earliest>
+	<latest>now</latest>
       </search>
     </table>
     </panel>

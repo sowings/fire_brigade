@@ -170,9 +170,10 @@ graph shows a thirty-day trend of the overall usage.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
       <search>
 	<query>`_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</query>
+      <earliest>-30d@d</earliest>
+      <latest>now</latest>
       </search>
       <drilldown>
         <link>/app/fire_brigade/retention_size</link>

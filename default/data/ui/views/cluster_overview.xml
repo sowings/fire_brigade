@@ -106,8 +106,6 @@ disproportionately loaded.
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
       <search>
 	<query><![CDATA[`_fb_summary_recs(*)`
 | bucket _time span=1d
@@ -117,6 +115,8 @@ disproportionately loaded.
 | eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type]]>
 	</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
       </search>
     </chart>
     </panel>

@@ -291,8 +291,6 @@ state!=thawed state!=hot `_fb_summary_recs($host$, $index$)`
            about the @d part; we may only get 29 days for a time-zone
 	   shifted environment, but that's still good enough to show
 	   the trend -->
-      <earliestTime>-30d@d</earliestTime>
-      <latestTime>now</latestTime>
       <search>
 	<query>
 state!=hot `_fb_summary_recs($host$, $index$)`
@@ -309,6 +307,8 @@ state!=hot `_fb_summary_recs($host$, $index$)`
 | eval outside_days=round((abs_latest - abs_earliest) / 86400, 2)
 | eval bucket_span=if(state="Thawed", outside_days, bucket_days)
 | timechart span=1d first(bucket_span) AS "Bucket Days" by state</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
       </search>
     </chart>
     </panel>
