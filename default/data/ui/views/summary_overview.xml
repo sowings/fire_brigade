@@ -28,7 +28,22 @@ example, a Model Name like "DM_Splunk_SA_CIM_Authentication" refers to the
 <i>Authentication</i> data model contained within the <i>Splunk_SA_CIM</i>
 application.
 <p />
-
+Continuing down the left column, accelerated model usage is broken out
+per indexer (in the panel <em>Datamodel Summary Usage by Indexer
+Host</em> and by search head in <em>Datamodel Summary Usage by Search
+Head</em>. As a reminder, the model acceleration is bound to the GUID
+of the search head (or search head cluster).
+<p />
+The panels down the right coumn are aimed at report acceleration
+summaries. The names of these are even more cryptic than those of data
+models! The first part of the name represents the app containing the
+report, similar to how a data model is defined. The next section
+contains the name of the user who scheduled the acceleration. Finally,
+the last piece is the <i>Normalized Summary ID</i> of the search. All
+of these are combined with underscores.
+<p />
+As with the Data Model Acceleration panels, the right column breaks
+out the acceleration usage by indexer, and then by search head.
 </div>
     </html>
   </row>
