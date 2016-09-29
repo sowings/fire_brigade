@@ -25,6 +25,59 @@
   <row>
     <html>
 <div id="fire_brigade_help">
+This dashboard attempts to provide some information about the state of buckets
+within the indexing clustered environment. Within an indexing cluster, buckets
+may be standalone or cluster-aware. Cluster-aware buckets may be replica
+copies (these do not contain the extra artifacts that make the data
+searchable, but they provide data security), or they may be
+searchable. Searchable copies may also be flagged as <i>primary</i>, and it is
+these which are searched when looking for events. As a final layer, the
+buckets may be "site aware" when multi-site clustering is used. Buckets minted
+before the <code>multisite = true</code> setting (in <a
+href="server.conf">server.conf</a> was enabled will only be single-site (read:
+<i>not</i> site aware).
+<p />
+Within an indexing cluster, all buckets are identified by their "bucket
+ID". This value is a string made up of the name of the index followed by the
+unique bucket number (this must be unique per-host, see below), followed in
+turn by the GUID of the indexer that ingested the data. A sample bucket ID
+looks like this <code>main~0~4260C3CE-894E-4055-9EB4-D4594097B8C8</code>. The
+panel titled <em>Unique Buckets</em> counts these across the entire indexing
+cluster. By contrast, the far right of this row, the panel titled, <em>Total
+Buckets</em> refers to the total number of <i>all</i> copies found within the
+cluster.
+<p />
+In the middle of the top row is a panel titled <em>Frozen Buckets</em>. This
+refers to the number of buckets within the cluster that have been marked as
+<i>frozen</i>. An indexer that is part of an indexing cluster is responsible
+for managing its own retention policies. However, the process of replacing
+missing copies of a bucket (arguably the main point of indexer clustering) is
+at odds with the notion of retiring buckets from service (freezing). When a
+host needs to freeze a bucket in order to satisfy its indexing policy, it will
+indicate this state change to the cluster master. At this point, the bucket
+will no longer be "fixed up" if it goes missing. Any remaining copies which
+are <i>searchable</i> can be promoted to primary so that the data will still
+be available to searches. However, a <i>replica-only</i> copy will <b>not</b>
+be fixed up, so the data may be unsearchable, <i>despite still being available
+within the cluster</i>. This panel (in combination with the two on the
+following row) shows the number of buckets marked as "frozen" within the
+cluster. Whether or not the bucket is still searchable will determine which
+panel of the two below (titled <em>Frozen Yet Searchable Buckets</em> and
+<em>Frozen Replica-Only Buckets</em> respectively) will show the bucket count.
+<p />
+The bottom left panel counts buckets by their state. There are several states
+represented. A <code>Replica</code> bucket is a non-searchable, backup copy of
+the data. A bucket tagged as <code>Searchable</code> is a redundant searchable
+copy of the data. If the bucket is marked as <code>Primary</code> this is a
+subset of the <i>Searchable</i> category. This bucket as the search metadata
+present, <i>and is specifically tagged as being the one to be searched.</i>
+<p />
+As mentioned in the prior paragraph, buckets marked as <code>Primary</code>
+are the ones which will be searched by Splunk. Ensuring that the load of these
+is balanced across the indexing infrastructure can help ensure good
+performance of searches. The bottom right panel, <em>Primary Buckets by Host
+(Search Load)</em> calls out the count of these primary buckets by indexer, to
+provide an insight into the approximate search load borne by each.
 <p />
 </div>
     </html>
