@@ -50,6 +50,9 @@
         <option name="drilldown">none</option>
 	<search base="multisite">
 	</search>
+        <drilldown>
+	  <link>/app/fire_brigade/dmccm_cluster_master_buckets</link>
+	</drilldown>
       </single>
     </panel>
   </row>
