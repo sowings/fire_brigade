@@ -1,17 +1,23 @@
 <form>
   <label>Multi-site Clustered Buckets Status (DMC or CM only)</label>
   <search id="cluster_master_buckets">
-    <query>| rest /services/cluster/master/buckets splunk_server=$host$</query>
+    <query>| rest /services/cluster/master/buckets splunk_server=$host$
+| fields title, frozen, primaries_by_site.*, peers.*.server_name, peers.*.bucket_flags, peers.*.search_state
+</query>
     <earliest></earliest>
     <latest></latest>
   </search>
   <search id="multisite">
-    <query>| rest /services/cluster/config splunk_server=$host$ | search mode="master" | fields multisite | eval range=if(multisite="true", 1, 0) | rangemap None=0-0 severe=1-1 field=range</query>
+    <query>| rest /services/cluster/config splunk_server=$host$ | search mode="master" | fields multisite | eval range=if(multisite="true", 1, 0) | rangemap None=1-1 severe=0-0 field=range</query>
     <earliest>0</earliest>
     <latest></latest>
     <done>
-      <condition match="'$result.multisite$' == 'false'">
+      <condition match="$result.multisite$ == &quot;false&quot;">
         <set token="show_multisite">$result.multisite$</set>
+      </condition>
+      <!-- Don't show this when multisite is true. -->
+      <condition match="$result.multisite$ == &quot;true&quot;">
+        <unset token="show_multisite"></unset>
       </condition>
     </done>
   </search>
