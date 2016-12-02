@@ -107,8 +107,6 @@ provide an insight into the approximate search load borne by each.
         <title>Unique Buckets</title>
         <search base="cluster_master_buckets">
           <query>stats count</query>
-          <earliest>0</earliest>
-          <latest></latest>
         </search>
 	<option name="link.visible">false</option>
         <option name="drilldown">none</option>
@@ -119,8 +117,6 @@ provide an insight into the approximate search load borne by each.
         <title>Frozen Buckets</title>
         <search base="cluster_master_buckets">
           <query>search frozen=1 | stats count</query>
-          <earliest>0</earliest>
-          <latest></latest>
         </search>
 	<option name="link.visible">false</option>
         <option name="drilldown">none</option>
@@ -196,8 +192,9 @@ provide an insight into the approximate search load borne by each.
           <query><![CDATA[| fields title peers.*.search_state peers.*.server_name peers.*.bucket_flags 
 | foreach peers.*.server_name [ eval host_state=mvappend(host_state, 'peers.<<MATCHSTR>>.search_state' . ";" . 'peers.<<MATCHSTR>>.server_name' . ";" . 'peers.<<MATCHSTR>>.bucket_flags') ] 
 | fields title, host_state 
-| mvexpand host_state 
-| search host_state="Searchable;*" host_state!="*;0x0" | eval host=mvindex(split(host_state, ";"), 1)
+| eval host_state=mvfilter(match(host_state,"^Searchable"))
+| eval host_state=mvfilter(not match(host_state, ";0x0$"))
+| rex field=host_state ";(?<host>[-.\w]+);"
 | stats count by host]]></query>
         </search>
         <option name="link.visible">false</option>
