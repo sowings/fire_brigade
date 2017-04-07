@@ -11,7 +11,7 @@
       </search>
     </input>
     <input type="dropdown" token="rest_indexes_data" searchWhenChanged="true">
-      <label>Select the "indexes" lookup</label>
+      <label>Select the "/services/data/indexes" lookup</label>
       <fieldForValue>title</fieldForValue>
       <fieldForLabel>title</fieldForLabel>
       <search base="hollfelder_lookup_rest">
@@ -21,12 +21,12 @@
 
 
   <search id="dbinspect_lookup">
-    <query>| inputlookup $dbinspect_data$
+    <query><![CDATA[| inputlookup $dbinspect_data$
 | fillnull value="full" tsidxState
 | eval _time=now(),
-    orig_host=if(isnotnull(host), host, "test_host"),
+    orig_host=coalesce(host, splunk_server, "test_host"),
     index=if(isnotnull(orig_index), orig_index, "unknown_index")
-</query>
+| rex field=path "[\\/](?<bucket_type>rb|db)_(?<bucket_lt>\d+)_(?<bucket_et>\d+)_(?<bucket_id>\d+)(?:_(?<bucket_primary_guid>.+))?$"]]></query>
   </search>
 
   <row>
@@ -64,8 +64,8 @@
 	  <query>| stats count by orig_host</query>
 	</search>
       </input>
-      <table id="host_overview_index_table">
-        <title>Indexes by Size and Capacity</title>
+      <table id="host_overview_index_table" rejects="$rest_indexes_data$">
+        <title>Indexes by Size and Capacity (No Index Configs)</title>
         <option name="link.visible">false</option>
         <search base="dbinspect_lookup">
           <query>`_fb_where_today`
@@ -107,6 +107,81 @@
       </drilldown>
 
       </table>
+      <table id="host_overview_index_table_configs" depends="$rest_indexes_data$">
+        <title>Indexes by Size and Capacity (No Index Configs)</title>
+        <option name="link.visible">false</option>
+	<option name="drilldown">none</option>
+        <search base="dbinspect_lookup">
+          <query>`_fb_where_today`
+| stats
+    sum(sizeOnDiskMB) AS diskTotalinMB
+    max(endEpoch) AS endEpoch
+    by index, state
+| lookup $rest_indexes_data$ title AS index
+| `_fb_null_hot_cold_max`
+| stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
+    sum(diskTotalinMB) AS totalUsage
+    first(maxTotalDataSizeMB) AS max_limit
+    first(homePath.maxDataSizeMB) AS home_limit
+    first(coldPath.maxDataSizeMB) AS cold_limit
+    by index
+| rename comment AS "No coalesce because a home / cold limit alone results in max taking over"
+| eval limit=min(home_limit + cold_limit, max_limit)
+| eval percentage=round(ratedUsage * 100 / limit, 1)
+| sort - ratedUsage
+| eventstats max(totalUsage) AS top_total
+| eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval ratedUsage=round(ratedUsage, 2)
+| eval totalUsage=round(totalUsage, 2)
+| eval Ballast=round(Ballast, 2)
+| rename ratedUsage AS "\"Retention\" Usage"
+    totalUsage AS "Total Usage" 
+    rel_size AS "Relative Size"
+    percentage AS "% of Capacity"
+    index AS Index
+    | table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+	</query>
+      </search>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+	<title>Total Buckets</title>
+	<option name="underLabel">unique / total</option>
+	<search base="dbinspect_lookup">
+	  <query>`_fb_where_today`
+| eval bucket_type=if(guId==bucket_primary_guid, "db", "rb")
+| stats count AS total, distinct_count(bucketId) AS unique
+| fillnull value=0 total, unique
+| eval result=unique . " / " . total 
+| fields result	  
+	  </query>
+	</search>
+      </single>
+      <single depends="$rest_indexes_data$">
+	<title>Max Bucket Size</title>
+	<search>
+	  <query>
+| inputlookup $rest_indexes_data$ | head 1 | fields maxDataSize
+| eval bucket_max=case(maxDataSize=="auto", 750, maxDataSize="auto_high_volume", 10000, 1=1, maxDataSize)
+| fields bucket_max</query>
+	</search>
+      </single>
+      <single>
+	<title>Average Bucket Size</title>
+	<search base="dbinspect_lookup">
+	  <query>`_fb_where_today`
+| eval bucket_type=if(guId=bucket_primary_guid, "db", "rb")
+| rename comment AS "bucket_type could end up null"
+| search NOT bucket_type="rb"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path, id
+| stats avg(sizeOnDiskMB)
+	  </query>
+	</search>
+      </single>
     </panel>
   </row>
 </form>
