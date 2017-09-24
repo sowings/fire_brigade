@@ -118,9 +118,7 @@ shown over a thirty-day trend.
       <option name="field">comp_percent</option>
       <option name="underLabel">of raw size</option>
       <search base="index_detail_summary">
-        <query>
-| rename sizeOnDiskMB AS diskTotalinMB
-| eval rawTotalinMB=round(rawSize / 1024 / 1024, 0)
+        <query>| stats sum(diskTotalinMB) AS diskTotalinMB, sum(rawTotalinMB) AS rawTotalinMB
 | `_fb_get_comp_percent`</query>
       </search>
     </single>
