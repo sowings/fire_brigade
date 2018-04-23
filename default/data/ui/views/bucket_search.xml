@@ -28,10 +28,12 @@ search anew.
     <event>
       <title>Bucket Events</title>
       <option name="count">50</option>
-      <searchString>index=$index$ earliest=$et$
-[| stats count | eval latest=$lt$+1 | return latest ]
+      <search>
+	<query>index=$index$ earliest=$et$
+[| makeresults | eval latest=$lt$+1 | return latest ]
 | where _bkt="$bucket_id$"
-      </searchString>
+	</query>
+      </search>
     </event>
   </row>
 </form>
