@@ -137,8 +137,7 @@ state="hot" OR state="warm"
 | bucket _time span=1d
 | eval state=mvappend(state, if(endEpoch>now(), "ballast", null()))
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, index, state
-| join type=left index
- [ | `_fb_rest_index_config($host$, $index$)` ]
+| lookup fb_services_data_indexes_cache splunk_server, title AS index OUTPUT maxHotBuckets maxWarmDBCount
 | eval limit=if(state=="hot", maxHotBuckets, if(state=="warm", maxWarmDBCount, 0))
 | timechart span=1d dc(path) AS "Count", first(limit) AS Limit by state
 | rename comment AS "Just in case..."

@@ -177,8 +177,7 @@ it will be shown as a line in the time trend as well.
 | dedup _time, path
 | eval title="$index$", state=if(endEpoch > now(), "ballast", "home")
 | search state="ballast"
-| join index [| `_fb_rest_index_config($host$, $index$)`
-   | fields index homePath.maxDataSizeMB, maxTotalDataSizeMB ]
+| lookup fb_services_data_indexes_cache splunk_server AS orig_host, title AS index OUTPUT homePath.maxDataSizeMB maxTotalDataSizeMB
 | eval limit=if('homePath.maxDataSizeMB' = 0, maxTotalDataSizeMB, 'homePath.maxDataSizeMB')
 | stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
 | fillnull value=0 limit, size
@@ -200,8 +199,7 @@ it will be shown as a line in the time trend as well.
 | dedup _time, path
 | eval title="$index$", state=if(endEpoch > now(), "ballast", "cold")
 | search state="ballast"
-| join index [| `_fb_rest_index_config($host$, $index$)`
-   | fields index homePath.maxDataSizeMB, maxTotalDataSizeMB ]
+| lookup fb_services_data_indexes_cache splunk_server AS orig_host, title AS index OUTPUT homePath.maxDataSizeMB maxTotalDataSizeMB
 | eval limit=if('homePath.maxDataSizeMB' = 0, maxTotalDataSizeMB, 'homePath.maxDataSizeMB')
 | stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
 | fillnull value=0 limit, size
@@ -231,8 +229,7 @@ it will be shown as a line in the time trend as well.
 | dedup _time, path
 | eval state=if(state=="hot" OR state=="warm", "homePath", if(state=="cold", "coldPath", state))
 | eval state=mvappend(state, if(endEpoch > now(), "ballast", null()))
-| join type=left index
- [ | `_fb_rest_index_config($host$, $index$)` ]
+| lookup fb_services_data_indexes_cache splunk_server AS orig_host, title AS index OUTPUT homePath.maxDataSizeMB coldPath.maxDataSizeMB maxTotalDataSizeMB
 | eval limit=if(state=="homePath", coalesce('homePath.maxDataSizeMB', maxTotalDataSizeMB), if(state=="coldPath", coalesce('coldPath.maxDataSizeMB', maxTotalDataSizeMB), 0))
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage", first(limit) AS Limit by state
 | fields - "Limit*ballast"

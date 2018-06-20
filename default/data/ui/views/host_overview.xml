@@ -194,9 +194,7 @@ GUID will be displayed instead.
     sum(sizeOnDiskMB) AS diskTotalinMB
     max(endEpoch) AS endEpoch
     by index, state
-| join type=left index
-[ | rest /services/data/indexes splunk_server=$host$* count=0
-  | rename title AS index ]
+| lookup fb_services_data_indexes_cache splunk_server, title AS index
 | `_fb_null_hot_cold_max`
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
     sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
