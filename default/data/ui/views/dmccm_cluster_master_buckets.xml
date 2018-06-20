@@ -10,10 +10,14 @@
     <earliest>0</earliest>
     <latest></latest>
     <done>
-      <condition match="$result.multisite$ == &quot;false&quot;">
+      <condition match="$result.multisite$ == &quot;true&quot;">
         <set token="show_multisite">$result.multisite$</set>
       </condition>
-    </done>
+      <!-- Don't show this when multisite is false. -->
+      <condition match="$result.multisite$ == &quot;false&quot;">
+        <unset token="show_multisite"></unset>
+      </condition>
+     </done>
   </search>
 
   <row>

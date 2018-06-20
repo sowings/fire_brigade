@@ -13,7 +13,7 @@
   </search>
   <search id="dma_overview">
     <query>| rest /services/data/summaries search="type=data_model_acceleration" splunk_server=$host$
-| join type=left search_head_guid [| rest /services/server/info | rename guid AS search_head_guid | fields splunk_server, search_head_guid ]
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT splunk_server
 | eval server_name=coalesce(splunk_server, search_head_guid)
     </query>
   </search>

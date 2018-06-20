@@ -172,7 +172,7 @@ other members of the cluster.
 	<query>`_fb_where_today`
 | extract auto=f fb_extract_hot_bucket
 | eval guid=coalesce(bucket_primary_guid, guId)
-| join type=left guid [ | rest /services/server/info | rename splunk_server AS host ]
+| lookup fb_services_server_info_cache guid OUTPUT splunk_server AS host
 | fillnull value="Missing Indexer" host
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by host, path
 | stats sum(sizeOnDiskMB) AS MBytes by host

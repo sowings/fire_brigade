@@ -255,8 +255,7 @@ stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
       <search>
 	<query>`fb_data_from_today` `_fb_summary_recs($index$)`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by orig_host, path, guId
-| join type=left guId [ | rest /services/server/info | fields - id 
-  | rename guid as guId ]
+| lookup fb_services_server_info_cache guId AS guid OUTPUT splunk_server
 | chart sum(sizeOnDiskMB) AS Total by orig_host, splunk_server
 	</query>
       </search>

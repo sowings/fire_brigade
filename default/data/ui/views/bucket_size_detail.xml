@@ -91,10 +91,10 @@ value labeled "Applied".
       <option name="link.visible">false</option>
       <option name="field">bucket_max</option>
       <option name="underLabel">Applied</option>
+<!-- I think I can do better with that logic -->
       <search id="rest_bucket_config">
 	<query>| `_fb_rest_index_config($host$, $index$)`
-| join type=left splunk_server
-   [ | rest /services/server/info splunk_server=$host$ ]
+| lookup fb_services_server_info_cache splunk_server OUTPUT cpu_arch
 | eval bucket_max=if(maxDataSize=="auto", 750,
     if(maxDataSize=="auto_high_volume",
         case(cpu_arch=="x86_64", 10000, cpu_arch=="x64", 10000, 1==1, 1000), maxDataSize))
@@ -124,8 +124,7 @@ extract auto=f fb_extract_bucket_type_time_source
 | sort 0 id
 | join type=left index
   [ | `_fb_rest_index_config($host$, $index$)` ]
-| join type=left splunk_server
-  [ | rest /services/server/info | fields - id ]
+| lookup fb_services_server_info_cache splunk_server OUTPUT cpu_arch
 | eval bucket_max=case(isint(maxDataSize), maxDataSize, maxDataSize=="auto", 750, cpu_arch="x86_64", 10000, cpu_arch="x64", 10000, 1==1, 1000)
 | table id, sizeOnDiskMB, average, bucket_max
 | rename sizeOnDiskMB AS "Bucket Size", average AS "Average Size",

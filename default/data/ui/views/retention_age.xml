@@ -216,9 +216,7 @@ possible disconnect with time stamps of ingested data.
 | convert ctime(bucket_lt)
 | convert ctime(bucket_et)
 | `_fb_mbytes_pretty(sizeOnDiskMB)`
-| join type=left guId [ | rest /services/server/info | fields - id
-    | rename splunk_server AS host,
-        guid AS guId ]
+| lookup fb_services_server_info_cache guid AS guId OUTPUT splunk_server AS host
 | fillnull host value="Missing Indexer"
 | table host, index, id, eventCount, sizeOnDiskMB, bucket_et, max_back, bucket_lt, bucket_age
 | rename bucket_lt AS "Latest Time",

@@ -26,7 +26,7 @@
   <search id="rest_summary_data">
     <query>| rest /services/data/summaries splunk_server=$host$
 | fields type search_head_guid total_size
-| join type=left search_head_guid [| rest /services/server/info | fields guid, serverName | rename guid AS search_head_guid ]
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
 | eval serverName=coalesce(serverName, search_head_guid)
     </query>
   </search>

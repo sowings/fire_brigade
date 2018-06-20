@@ -64,7 +64,8 @@
 	<title>Fucko</title>
 	<option name="charting.chart">column</option>
 	<search base="cluster_master_summaries">
-	  <query>
+	  <query></query>
+	</search>
       </chart>
     </panel>
   </row>

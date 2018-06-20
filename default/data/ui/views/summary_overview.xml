@@ -112,7 +112,7 @@ out the acceleration usage by indexer, and then by search head.
         <search base="summary_overview_rest">
           <query>search type=data_model_acceleration
 | stats sum(total_size) AS Usage by search_head_guid
-| join type=left search_head_guid [| rest /services/server/info | rename guid AS search_head_guid ]
+| lookup fb_services_server_info_cache search_head_guid AS guid OUTPUT splunk_server
 | eval shead=coalesce(splunk_server, search_head_guid)
 | rename shead AS "Search Head"
 | fields "Search Head", Usage</query>
@@ -127,7 +127,7 @@ out the acceleration usage by indexer, and then by search head.
         <search base="summary_overview_rest">
           <query>search type=report_acceleration
 | stats sum(total_size) AS Usage by search_head_guid
-| join type=left search_head_guid [| rest /services/server/info | rename guid AS search_head_guid ]
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT splunk_server
 | eval shead=coalesce(splunk_server, search_head_guid)
 | rename shead AS "Search Head"
 | fields "Search Head", Usage</query>
