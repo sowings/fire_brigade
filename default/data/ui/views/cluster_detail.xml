@@ -108,9 +108,7 @@ other members of the cluster.
       <option name="link.visible">false</option>
       <option name="field">search_factor</option>
       <option name="underLabel">Global Searchable Copies</option>
-      <search base="rest_server_clustering">
-	<query>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</query>
-      </search>
+      <search base="rest_server_clustering"/>
     </single>
     </panel>
   </row>
