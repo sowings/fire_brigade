@@ -171,6 +171,7 @@ GUID will be displayed instead.
     <panel>
     <single>
       <title>Data Model Acceleration Usage</title>
+      <option name="link.visible">false</option>
       <option name="field">modelUsage</option>
 <!--      <option name="underLabel">Serving this SH</option> -->
       <search base="rest_summary_data">
