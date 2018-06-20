@@ -177,6 +177,7 @@ GUID will be displayed instead.
       <search base="rest_summary_data">
         <query>search type="data_model_acceleration"
 | stats sum(total_size) AS modelUsage
+| fillnull value=0 modelUsage
 | `_fb_mbytes_pretty(modelUsage)`
 	</query>
       </search>
