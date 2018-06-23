@@ -165,6 +165,7 @@ the volume.
       <option name="underLabel">Indexes</option>
       <option name="showSparkline">false</option>
       <option name="showTrendIndicator">false</option>
+      <search base="retention_volume_summary"/>
     </single>
     <single>
       <option name="link.visible">false</option>
