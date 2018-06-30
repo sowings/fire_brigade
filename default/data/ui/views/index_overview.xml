@@ -18,7 +18,7 @@
   first(global_avgBucket) AS global_avgBucket
   by orig_host, state, index
 | rename orig_host AS host
-| join type=left host, index [ `_fb_rest_index_config($index$)`| rename splunk_server AS host | fields host, index, maxTotalDataSizeMB, frozenTimePeriodInSecs, maxDataSize, maxHotBuckets, maxWarmDBCount, homePath.maxDataSizeMB, coldPath.maxDataSizeMB ]
+| lookup fb_services_data_indexes_cache splunk_server AS host, title AS index OUTPUT maxTotalDataSizeMB, frozenTimePeriodInSecs, maxDataSize, maxHotBuckets, maxWarmDBCount, homePath.maxDataSizeMB, coldPath.maxDataSizeMB
 | `_fb_null_hot_cold_max`
     </query>
   </search>
