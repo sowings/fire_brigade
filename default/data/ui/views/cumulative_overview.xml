@@ -68,7 +68,7 @@ graph shows a thirty-day trend of the overall usage.
        <option name="underLabel">From REST</option>
        <option name="link.visible">false</option>
        <search id="rest">
-	 <query>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| eventstats dc(title) AS count</query>
+	 <query>| rest /services/data/indexes count=0 | search disabled=0 title!=_blocksignature title!=_thefishbucket| stats dc(title) AS count, sum(eval(if(totalEventCount!=0, currentDBSizeMB, 0))) AS total_size | `_fb_mbytes_pretty(total_size)`</query>
        </search>
     </single>
      <single>
@@ -99,12 +99,7 @@ graph shows a thirty-day trend of the overall usage.
       <option name="link.visible">false</option>
       <option name="field">total_size</option>
       <option name="underLabel">Current (REST)</option>
-      <search base="rest">
-	<query>| `_fb_filter_empty_indexes_from_rest`
-| stats sum(currentDBSizeMB) AS total_size
-| `_fb_mbytes_pretty(total_size)`
-	</query>
-      </search>
+      <search base="rest"/>
     </single>
     </panel>
     <panel>
