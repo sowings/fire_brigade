@@ -2,7 +2,7 @@
   <label>Clustered Bucket Lifecycle</label>
 
   <search id="lifecycle_events">
-    <query>`fb_cluster_bucket_transitions($host$, $stage$)` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</query>
+    <query>`fb_cluster_bucket_transitions($host$, $stage$)` | `_fb_s2_field_extractions` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</query>
   </search>
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
@@ -29,6 +29,8 @@
       <choice value="kindle">New Hot Buckets</choice>
       <choice value="cool">Hot -> Warm</choice>
       <choice value="freeze">Cold -> Frozen</choice>
+      <choice value="s2_up">Remote Storage Upload</choice>
+      <choice value="s2_remove">Remote Storage Cleanup</choice>
       <choice value="*">All State Transitions</choice>
     </input>
     <input type="time" />
