@@ -1,0 +1,140 @@
+<form>
+  <label>S2 - Traffic To And From Remote Storage</label>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <choice value="*">All Hosts</choice>
+      <default>All Hosts</default>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
+    </input>
+
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_index</query>
+      </search>
+    </input>
+
+    <input type="time">
+      <label>Time Range</label>
+      <default>Last 24 hours</default>
+    </input>
+    
+  </fieldset>
+
+  <search id="cachemgr_traffic_rest_cacheman_metrics">
+    <query>| rest /services/admin/cacheman/_metrics `_fb_use_or_ignore(splunk_server, $host$)`
+    </query>
+  </search>
+
+  <search id="cachemgr_audit_upload">
+    <query>index=_audit sourcetype=audittrail action!=search TERM(info=completed) TERM(action=local_bucket_upload) host=$host$*
+| fields _time host action cid_type cid_bid cid_index cid_dma_bucket_id kb elapsed_ms
+| eval bandwidth=(kb*1024)/(elapsed_ms/1000)
+| extract auto=f fb_cacheid_bid_subfields
+| extract auto=f fb_cacheid_dma_subfields
+    </query>
+  </search>
+
+  <row>
+    <panel>
+      <html>
+<div id="fire_brigade_help"/>
+      </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+	<title>Remote Storage Uploads</title>
+	<option name="underLabel">pending</option>
+	<search base="cachemgr_traffic_rest_cacheman_metrics">
+	  <query>stats sum(uploads.pending) AS pending</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Queued</title>
+	<option name="underLabel">queued</option>
+	<search base="cachemgr_traffic_rest_cacheman_metrics">
+	  <query>stats sum(uploads.queued) AS queued</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>Audit Bucket Movement (Data Buckets)</title>
+	<search base="cachemgr_audit_upload">
+	  <query>search cid_type=bid
+| table _time, host, kb, elapsed_ms, bandwidth
+| rename host AS Host, kb AS KBytes, elapsed_ms AS "Elapsed (ms)", bandwidth AS Bandwidth
+</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+	<title>Remote Storage Upload Bandwidth Over Time by Host</title>
+	<option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+	<search base="cachemgr_audit_upload">
+	  <query>search cid_type=bid
+| timechart max(bandwidth) AS Bandwidth by host
+| eventstats avg(bandwidth) AS "Avg. B/W"</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Remote Storage Upload Bandwidth Over Time by Index</title>
+	<option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+	<search base="cachemgr_audit_upload">
+	  <query>search cid_type=bid
+| timechart max(bandwidth) AS Bandwidth by cid_index limit=40 usenull=f
+| eventstats avg(bandwidth) AS "Avg. B/W"</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+	<title>Audit Bucket Movement (Data Model Acceleration) by Model</title>
+	<option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+	<search base="cachemgr_audit_upload">
+	  <query>search cid_type=dma
+| timechart max(bandwidth) AS Bandwidth by model_id useother=f limit=40</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Audit Bucket Movement (Data Model Acceleration) by Search Head</title>
+	<option name="charting.chart">line</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+	<search base="cachemgr_audit_upload">
+	  <query>search cid_type=dma
+| timechart max(bandwidth) AS Bandwidth by search_head_guid useother=f limit=40</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+</form>
