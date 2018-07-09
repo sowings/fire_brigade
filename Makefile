@@ -36,7 +36,6 @@ app_package: build_number
 	for f in savedsearches.conf macros.conf transforms.conf ; do sh strip_by_rule.sh above default/$$f ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/$$f ; done
 	sed -e 's/%buildnum%/${BUILD}/g' -e 's/%label%/${APP_LABEL}/g' -e 's/%package_id%/${APP_ID}/g' -e 's/%version%/${APP_VERSION}/g' default/app.conf > ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/app.conf
 	@rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README*.txt
-	rm -rf ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/default/data/ui/views/summary_overview.xml
 	cp -p README.${APP_NAME}.txt ${BUILD_ROOT}/${APP_PACKAGE_BASE}/${APP_NAME}/README.txt
 	(cd ${BUILD_ROOT}/${APP_PACKAGE_BASE} && gnutar -zcf ../${APP_PACKAGE_NAME} --exclude .git --exclude dbinspect-decoder-ring.txt --exclude searches.txt --exclude *.xsl --exclude *.sh --exclude screenshots --exclude modules --exclude ~ --exclude Makefile --exclude bin --exclude Makefile --exclude monitored_indexes.csv --exclude bin --exclude inputs.conf --exclude *.diff --exclude sparklines.xml --exclude msft_* --exclude hollfelder.xml --exclude dbinspect_samples ${APP_NAME})
 
