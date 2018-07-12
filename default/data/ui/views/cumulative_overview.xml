@@ -3,7 +3,7 @@
 
   <search id="summary_one_day">
     <query>
-`fb_data_from_today` `_fb_summary_recs(*)`
+`fb_data_two_days_full` `_fb_summary_recs(*)`
 | bucket _time span=1d
 | fields _time, orig_host, index, sizeOnDiskMB, rawSize
 | stats sum(*) AS * by _time, orig_host, index
@@ -76,7 +76,7 @@ graph shows a thirty-day trend of the overall usage.
       <option name="field">count</option>
       <option name="underLabel">Non-Empty</option>
       <search base="summary_one_day">
-	<query>`_fb_where_today` | stats dc(index) AS count</query>
+	<query>| stats dc(index) AS count by _time</query>
       </search>
     </single>
     </panel>
@@ -87,9 +87,8 @@ graph shows a thirty-day trend of the overall usage.
       <option name="field">dbinspect_size</option>
       <option name="underLabel">Snapshot (dbinspect)</option>
       <search base="summary_one_day">
-	<query>`_fb_where_today`
-| stats sum(sizeOnDiskMB) AS dbinspect_size
-| `_fb_mbytes_pretty(dbinspect_size)`
+	<query>
+| stats sum(sizeOnDiskMB) AS dbinspect_size by _time
 	</query>
       </search>
     </single>
@@ -109,8 +108,8 @@ graph shows a thirty-day trend of the overall usage.
       <option name="field">rawBytes</option>
       <option name="underLabel">From dbinspect</option>
       <search base="summary_one_day">
-	<query>`_fb_where_today`
-| stats sum(rawSize) AS rawBytes
+	<query>
+| stats sum(rawSize) AS rawBytes by _time
 | `_fb_bytes_pretty(rawBytes)`
 	</query>
       </search>
