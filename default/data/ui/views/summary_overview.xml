@@ -55,25 +55,17 @@ out the acceleration usage by indexer, and then by search head.
         <option name="link.visible">false</option>
 	<search base="summary_overview_rest">
           <query>search type=data_model_acceleration
-| fields name, total_bucket_count, total_size
-| rename name AS "Model Title", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage (MB)"</query>
+| stats sum(total_bucket_count) AS total_bucket_count, sum(total_size) AS total_size by search_head_guid, name
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
+| eval shead=coalesce(serverName, search_head_guid)
+| fields shead, name, total_bucket_count, total_size
+| rename shead AS "Search Head", name AS "Model Title", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage (MB)"</query>
 	</search>
 	<drilldown>
 	  <link><![CDATA[
 /app/fire_brigade/summary_dma_summary_detail?form.dm_full_name=$row.Model Title$]]>
 	  </link>
 	</drilldown>
-      </table>     
-    </panel>
-    <panel>
-      <table>
-        <title>Report Acceleration Usage by Search Name</title>
-        <option name="link.visible">false</option>
-	<search base="summary_overview_rest">
-          <query>search type=report_acceleration
-| fields name, total_bucket_count, total_size
-| rename name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"</query>
-	</search>
       </table>     
     </panel>
   </row>
@@ -93,6 +85,46 @@ out the acceleration usage by indexer, and then by search head.
     </panel>
     <panel>
       <chart>
+	<title>Datamodel Summary Usage by Search Head</title>
+        <option name="link.visible">false</option>
+        <search base="summary_overview_rest">
+          <query>search type=data_model_acceleration
+| stats sum(total_size) AS Usage by search_head_guid
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT splunk_server
+| eval shead=coalesce(splunk_server, search_head_guid)
+| rename shead AS "Search Head"
+| fields "Search Head", Usage</query>
+	</search>
+      </chart>
+      
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <html>
+	<hr/>
+      </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+        <title>Report Acceleration Usage by Search Name</title>
+        <option name="link.visible">false</option>
+	<search base="summary_overview_rest">
+          <query>search type=report_acceleration
+| fields name, total_bucket_count, total_size
+| rename name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"</query>
+	</search>
+      </table>     
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
 	<title>Report Acceleration Summary Usage by Indexer Host</title>
         <option name="link.visible">false</option>
         <search base="summary_overview_rest">
@@ -101,24 +133,6 @@ out the acceleration usage by indexer, and then by search head.
 | rename splunk_server AS Indexer</query>
 	</search>
       </chart>
-      
-    </panel>
-  </row>
-  <row>
-    <panel>
-      <chart>
-	<title>Datamodel Summary Usage by Search Head</title>
-        <option name="link.visible">false</option>
-        <search base="summary_overview_rest">
-          <query>search type=data_model_acceleration
-| stats sum(total_size) AS Usage by search_head_guid
-| lookup fb_services_server_info_cache search_head_guid AS guid OUTPUT splunk_server
-| eval shead=coalesce(splunk_server, search_head_guid)
-| rename shead AS "Search Head"
-| fields "Search Head", Usage</query>
-	</search>
-      </chart>
-      
     </panel>
     <panel>
       <chart>
