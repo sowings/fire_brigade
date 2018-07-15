@@ -2,9 +2,10 @@
   <label>Acceleration Data Overview (6.4+)</label>
 
   <search id="summary_overview_rest">
-    <query>
-      | rest /services/data/summaries
-    </query>
+    <query>| rest /services/data/summaries
+| stats sum(total_bucket_count) AS total_bucket_count, sum(total_size) AS total_size by search_head_guid, name, type, splunk_server
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
+| eval shead=coalesce(serverName, search_head_guid)</query>
   </search>
 
   <row>
@@ -55,15 +56,13 @@ out the acceleration usage by indexer, and then by search head.
         <option name="link.visible">false</option>
 	<search base="summary_overview_rest">
           <query>search type=data_model_acceleration
-| stats sum(total_bucket_count) AS total_bucket_count, sum(total_size) AS total_size by search_head_guid, name
-| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
-| eval shead=coalesce(serverName, search_head_guid)
 | fields shead, name, total_bucket_count, total_size
+| sort 0 - total_size
 | rename shead AS "Search Head", name AS "Model Title", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage (MB)"</query>
 	</search>
 	<drilldown>
 	  <link><![CDATA[
-/app/fire_brigade/summary_dma_summary_detail?form.dm_full_name=$row.Model Title$]]>
+/app/fire_brigade/summary_dma_summary_detail?form.srv=$row.Search Head$&form.dm_full_name=$row.Model Title$]]>
 	  </link>
 	</drilldown>
       </table>     
@@ -75,6 +74,11 @@ out the acceleration usage by indexer, and then by search head.
       <chart>
 	<title>Datamodel Summary Usage by Indexer Host</title>
         <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
         <search base="summary_overview_rest">
           <query>search type=data_model_acceleration
 | stats sum(total_size) AS Usage by splunk_server
@@ -87,11 +91,14 @@ out the acceleration usage by indexer, and then by search head.
       <chart>
 	<title>Datamodel Summary Usage by Search Head</title>
         <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Search Head</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
         <search base="summary_overview_rest">
           <query>search type=data_model_acceleration
-| stats sum(total_size) AS Usage by search_head_guid
-| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT splunk_server
-| eval shead=coalesce(splunk_server, search_head_guid)
+| stats sum(total_size) AS Usage by shead
 | rename shead AS "Search Head"
 | fields "Search Head", Usage</query>
 	</search>
@@ -115,8 +122,9 @@ out the acceleration usage by indexer, and then by search head.
         <option name="link.visible">false</option>
 	<search base="summary_overview_rest">
           <query>search type=report_acceleration
-| fields name, total_bucket_count, total_size
-| rename name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"</query>
+| fields shead, name, total_bucket_count, total_size
+| sort 0 - total_size
+| rename shead AS "Search Head", name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"</query>
 	</search>
       </table>     
     </panel>
@@ -127,6 +135,11 @@ out the acceleration usage by indexer, and then by search head.
       <chart>
 	<title>Report Acceleration Summary Usage by Indexer Host</title>
         <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
         <search base="summary_overview_rest">
           <query>search type=report_acceleration
 | stats sum(total_size) AS Usage by splunk_server
@@ -138,11 +151,14 @@ out the acceleration usage by indexer, and then by search head.
       <chart>
 	<title>Report Acceleration Summary Usage by Search Head</title>
         <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Search Head</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
         <search base="summary_overview_rest">
           <query>search type=report_acceleration
-| stats sum(total_size) AS Usage by search_head_guid
-| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT splunk_server
-| eval shead=coalesce(splunk_server, search_head_guid)
+| stats sum(total_size) AS Usage by shead
 | rename shead AS "Search Head"
 | fields "Search Head", Usage</query>
 	</search>
