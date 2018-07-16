@@ -63,7 +63,7 @@ out the acceleration usage by indexer, and then by search head.
 	</search>
 	<drilldown>
 	  <link><![CDATA[
-/app/fire_brigade/summary_dma_summary_detail?form.srv=$row.Search Head$&form.dm_full_name=$row.Model Title$]]>
+/app/fire_brigade/summary_dma_summary_overview?form.srv=$row.Search Head$&form.dm_full_name=$row.Model Title$]]>
 	  </link>
 	</drilldown>
       </table>     
