@@ -1,0 +1,248 @@
+<form>
+  <label>Wonder Twin Powers, Activate!</label>
+
+  <search id="summary_dma_retention_selector">
+    <query>| rest /services/data/summaries data_model_acceleration=1
+| stats count by search_head_guid, name
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
+| fillnull value="Unpeered" serverName
+| eval shead=search_head_guid . " (" . serverName . ")"</query>
+    <done>
+      <set token="selector_sid">$job.sid$</set>
+    </done>
+  </search>
+
+  <fieldset>
+    <input type="dropdown" token="srv" searchWhenChanged="true">
+      <label>Search Head</label>
+      <fieldForValue>search_head_guid</fieldForValue>
+      <fieldForLabel>shead</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_retention_selector">
+	<query>| stats count values(search_head_guid) AS search_head_guid by shead</query>
+      </search>
+    </input>
+      
+    <input type="dropdown" token="dm_full_name" searchWhenChanged="true">
+      <label>Data Model</label>
+      <fieldForValue>name</fieldForValue>
+      <fieldForLabel>name</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_retention_selector">
+	<query>search search_head_guid=$srv$ | stats count by name</query>
+      </search>
+    </input>
+  </fieldset>
+  
+  <search id="sdr_data_summaries">
+    <query>| rest /services/data/summaries data_model_acceleration=1
+| search search_head_guid=$srv$ title=$dm_full_name$
+| eval related=split(related_indexes, ",")
+    </query>
+    <done>
+      <set token="data_summaries_sid">$job.sid$</set>
+    </done>
+  </search>
+
+  <row>
+    <panel>
+      <single>
+	<title>GUID mapped to serverName (wants GUID)</title>
+	<search>
+	  <query>| loadjob $selector_sid$ | search search_head_guid=$srv|s$ | fields serverName</query>
+          <done>
+            <eval token="srv_name">if($result.serverName$!="Unpeered", $result.serverName$, null())</eval>
+	  </done>
+	</search>
+      </single>
+    </panel>
+  </row>
+  
+  <row depends="$srv_name$">
+    <panel>
+      <single>
+	<title>Acceleration Range</title>
+	<option name="link.visible">false</option>
+	<option name="field">acceleration.earliest_time</option>
+	<search id="sdr_data_models">
+	  <query>| rest /servicesNS/-/-/data/models splunk_server=$srv_name$
+| eval full_name="DM_" . 'eai:acl.app' . "_" . title
+| search full_name=$dm_full_name$</query>
+	  <eval token="different_backfill">if($result.acceleration.backfill_time$ != "0", '$result.acceleration.backfill_time$', null())</eval>
+	</search>
+      </single>
+    </panel>
+    <panel depends="$different_backfill$">
+      <single>
+	<title>Acceleration Backfill Range</title>
+	<option name="link.visible">false</option>
+	<option name="field">acceleration.backfill_time</option>
+	<search base="sdr_data_models"/>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Acceleration Range (sec)</title>
+	<option name="link.visible">false</option>
+	<option name="field">acceleration_secs</option>
+	<search base="sdr_data_models">
+	  <query>eval now=now(), atime=if('acceleration.earliest_time' = 0, 0, relative_time(now(), 'acceleration.earliest_time'))
+| eval acceleration_secs=now - atime</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel rejects="$dbinspect_available$">
+      <table>
+	<title>Indexes Used by This Model</title>
+	<search base="sdr_data_summaries">
+	  <query>stats count by related, splunk_server
+| lookup fb_services_data_indexes_cache splunk_server, title AS related OUTPUT frozenTimePeriodInSecs
+| stats max(frozenTimePeriodInSecs) AS frozenTimePeriodInSecs by related
+| rename related AS "Indexes", frozenTimePeriodInSecs AS "Freeze Cutoff (sec)"</query>
+	</search>
+      </table>
+    </panel>
+    <panel depends="$dbinspect_available$">
+      <chart>
+	<title>Indexes Used by This Model, with Time Range</title>
+	<option name="charting.chart">column</option>
+	<search base="sdr_dbinspect">
+	  <query>| stats min(startEpoch) AS dbi_et max(endEpoch) AS dbi_lt by orig_index
+| eval raw_range=dbi_lt - dbi_et
+| rename orig_index AS related
+| append [ | loadjob $data_summaries_sid$ 
+    | stats count by related, splunk_server
+    | lookup fb_services_data_indexes_cache splunk_server, title AS related OUTPUT frozenTimePeriodInSecs ]
+| fields related frozenTimePeriodInSecs raw_range
+| stats max(*) AS * BY related
+| rename related AS "Indexes", frozenTimePeriodInSecs AS "Freeze Cutoff (sec)", raw_range AS "Raw Data Span"</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Disk Usage / Bucket Count by Indexer</title>
+	<option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (Mbytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
+	<search base="sdr_data_summaries">
+	  <query>stats sum(total_bucket_count) AS count, sum(total_size) AS size by splunk_server
+| rename splunk_server AS Indexer</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is DBinspect (wants hostname - serverName?)</title>
+	<search id="sdr_dbinspect">
+	  <query>`fb_data_from_today` `__fb_summary_recs_base`
+[| loadjob $data_summaries_sid$ | stats count by related, splunk_server | fields related, splunk_server | rename related AS orig_index, splunk_server AS orig_host ]
+| fields orig_host orig_index startEpoch endEpoch sizeOnDiskMB
+</query>
+          <done>
+            <eval token="dbinspect_available">if($job.resultCount$ != "0", "yes", null())</eval>
+	    <set token="dbinspect_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <table>
+	<title>This is
+	/services/admin/summarization/&lt;model&gt;/details (wants serverName)</title>
+	<search>
+	  <query>| rest /services/admin/summarization/tstats:$dm_full_name$/details splunk_server=$srv_name$
+| eval bucketId=index . "~" . replace(bucket_id, "^(\d+)_(.*)$", "\1~\2")</query>
+	  <done>
+	    <set token="admin_summarization_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <table>
+	<title>These are the volumes identified by tstatsHomePath
+	(wants serverName)</title>
+	<search>
+	  <query>| loadjob $data_summaries_sid$
+| stats count by related
+| fields related
+| rename related AS title
+| join type=left title [| rest /services/data/indexes splunk_server=$srv_name$
+    | rex field=tstatsHomePath "volume:(?&lt;volume_name&gt;[^/\\\\]+)"
+    | stats count by volume_name, title
+]
+| table title, volume_name
+| rename title AS "Related Index", volume_name AS "Volume Used"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <table>
+	<title>Form of: An Elephant</title>
+	<search base="sdr_dbinspect">
+	  <query>| append [| loadjob $admin_summarization_sid$ ]
+| table bucketId summary_path bucket_path bucket_et bucket_lt summary_size summary_omplete summary_modtime </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <table>
+	<title>This is the output from index-volumes (wants serverName)</title>
+        <search>
+	  <query>| rest /services/data/index-volumes splunk_server=$srv_name$
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is /server/status/partitions-space</title>
+	<search>
+	  <query>| rest /services/server/status/partitions-space splunk_server=$host$*
+| fields mount_point, available, capacity
+| eval UsePct=round((capacity - available) * 100 / capacity, 1)
+| rename capacity AS Size, available AS Avail
+| `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
+| rename mount_point AS MountedOn
+| table MountedOn, Size, Avail, UsePct
+	  | sort MountedOn</query>
+	  <done>
+	    <set token="partitions_space_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+</form>
