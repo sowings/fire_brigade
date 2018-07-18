@@ -5,8 +5,9 @@
     <query>| rest /services/data/summaries data_model_acceleration=1
 | stats count by search_head_guid, name
 | lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
-| fillnull value="Unpeered" serverName
-| eval shead=search_head_guid . " (" . serverName . ")"</query>
+| lookup fb_services_server_info_cache captain AS search_head_guid OUTPUT serverName AS shc_peer
+| eval server_alt=case(isnotnull(shc_peer), mvindex(shc_peer, 0) . " (SHC)", isnull(serverName), "Unpeered", 1=1, serverName)
+| eval shead=search_head_guid . " (" . server_alt . ")"</query>
     <done>
       <set token="selector_sid">$job.sid$</set>
     </done>
@@ -49,7 +50,9 @@
       <single>
 	<title>GUID mapped to serverName (wants GUID)</title>
 	<search>
-	  <query>| loadjob $selector_sid$ | search search_head_guid=$srv|s$ | fields serverName</query>
+	  <query>| loadjob $selector_sid$ | search search_head_guid=$srv|s$
+| eval serverName=if(isnotnull(shc_peer), mvindex(shc_peer, random() % mvcount(shc_peer)), serverName)
+| fields serverName</query>
           <done>
             <eval token="srv_name">if($result.serverName$!="Unpeered", $result.serverName$, null())</eval>
 	  </done>
