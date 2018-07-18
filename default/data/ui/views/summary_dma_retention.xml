@@ -97,7 +97,7 @@
   </row>
 
   <row>
-    <panel rejects="$dbinspect_available$">
+    <panel>
       <table>
 	<title>Indexes Used by This Model</title>
 	<search base="sdr_data_summaries">
@@ -107,23 +107,6 @@
 | rename related AS "Indexes", frozenTimePeriodInSecs AS "Freeze Cutoff (sec)"</query>
 	</search>
       </table>
-    </panel>
-    <panel depends="$dbinspect_available$">
-      <chart>
-	<title>Indexes Used by This Model, with Time Range</title>
-	<option name="charting.chart">column</option>
-	<search base="sdr_dbinspect">
-	  <query>| stats min(startEpoch) AS dbi_et max(endEpoch) AS dbi_lt by orig_index
-| eval raw_range=dbi_lt - dbi_et
-| rename orig_index AS related
-| append [ | loadjob $data_summaries_sid$ 
-    | stats count by related, splunk_server
-    | lookup fb_services_data_indexes_cache splunk_server, title AS related OUTPUT frozenTimePeriodInSecs ]
-| fields related frozenTimePeriodInSecs raw_range
-| stats max(*) AS * BY related
-| rename related AS "Indexes", frozenTimePeriodInSecs AS "Freeze Cutoff (sec)", raw_range AS "Raw Data Span"</query>
-	</search>
-      </chart>
     </panel>
     <panel>
       <chart>
@@ -145,24 +128,6 @@
 | rename splunk_server AS Indexer</query>
 	</search>
       </chart>
-    </panel>
-  </row>
-
-  <row>
-    <panel>
-      <table>
-	<title>This is DBinspect (wants hostname - serverName?)</title>
-	<search id="sdr_dbinspect">
-	  <query>`fb_data_from_today` `__fb_summary_recs_base`
-[| loadjob $data_summaries_sid$ | stats count by related, splunk_server | fields related, splunk_server | rename related AS orig_index, splunk_server AS orig_host ]
-| fields orig_host orig_index startEpoch endEpoch sizeOnDiskMB
-</query>
-          <done>
-            <eval token="dbinspect_available">if($job.resultCount$ != "0", "yes", null())</eval>
-	    <set token="dbinspect_sid">$job.sid$</set>
-	  </done>
-	</search>
-      </table>
     </panel>
   </row>
 
@@ -198,18 +163,6 @@
 ]
 | table title, volume_name
 | rename title AS "Related Index", volume_name AS "Volume Used"</query>
-	</search>
-      </table>
-    </panel>
-  </row>
-
-  <row depends="$srv_name$">
-    <panel>
-      <table>
-	<title>Form of: An Elephant</title>
-	<search base="sdr_dbinspect">
-	  <query>| append [| loadjob $admin_summarization_sid$ ]
-| table bucketId summary_path bucket_path bucket_et bucket_lt summary_size summary_omplete summary_modtime </query>
 	</search>
       </table>
     </panel>
