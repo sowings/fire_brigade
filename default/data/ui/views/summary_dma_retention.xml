@@ -45,6 +45,15 @@
     </done>
   </search>
 
+  <search id="sdr_admin_summarization">
+    <query>| rest /services/admin/summarization/tstats:$dm_full_name$ splunk_server=$srv_name$
+| fields - search
+    </query>
+    <done>
+      <set token="admin_summarization_sid">$job.sid$</set>
+    </done>
+  </search>
+
   <row>
     <panel>
       <single>
@@ -133,17 +142,34 @@
 
   <row depends="$srv_name$">
     <panel>
-      <table>
-	<title>This is
-	/services/admin/summarization/&lt;model&gt;/details (wants serverName)</title>
-	<search>
-	  <query>| rest /services/admin/summarization/tstats:$dm_full_name$/details splunk_server=$srv_name$
-| eval bucketId=index . "~" . replace(bucket_id, "^(\d+)_(.*)$", "\1~\2")</query>
-	  <done>
-	    <set token="admin_summarization_sid">$job.sid$</set>
-	  </done>
+      <single>
+	<title>Earliest Summary Time</title>
+	<option name="link.visible">false</option>
+	<option name="field">summary.earliest_time</option>
+	<search base="sdr_admin_summarization">
+	  <query>convert ctime(summary.earliest_time)</query>
 	</search>
-      </table>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Latest Summary Time</title>
+	<option name="link.visible">false</option>
+	<option name="field">summary.latest_time</option>
+	<search base="sdr_admin_summarization">
+	  <query>convert ctime(summary.latest_time)</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Summary Size</title>
+        <option name="link.vislble">false</option>
+        <option name="field">summary.size</option>
+        <search base="sdr_admin_summarization">
+          <query>`_fb_bytes_pretty(summary.size)`</query>
+        </search>
+      </single>
     </panel>
   </row>
 
@@ -185,13 +211,14 @@
       <table>
 	<title>This is /server/status/partitions-space</title>
 	<search>
-	  <query>| rest /services/server/status/partitions-space splunk_server=$host$*
-| fields mount_point, available, capacity
+	  <query>| rest /services/server/status/partitions-space splunk_server=*
+| search [| loadjob $data_summaries_sid$ | fields splunk_server ]
+| fields splunk_server, mount_point, available, capacity
 | eval UsePct=round((capacity - available) * 100 / capacity, 1)
 | rename capacity AS Size, available AS Avail
 | `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
 | rename mount_point AS MountedOn
-| table MountedOn, Size, Avail, UsePct
+| table splunk_server, MountedOn, Size, Avail, UsePct
 	  | sort MountedOn</query>
 	  <done>
 	    <set token="partitions_space_sid">$job.sid$</set>
