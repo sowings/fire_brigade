@@ -8,21 +8,47 @@
     </html>
   </row>
 
+  <search id="dbi_today">
+    <query>`fb_data_from_today` index=summary source="DB inspection"
+| stats count by orig_host</query>
+    <done>
+      <set token="dbinspect_sid">$job.sid$</set>
+    </done>
+  </search>
+  
+  <search id="fbd_server_info">
+    <query>| rest/services/server/info splunk_server=*
+    </query>
+    <done>
+      <set token="server_info_sid">$job.sid$</set>
+    </done>
+  </search>
+  
+  <search id="info_vs_apps">
+    <query>| rest /services/server/info splunk_server=*
+| search server_roles=indexer
+| join type=left splunk_server
+    [| rest /services/apps/local splunk_server=*
+     | search title="TA-fire_brigade"
+     | fields splunk_server, title
+     | rename title AS app ] </query>
+  </search>
+    
   <row>
     <panel>
       <single>
 	<title>Search Peers Found</title>
         <!-- splunk_server=* to get around default search groups in
 	     case we're on a DMC host -->
-	<search id="rest_count">
-	  <query>| rest /services/server/info splunk_server=* | stats count</query>
+	<search base="fbd_server_info">
+	  <query>stats count</query>
 	</search>
         <option name="underLabel">Total</option>
       </single>
       <single>
         <option name="field">count</option>
-	<search>
-	  <query>| rest /services/server/info splunk_server=* | search server_roles=indexer | stats count</query>
+	<search base="fbd_server_info">
+	  <query>search server_roles=indexer | stats count</query>
 	</search>
         <option name="underLabel">Indexers</option>
       </single>
@@ -32,8 +58,8 @@
       <single>
 	<title>Configuration Mode</title>
 	<option name="field">mode</option>
-	<search base="rest_count">
-	  <query>eval mode=if(count > 1, "Distributed", "Standalone")</query>
+	<search base="fbd_server_info">
+	  <query>stats count | eval mode=if(count > 1, "Distributed", "Standalone")</query>
 	</search>
 	<!-- drilldown from here to the right dash? -->
       </single>
@@ -45,7 +71,10 @@
 	<option name="field">Final</option>
 	<option name="underLabel">Indexers</option>
 	<search>
-	  <query>| rest /services/server/info splunk_server=* | search server_roles=indexer | join type=left splunk_server [| rest /services/apps/local splunk_server=* | search title="TA-fire_brigade" | fields splunk_server, title | rename title AS app ] | stats count AS total, count(eval(if(isnotnull(title), title, null()))) AS installed | eval Final=installed . " / " . total</query>
+	  <query>| loadjob $server_info_sid$ | search server_roles=indexer
+| join type=left splunk_server [| rest /services/apps/local/ta-fire_brigade splunk_server=*
+    | rename title AS app ]
+| stats count AS total, count(eval(if(isnotnull(app), app, null()))) AS installed | eval Final=installed . " / " . total</query>
 	</search>
       </single>	    
     </panel>
@@ -66,7 +95,7 @@
       <single>
 	<title>Most Recent "DB inspection" Event</title>
 	<option name="field">last</option>
-	<option name="underlabel">Local Time</option>
+	<option name="underLabel">Local Time</option>
 	<search base="metadata">
 	  <query>| convert ctime(*Time) AS *</query>
 	</search>
@@ -76,12 +105,28 @@
     <panel>
       <single>
 	<title>Events Found Since "Today"</title>
-	<search>
-	  <query>`fb_data_from_today` index=summary source="DB inspection" | stats count
-	  </query>
+	<search base="dbi_today">
+	  <query>stats sum(count) AS count</query>
 	</search>
       </single>
     </panel>
   </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>Hosts Missing "DB Inspection" Events</title>
+	<search base="fbd_server_info">
+	  <query>search server_roles=indexer
+| join type=left splunk_server [| loadjob $dbinspect_sid$  |
+	  rename orig_host AS splunk_server ]
+| where isnull(count)
+| table splunk_server
+</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+  
 
 </dashboard>
