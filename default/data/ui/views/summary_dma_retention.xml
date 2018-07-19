@@ -1,5 +1,5 @@
 <form>
-  <label>Wonder Twin Powers, Activate!</label>
+  <label>DMA Summary Retention Overview</label>
 
   <search id="summary_dma_retention_selector">
     <query>| rest /services/data/summaries data_model_acceleration=1
