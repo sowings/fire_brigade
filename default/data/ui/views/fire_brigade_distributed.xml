@@ -24,6 +24,7 @@
     </done>
   </search>
   
+<!--
   <search id="info_vs_apps">
     <query>| rest /services/server/info splunk_server=*
 | search server_roles=indexer
@@ -33,7 +34,8 @@
      | fields splunk_server, title
      | rename title AS app ] </query>
   </search>
-    
+-->
+
   <row>
     <panel>
       <single>
@@ -72,7 +74,7 @@
 	<option name="underLabel">Indexers</option>
 	<search>
 	  <query>| loadjob $server_info_sid$ | search server_roles=indexer
-| join type=left splunk_server [| rest /services/apps/local/ta-fire_brigade splunk_server=*
+| join type=left splunk_server [| rest /services/apps/local/TA-fire_brigade splunk_server=*
     | rename title AS app ]
 | stats count AS total, count(eval(if(isnotnull(app), app, null()))) AS installed | eval Final=installed . " / " . total</query>
 	</search>
@@ -127,6 +129,46 @@
       </table>
     </panel>
   </row>
-  
+
+  <row>
+    <panel>
+      <input type="time">
+	<label>Time Range</label>
+	<default>Last 24 hours</default>
+      </input>
+      <table>
+	<title>Scheduler Log Events</title>
+	<option name="link.visible">true</option>
+	<fields>["_time", "Host", "Search Name", "Status", "Runtime", "Result Count", "Short SID"]</fields>
+	<search>
+	  <query>index=_internal source=*scheduler.log* app=ta-fire_brigade 
+(savedsearch_name="DB inspection" OR savedsearch_name="Update monitored list from REST")
+| table _time, host, savedsearch_name, status, run_time, result_count, sid
+| eval "Short SID"=replace(sid, "^(\w{10}).*([\w\.]{5})$", "\1...\2")
+| rename host AS Host, savedsearch_name AS "Search Name", status AS Status, run_time AS Runtime, result_count AS "Result Count"
+</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>TA-fire_brigade Scheduled Search Status</title>
+	<search>
+	  <query>| rest /servicesNS/nobody/ta-fire_brigade/saved/searches
+| search (title="DB inspection" OR title="Update monitored list from REST") eai:acl.app="ta-fire_brigade"
+| table splunk_server, title, is_scheduled, cron_schedule, disabled
+| replace 0 WITH "false" IN is_scheduled
+| replace 1 WITH "true" IN is_scheduled
+| replace 0 WITH "false" IN disabled
+| replace 1 WITH "true" IN disabled
+| rename splunk_server AS Host, title AS "Search Name", is_scheduled AS "Scheduled?", cron_schedule AS "Cron Schedule", disabled AS "Disabled?"
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
 
 </dashboard>
