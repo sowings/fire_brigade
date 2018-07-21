@@ -148,6 +148,9 @@
 | rename host AS Host, savedsearch_name AS "Search Name", status AS Status, run_time AS Runtime, result_count AS "Result Count"
 </query>
 	</search>
+        <drilldown>
+          <link target="_blank"><![CDATA[search?q=index=_internal source=*scheduler.log* app=TA-fire_brigade host=$row.Host|s$ savedsearch_name=$row.Search Name|s$ sid=$row.sid|s$]]></link>
+	</drilldown>
       </table>
     </panel>
   </row>
