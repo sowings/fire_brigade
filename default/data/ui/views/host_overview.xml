@@ -149,40 +149,6 @@ GUID will be displayed instead.
       </search>
     </single>
     </panel>
-    <panel>
-    <single>
-      <title>Report Acceleration Usage</title>
-      <option name="link.visible">false</option>
-      <option name="field">RAbytes</option>
-      <search base="rest_summary_data">
-	<query>search type="report_acceleration"
-| stats count, sum(total_size) AS RAbytes
-| fillnull value=0 RAbytes
-| `_fb_bytes_pretty(RAbytes)`
-	</query>
-      </search>
-    </single>
-    </panel>
-<!-- Punt on this; the map command won't run if there are no matching
-     models. So while we could run this search to get data, in most
-     cases it will return nothing, and complain about the search being
-     unresolved in the UI. Undesired. Hide this for now.
--->
-    <panel>
-    <single>
-      <title>Data Model Acceleration Usage</title>
-      <option name="link.visible">false</option>
-      <option name="field">modelUsage</option>
-<!--      <option name="underLabel">Serving this SH</option> -->
-      <search base="rest_summary_data">
-        <query>search type="data_model_acceleration"
-| stats sum(total_size) AS modelUsage
-| fillnull value=0 modelUsage
-| `_fb_mbytes_pretty(modelUsage)`
-	</query>
-      </search>
-    </single>
-    </panel>
   </row>
 
   <row>
@@ -311,6 +277,38 @@ GUID will be displayed instead.
 
   <row>
     <panel>
+      <single>
+        <title>Report Acceleration Usage</title>
+        <option name="link.visible">false</option>
+        <option name="field">RAbytes</option>
+        <search base="rest_summary_data">
+          <query>search type="report_acceleration"
+| stats count, sum(total_size) AS RAbytes
+| fillnull value=0 RAbytes
+| `_fb_mbytes_pretty(RAbytes)`
+	  </query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Data Model Acceleration Usage</title>
+        <option name="link.visible">false</option>
+        <option name="field">modelUsage</option>
+        <search base="rest_summary_data">
+          <query>search type="data_model_acceleration"
+| stats sum(total_size) AS modelUsage
+| fillnull value=0 modelUsage
+| `_fb_mbytes_pretty(modelUsage)`
+	  </query>
+        </search>
+      </single>
+    </panel>
+
+  </row>
+
+  <row>
+    <panel>
     <chart>
       <title>Report Acceleration Usage by (Search Head) Host</title>
       <option name="link.visible">false</option>
@@ -320,6 +318,8 @@ GUID will be displayed instead.
 | stats sum(total_size) AS total_size by serverName</query>
       </search>
     </chart>
+    </panel>
+    <panel>
     <chart>
       <title>Data Model Acceleration Usage by (Search Head) Host</title>
       <option name="link.visible">false</option>
