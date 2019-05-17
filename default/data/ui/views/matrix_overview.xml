@@ -46,24 +46,32 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
     </panel>
   </row>
 
+  <search id="fb_matrix_overview_rest_data_indexes">
+    <query>
+| rest /services/data/indexes search="totalEventCount!=0"
+| `_fb_null_hot_cold_max`
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
+                maxTotalDataSizeMB)
+| eval minTime=round(strptime(minTime, "%Y-%m-%dT%H:%M:%S%z"))
+| eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
+    </query>
+  </search>
+
   <row>
     <panel>
     <table>
       <title>Matrix View - Index Capacity</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchString>
-| rest /services/data/indexes search="totalEventCount!=0"
-| `_fb_null_hot_cold_max`
-| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
-                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
-                maxTotalDataSizeMB)
-| eval span=tostring(currentDBSizeMB) + " / " +
+      <search base="fb_matrix_overview_rest_data_indexes">
+	<query>eval span=tostring(currentDBSizeMB) + " / " +
     tostring(roof) + " MB (" +
     tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
 | chart useother=f usenull=f limit=50 first(span) over splunk_server by title
 | rename splunk_server AS Indexer
-      </searchString>
+        </query>
+      </search>
 
       <drilldown>
         <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
@@ -79,15 +87,13 @@ is &lt;days&gt;+&lt;hours&gt;:&lt;minutes&gt;:&lt;seconds&gt;.
       <title>Matrix View - Index Retention</title>
       <option name="link.visible">false</option>
       <option name="drilldown">row</option>
-      <searchString>
-| rest /services/data/indexes search="totalEventCount!=0"
-| eval minTime=round(strptime(minTime, "%Y-%m-%dT%H:%M:%S%z"))
-| eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
-| eval span=tostring(maxTime-minTime, "duration") + " / " +
+      <search base="fb_matrix_overview_rest_data_indexes">
+	<query>eval span=tostring(maxTime-minTime, "duration") + " / " +
     tostring(frozenTimePeriodInSecs, "duration")
 | chart useother=f usenull=f limit=50 first(span) over splunk_server by title
 | rename splunk_server AS Indexer
-      </searchString>
+	</query>
+      </search>
 
       <drilldown>
         <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
