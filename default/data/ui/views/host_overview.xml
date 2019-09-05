@@ -31,6 +31,16 @@
     </query>
   </search>
 
+  <search id="host_overview_partitions_space">
+    <query>
+| rest /services/server/status/partitions-space splunk_server=$host$*
+| fields mount_point, available, capacity
+    </query>
+    <done>
+      <set token="partitions_space_sid">$job.sid$</set>
+    </done>
+  </search>
+
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
@@ -149,6 +159,17 @@ GUID will be displayed instead.
       </search>
     </single>
     </panel>
+    <panel>
+      <single>
+	<title>Total Index Subcription for Host</title>
+	<search>
+	  <query>| rest /services/data/indexes splunk_server=$host$*
+
+	    | append [| loadjob $partitions_space_sid$ ]
+	  </query>
+	</search>
+      </single>
+    </panel>
   </row>
 
   <row>
@@ -199,10 +220,8 @@ GUID will be displayed instead.
     <table id="host_overview_disk_table">
       <title>Disk Usage Information</title>
       <option name="link.visible">false</option>
-      <search>
+      <search base="host_overview_partitions_space">
 	<query>
-| rest /services/server/status/partitions-space splunk_server=$host$*
-| fields mount_point, available, capacity
 | eval UsePct=round((capacity - available) * 100 / capacity, 1)
 | rename capacity AS Size, available AS Avail
 | `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
