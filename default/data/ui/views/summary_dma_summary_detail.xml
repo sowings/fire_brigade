@@ -5,23 +5,38 @@
 
   <search id="no_detail">
     <query>
-| rest /services/admin/summarization/tstats:$dm_full_name$
+| rest /services/admin/summarization/tstats:$dm_full_name$ splunk_server=$srv$
     </query>
   </search>
   <search id="yes_detail">
     <query>
-| rest /services/admin/summarization/tstats:$dm_full_name$/details	    
+| rest /services/admin/summarization/tstats:$dm_full_name$/details splunk_server=$srv$
     </query>
   </search>
 
+  <search id="summary_dma_model_selector">
+    <query>| rest /servicesNS/-/-/data/models | search
+	acceleration=1 | stats count by splunk_server, eai:acl.app, title | eval
+	app_model_name='eai:acl.app' .  " / " . title | eval
+	dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
+  </search>
+    
   <fieldset>
+    <input type="dropdown" token="srv" searchWhenChanged="true">
+      <label>Search Head</label>
+      <fieldForValue>splunk_server</fieldForValue>
+      <fieldForLabel>splunk_server</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_model_selector"/>
+    </input>
+      
     <input type="dropdown" token="dm_full_name" searchWhenChanged="true">
       <label>Data Model</label>
       <fieldForValue>dm_full_name</fieldForValue>
       <fieldForLabel>app_model_name</fieldForLabel>
       <selectFirstChoice>true</selectFirstChoice>
-      <search>
-	<query>| rest /servicesNS/-/-/data/models | search acceleration=1 | fields title, eai:acl.app | eval app_model_name='eai:acl.app' .  " / " . title | eval dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
+      <search base="summary_dma_model_selector">
+	<query>search splunk_server="$srv$"</query>
       </search>
     </input>
   </fieldset>
