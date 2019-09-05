@@ -1,0 +1,120 @@
+<dashboard>
+  <label>Cache Manager Overview</label>
+
+  <search id="cacheman_status">
+    <query><![CDATA[| rest /services/admin/cacheman
+| rex field=title "^(?<cid_object_type>\w+)\|(?<cid_index>[^~]+).*\|(?<cid_other>.*)"
+| sistats count dc(cm:bucket.directory) min(cm:bucket.earliest_time) max(cm:bucket.latest_time) sum(cm:bucket.estimated_size) values(cm:bucket.upload_status) by splunk_server cid_object_type cid_index cm:bucket.status]]></query>
+  </search>
+
+  <row>
+    <panel>
+      <single>
+	<title>Buckets Managed in Cache</title>
+	<search base="cacheman_status">
+	  <query>| stats count</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Disk Space Managed in Cache</title>
+	<option name="underLabel">Approximate</option>
+	<search base="cacheman_status">
+	  <query>| stats sum(cm:bucket.estimated_size) AS est_size
+| `_fb_nbytes_pretty(est_size)`</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Bucket Count by State</title>
+	<option name="charting.chart">pie</option>
+	<search base="cacheman_status">
+	  <query>stats count by cm:bucket.status</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Object Count by Type</title>
+	<option name="charting.chart">pie</option>
+	<search base="cacheman_status">
+	  <query>stats count by cid_object_type</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+<!--
+    <panel>
+      <chart>
+        <title>Object Count by Index</title>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <search base="cacheman_status">
+          <query>chart count over cid_index by cm:bucket.status
+| addtotals row=t fieldname=total_count local remote
+| sort 0 - total_count
+| fields - total_count
+| rename count AS Count, cid_index AS Index</query>
+        </search>
+      </chart>
+    </panel>
+-->
+    <panel>
+      <chart>
+        <title>Local Disk Usage by Index</title>
+        <option name="charting.chart">bar</option>
+        <search base="cacheman_status">
+          <query>search cm:bucket.status="local"
+| chart sum(cm:bucket.esimated_size) AS local_size over cid_index
+| sort 0 - local_size
+| fields - local_size
+| rename local_size AS "Local Disk Usage", cid_index AS Index</query>
+        </search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Disk Usage by Index</title>
+	<option name="charting.chart">bar</option>
+	<option name="charting.legend.placement">none</option>
+	<search base="cacheman_status">
+	  <query>stats sum(cm:bucket.estimated_size) AS est_size by cid_index
+| sort 0 - est_size
+| rename est_size AS "Estimated Size", cid_index AS Index</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Cache Usage by State</title>
+	<option name="charting.chart">pie</option>
+	<search base="cacheman_status">
+	  <query>| stats sum(cm:bucket.estimated_size) AS size by cm:bucket.status</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+
+  <row>
+    <panel>
+      <table>
+	<title>Summary Table</title>
+	<search base="cacheman_status">
+	  <query>| stats count sum(cm:bucket.estimated_size) min(cm:bucket.earliest_time) AS earliest_time max(cm:bucket.latest_time) AS latest_time by splunk_server cid_index cm:bucket.status
+| convert ctime(*_time) AS *_time</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+</dashboard>
