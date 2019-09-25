@@ -1,0 +1,90 @@
+<form>
+  <label>Cache Manager Index Detail</label>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <search id="cachemgr_overview_rest_cacheman">
+    <query><![CDATA[| rest /services/admin/cacheman splunk_server=$host$*
+| rex field=title "^(?<cache_type>[^\|]+)\|(?<index>[^~]+)~"
+| sistats count, sum(cm:bucket.estimated_size), max(cm:bucket.latest_time), min(cm:bucket.earliest_time) by splunk_server, cache_type, index, cm:bucket.status]]></query>
+  </search>
+
+  <row>
+    <panel>
+      <single>
+	<title>Cache Manager Policy</title>
+	<option name="field">eviction_policy</option>
+	<search>
+	  <query>| rest /services/configs/conf-server/cachemanager splunk_server=$host$*
+| replace "lru" WITH "Least Recently Used" IN eviction_policy
+	  </query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Buckets Managed in Cache</title>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(count) AS count</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Disk Space Managed in Cache</title>
+	<option name="underLabel">Approximate</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS est_size
+| `_fb_mbytes_pretty(est_size)`</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+	<title>Index(es) Using Remote Storage</title>
+	<search>
+	  <query>| rest /services/data/indexes splunk_server=$host$*
+| where isnotnull(remotePath)
+| stats count by title
+| table title
+| rename title AS Index</query>
+	</search>
+      </table>
+    </panel>
+    <panel>
+      <table>
+	<title>Remote Storage Location(s) Used</title>
+	<search>
+	  <query>| rest /services/data/indexes splunk_server=$host$*
+| stats count by remotePath
+| table remotePath
+| rename remotePath AS "Remote Path"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Cache Usage by State</title>
+	<option name="charting.chart">pie</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS size by cm:bucket.status</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+</form>
+  

@@ -1,0 +1,64 @@
+<form>
+  <label>Clustering Replication Bandwidth</label>
+  <fieldset>
+    <input type="time"></input>
+  </fieldset>
+  <row>
+    <panel>
+      <chart>
+        <title>This is inbound DATA</title>
+        <search>
+          <query>index=_internal source=*metrics.log* sourcetype=splunkd component=Metrics
+TERM(group=tcpin_connections)
+| timechart sum(kb) by host
+	  </query>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.stackMode">stacked</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>This is cluster IN</title>
+        <search>
+          <query>index=_internal source=*metrics.log* sourcetype=splunkd component=Metrics
+TERM(group=clusterin_connections)
+| timechart sum(kb) by host
+	  </query>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.stackMode">stacked</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>This is cluster OUT</title>
+        <search>
+          <query>index=_internal source=*metrics.log* sourcetype=splunkd component=Metrics
+TERM(group=clusterout_connections)
+| timechart sum(kb) by host
+	  </query>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.stackMode">stacked</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>This is cluster IN vs. OUT</title>
+        <search>
+          <query>index=_internal source=*metrics.log* sourcetype=splunkd component=Metrics
+TERM(group=clusterout_connections) OR TERM(group=clusterin_connections)
+| timechart sum(kb) by group
+	  </query>
+        </search>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.stackMode">stacked</option>
+      </chart>
+    </panel>
+  </row>
+</form>
