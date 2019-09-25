@@ -1,0 +1,25 @@
+<panel>
+  <title>Snapshot: Index Size vs. Capacity (REST)</title>
+  <table>
+    <option name="link.visible">false</option>
+    <option name="drilldown">row</option>
+    <searchString>
+| rest /services/data/indexes search="totalEventCount!=0"
+| `_fb_null_hot_cold_max`
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
+                maxTotalDataSizeMB)
+| eval span=tostring(currentDBSizeMB) + " / " +
+    tostring(roof) + " MB (" +
+    tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
+| chart useother=f usenull=f limit=50 first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+    </searchString>
+
+    <drilldown>
+      <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+      <link><![CDATA[/app/fire_brigade/retention_size?form.host=$row.Indexer$&form.index=$click.name2$]]></link>
+    </drilldown>
+    
+  </table>
+</panel>

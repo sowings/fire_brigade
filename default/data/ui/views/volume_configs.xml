@@ -1,0 +1,175 @@
+<form script="volume_configs.js">
+  <label>Troubleshooting Volume Configuration</label>
+
+  <search id="volume_configs_rest">
+    <query>
+| rest /services/data/indexes `_fb_use_or_ignore(splunk_server, $host$)`
+    </query>
+  </search>
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This dashboard is designed to highlight the configuration of any volumes
+(shared paths for index storage) which may exist in the deployment. The Splunk
+daemon will emit a warning if an index is configured to use the same path as
+an existing volume if the index is not a member of that volume. See <a
+href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Configureindexstoragesize">here</a>
+for more information about using volumes.
+<p />
+In the panel titled <em>Index Counts</em> two numbers are listed. These counts
+represent the total number of indexes found (on the right) and the number of
+those which are utilizing volume definitions for indexed data (on the left).
+<p />
+<strong>Note: Hosts making use of volume configurations for neither
+<code>homePath</code> nor <code>coldPath</code> will not reflect any entries
+here. There is a default volume titled <code>_splunk_summaries</code> which
+can be used to set a cap on the size of accelerated data models. This
+dashboard is concerned <em>only</em> with volumes used for index
+storage.</strong>
+<p />
+The volume definitions (if any are found--this includes the default
+<code>_splunk_summaries</code> mentioned above) will be displayed in the panel
+titled <em>Volume Definitions Found</em>. The salient qualities of a volume
+are its path and configured limit (if any). This panel also attempts to
+correlate with the partitions found on the system, to provide a hint whether
+the volume (partition) is oversubscribed.
+<p />
+The next row features two panels which are intrinsically linked. The first is 
+<em>Indexes Using Volumes</em>. This panel shows a list of indexes (and the
+host on which they reside) that are making use of a volume for either
+<code>homePath</code> or <code>coldPath</code> or both. By contrast,
+<em>Indexes Not Using Volumes</em> is the converse; it shows indexes that are
+not using volumes at all.
+<p />
+The bottom panel, titled <em>Volume Configuration Warnings</em> shows any
+warnings emitted by the Splunk daemon regarding volume configuration. This
+would occur when a volume is defined for a given path, and other indexes are
+utilizing that path, but <i>not</i> using a volume. The warning from Splunk
+indicates that the named index will not participate in the shared storage
+limit that the volume defines. If the index definition is adjusted to correct
+this, the subsequent restart will "clear" the warning shown in this panel.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <single id="volume_configs_index_count">
+        <option name="link.visible">false</option>
+        <option name="field">count</option>
+        <option name="underLabel">using volumes</option>
+        <search base="volume_configs_rest">
+	  <query>| search coldPath=volume:* OR homePath=volume:* | stats dc(title) AS count</query>
+	</search>
+      </single>
+      <single>
+        <option name="link.visible">false</option>
+        <option name="field">count</option>
+        <option name="underLabel">total</option>
+        <search base="volume_configs_rest">
+	  <query>| stats dc(title) AS count</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+        <title>Volume Definitions Found</title>
+        <option name="link.visible">false</option>
+<!--
+        <searchString>| rest /servicesNS/-/-/configs/conf-indexes splunk_server=$host$ | search title="volume:*"
+| fields splunk_server, title, path, maxVolumeDataSizeMB
+| rename splunk_server AS Indexer, title AS "Volume Label", path as "Path", maxVolumeDataSizeMB AS "Size Limit (MB)"</searchString>
+-->
+        <search>
+          <query>| rest /servicesNS/-/-/configs/conf-indexes `_fb_use_or_ignore(splunk_server, $host$)`
+| search title=volume:* | fields splunk_server, title, path, maxVolumeDataSizeMB
+| join type=left
+  [| rest /services/server/status/partitions-space `_fb_use_or_ignore(splunk_server, $host$)`
+   | table splunk_server, mount_point, capacity]
+| eval volume_mount=if(match(path, "^" . mount_point . ".*"), mount_point, "Unknown")
+| eval capacity=if(volume_mount="Unknown", "N/A", capacity)
+| eval pct_subscribed=round(maxVolumeDataSizeMB * 100 / round(capacity), 2)
+| fillnull value="N/A" pct_subscribed
+| fields splunk_server, title, path, volume_mount, maxVolumeDataSizeMB, capacity, pct_subscribed
+| rename splunk_server AS Indexer, title AS Volume, path AS Path, volume_mount AS "Filesystem", maxVolumeDataSizeMB AS Limit, capacity AS "Filesystem Capacity", pct_subscribed AS "Subscription Percentage"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+        <title>Indexes Using Volumes</title>
+        <option name="link.visible">false</option>
+        <search base="volume_configs_rest">
+	  <query>| search coldPath=volume:* OR homePath=volume:*
+| fields splunk_server, title, homePath, coldPath
+| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</query>
+	</search>
+      </table>
+    </panel>
+    <panel>
+      <table>
+        <title>Indexes Not Using Volumes</title>
+        <option name="link.visible">false</option>
+        <search base="volume_configs_rest">
+	  <query>search coldPath!=volume:* homePath!=volume:*
+| fields splunk_server, title, homePath, coldPath
+| rename splunk_server AS Indexer, title AS Index, homePath AS "Home Path", coldPath AS "Cold Path"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+
+  <row>
+    <table id="index_configs_table">
+      <title>Volume Configuration Warnings</title>
+      <option name="link.visible">false</option>
+      <!-- Things that make this start over: 
+            loader - Starting splunkd (build ...) -->
+      <search>
+	<query><![CDATA[index=_internal source=*splunkd.log* host=$host$
+(component=IndexConfig idx inside config error) OR (component=loader starting)
+| rex "volume=(?<volume>\w+)\s" | eval volume="volume:" . volume 
+| rex "homePath='(?<homePath_expanded>.+?)'" | rex "coldPath='(?<coldPath_expanded>.+?)'" 
+| eval state=case(isnotnull(homePath_expanded), "Home (Hot + Warm)", isnotnull(coldPath_expanded), "Cold", 1=1, "unknown") 
+| eval path=coalesce(homePath_expanded, coldPath_expanded, "NULL?")
+| eval idx=if(component!="IndexConfig", "RESTART", idx)
+| stats values(volume) AS volume,
+    values(state) AS state,
+    values(path) AS Directories,
+    max(_time) AS mytime,
+    max(eval(if(component!="IndexConfig", _time, 0))) AS last_start
+    by host, idx
+| eventstats max(last_start) AS host_restart by host
+| where mytime>host_restart
+| fields - mytime last_start host_restart]]></query>
+      </search>
+    </table>
+  </row>
+
+</form>
+
+<!--
+| rest /services/data/indexes splunk_server=*
+| search coldPath=volume:* OR homePath=volume:*
+| rex field=coldPath "(?<coldVol>volume:[^\\/]+)"
+| rex field=homePath "(?<homeVol>volume:[^\\/]+)"
+| fields title, homeVol homePath coldVol coldPath, maxTotalDataSizeMB
+| eval volumes=mvappend(coldVol, homeVol)
+-->

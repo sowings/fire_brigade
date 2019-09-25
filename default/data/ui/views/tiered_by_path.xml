@@ -1,0 +1,80 @@
+<form class="formsearch">
+  <label>Data Time Span by Path, Host</label>
+
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+    <html>
+<div id="fire_brigade_help">
+This dashboard can be used to help understand how much data (by its
+time span) is available on each index path. Some Splunk installations
+will make use of "tiered storage", where the <code>homePath</code> may
+have higher performance charactersistics than the
+<code>coldPath</code>. In these cases, the difference in speed between
+these two storage media will drive retention policies to keep data
+that is frequently searched on the faster storage. There are
+<i>not</i> specific retention settings in Splunk's
+<code>indexes.conf</code> to force this to be a time-based constraint,
+so the adjustment of these policies is a "best effort" to achieve the
+desired SLA.
+<p/>
+
+</div>
+    </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+    <table>
+      <title>Indexes by Time Span and Path</title>
+      <option name="link.visible">false</option>
+      <search>
+	<query>`fb_data_from_today` `_fb_summary_recs_host($host$)`
+| fields _time, index, startEpoch, earliestTime, endEpoch, latestTime, path, state, sizeOnDiskMB
+| `_fb_startEpoch_from_earliestTime`
+| `_fb_endEpoch_from_latestTime`
+| stats min(eval(if(state="hot" OR state="warm", startEpoch, null()))) AS home_earliest
+  max(eval(if(state="hot" OR state="warm", endEpoch, null()))) AS home_latest
+  min(eval(if(state="cold", startEpoch, null()))) AS cold_earliest
+  max(eval(if(state="cold", endEpoch, null()))) AS cold_latest
+  min(eval(if(state="thawed", startEpoch, null()))) AS thawed_earliest
+  max(eval(if(state="thawed", endEpoch, null()))) AS thawed_latest
+  by index
+| eval home_delta=tostring(home_latest - home_earliest, "duration")
+| eval cold_delta=tostring(cold_latest - cold_earliest, "duration")
+| eval thawed_delta=tostring(thawed_latest - thawed_earliest, "duration")
+| convert ctime(*est)
+| table index, home_earliest, home_delta, home_latest, cold_earliest, cold_delta, cold_latest, thawed_earliest, thawed_delta, thawed_latest
+| rename index AS Index
+  home_earliest AS "Earliest Time (homePath)"
+  home_delta AS "homePath Data Span"
+  home_latest AS "Latest Time (homePath)"
+  cold_earliest AS "Earliest Time (coldPath)"
+  cold_delta AS "coldPath Data Span"
+  cold_latest AS "Latest Time (coldPath)"
+  thawed_earliest AS "Earliest Time (thawedPath)"
+  thawed_delta AS "thawedPath Data Span"
+  thawed_latest AS "Latest Time (thawedPath)"
+	</query>
+      </search>
+
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/retention_age?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+    </table>
+    </panel>
+  </row>
+
+</form>

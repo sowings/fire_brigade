@@ -1,0 +1,268 @@
+<form>
+  <label>Diag Style</label>
+
+  <fieldset>
+    <input type="dropdown" token="dbinspect_data" searchWhenChanged="true">
+      <label>Select the "dbinspect" lookup</label>
+      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>title</fieldForLabel>
+      <search id="hollfelder_lookup_rest">
+	<query>| rest /servicesNS/-/-/data/lookup-table-files | search eai:acl.app=fire_brigade</query>
+      </search>
+    </input>
+    <input type="dropdown" token="rest_indexes_data" searchWhenChanged="true">
+      <label>Select the "/services/data/indexes" lookup</label>
+      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>title</fieldForLabel>
+      <search base="hollfelder_lookup_rest">
+      </search>
+    </input>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Select the host</label>
+      <fieldForLabel>splunk_server</fieldForLabel>
+      <fieldForValue>splunk_server</fieldForValue>
+      <choice value="*">All Hosts</choice>
+      <search>
+        <query>| inputlookup $dbinspect_data$ | stats count by splunk_server</query>
+      </search>
+    </input>
+  </fieldset>
+
+
+  <search id="dbinspect_lookup">
+    <query><![CDATA[| inputlookup $dbinspect_data$ where splunk_server=$host$
+| fillnull value="full" tsidxState
+| eval _time=now(),
+    state=mvappend(state, if(endEpoch > now(), "ballast", null())),
+    orig_host=coalesce(host, splunk_server, "test_host"),
+    index=coalesce(orig_index, index, "unknown_index")
+| rex field=path "[\\/](?<bucket_type>rb|db)_(?<bucket_lt>\d+)_(?<bucket_et>\d+)_(?<bucket_id>\d+)(?:_(?<bucket_primary_guid>.+))?$"]]></query>
+  </search>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Monitored Indexes by Host</title>
+<!--	<option name="link.visible">false</option> -->
+	<option name="charting.chart">column</option>
+	<option name="charting.chart.stackMode">stacked</option>
+	<option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.legend.placement">none</option>
+	<option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+	<option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+	<option name="charting.axisTitleY.text">MBytes</option>
+	<option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+	<search base="dbinspect_lookup">
+	  <query>`_fb_where_today`
+	  | chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
+	  </query>
+	</search>
+	<drilldown>
+          <link><![CDATA[
+	  /app/fire_brigade/index_detail?form.host=$click.value$&form.index=$click.name2$]]></link>
+	</drilldown>
+      </chart>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <table id="host_overview_index_table" rejects="$rest_indexes_data$">
+        <title>Indexes by Size and Capacity (No Index Configs)</title>
+        <option name="link.visible">false</option>
+        <search base="dbinspect_lookup">
+          <query>`_fb_where_today`
+| search orig_host=$host$
+| stats
+    sum(sizeOnDiskMB) AS diskTotalinMB
+    max(endEpoch) AS endEpoch
+    by index, state
+| join type=left index
+[ | rest /services/data/indexes splunk_server=$host$* count=0
+  | rename title AS index ]
+| `_fb_null_hot_cold_max`
+| stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
+    sum(diskTotalinMB) AS totalUsage
+    first(maxTotalDataSizeMB) AS max_limit
+    first(homePath.maxDataSizeMB) AS home_limit
+    first(coldPath.maxDataSizeMB) AS cold_limit
+    by index
+| rename comment AS "No coalesce because a home / cold limit alone results in max taking over"
+| eval limit=min(home_limit + cold_limit, max_limit)
+| eval percentage=round(ratedUsage * 100 / limit, 1)
+| sort - ratedUsage
+| eventstats max(totalUsage) AS top_total
+| eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval ratedUsage=round(ratedUsage, 2)
+| eval totalUsage=round(totalUsage, 2)
+| eval Ballast=round(Ballast, 2)
+| rename ratedUsage AS "\"Retention\" Usage"
+    totalUsage AS "Total Usage" 
+    rel_size AS "Relative Size"
+    percentage AS "% of Capacity"
+    index AS Index
+    | table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+	</query>
+      </search>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+
+      </table>
+      <table id="host_overview_index_table_configs" depends="$rest_indexes_data$">
+        <title>Indexes by Size and Capacity</title>
+        <option name="link.visible">false</option>
+	<option name="drilldown">none</option>
+        <search base="dbinspect_lookup">
+          <query>`_fb_where_today`
+| search orig_host=$host$
+| stats
+    sum(sizeOnDiskMB) AS diskTotalinMB
+    max(endEpoch) AS endEpoch
+    by index, state
+| lookup $rest_indexes_data$ title AS index
+| `_fb_null_hot_cold_max`
+| stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
+    sum(diskTotalinMB) AS totalUsage
+    first(maxTotalDataSizeMB) AS max_limit
+    first(homePath.maxDataSizeMB) AS home_limit
+    first(coldPath.maxDataSizeMB) AS cold_limit
+    by index
+| rename comment AS "No coalesce because a home / cold limit alone results in max taking over"
+| eval limit=min(home_limit + cold_limit, max_limit)
+| eval percentage=round(ratedUsage * 100 / limit, 1)
+| sort - ratedUsage
+| eventstats max(totalUsage) AS top_total
+| eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval ratedUsage=round(ratedUsage, 2)
+| eval totalUsage=round(totalUsage, 2)
+| eval Ballast=round(Ballast, 2)
+| rename ratedUsage AS "\"Retention\" Usage"
+    totalUsage AS "Total Usage" 
+    rel_size AS "Relative Size"
+    percentage AS "% of Capacity"
+    index AS Index
+    | table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+	</query>
+      </search>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <single>
+	<title>Total Buckets</title>
+	<option name="underLabel">unique / total</option>
+	<search base="dbinspect_lookup">
+	  <query>`_fb_where_today`
+| eval bucket_type=if(guId==bucket_primary_guid, "db", "rb")
+| stats count AS total, distinct_count(bucketId) AS unique
+| fillnull value=0 total, unique
+| eval result=unique . " / " . total 
+| fields result	  
+	  </query>
+	</search>
+      </single>
+      <single depends="$rest_indexes_data$">
+	<title>Max Bucket Size</title>
+	<search>
+	  <query>
+| inputlookup $rest_indexes_data$ where splunk_server=$host$ | head 1 | fields maxDataSize
+| eval bucket_max=case(maxDataSize=="auto", 750, maxDataSize="auto_high_volume", 10000, 1=1, maxDataSize)
+| fields bucket_max</query>
+	</search>
+      </single>
+      <single>
+	<title>Average Bucket Size</title>
+	<search base="dbinspect_lookup">
+	  <query>`_fb_where_today`
+| eval bucket_type=if(guId=bucket_primary_guid, "db", "rb")
+| rename comment AS "bucket_type could end up null"
+| search NOT bucket_type="rb"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path, id
+| stats avg(sizeOnDiskMB)
+	  </query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table depends="$rest_indexes_data$">
+	<search base="dbinspect_lookup">
+	  <query>
+| stats
+  min(startEpoch) AS startEpoch
+  max(endEpoch) AS endEpoch
+  sum(sizeOnDiskMB) AS sizeOnDiskMB
+  sum(rawSize) AS rawSize
+  avg(sizeOnDiskMB) AS avgBucket
+  sum(eventCount) AS eventCount
+  dc(path) AS buckets
+  first(global_avgBucket) AS global_avgBucket
+  by orig_host, state, index
+| rename orig_host AS host
+| lookup $rest_indexes_data$ title AS index splunk_server AS host 
+| `_fb_null_hot_cold_max`	    
+| stats sum(eval(if(state!="ballast", sizeOnDiskMB, 0))) AS sizeOnDiskMB
+  sum(eval(if(state!="ballast", rawSize, 0))) AS rawSize
+  sum(eval(if(state!="thawed", sizeOnDiskMB, 0))) AS ratedUsage
+  sum(eval(if(state="ballast", sizeOnDiskMB, 0))) AS ballast
+  first(maxTotalDataSizeMB) AS max_limit
+  first(homePath.maxDataSizeMB) AS home_limit
+  first(coldPath.maxDataSizeMB) AS cold_limit
+  by host
+| eval rawTotalinMB=rawSize / 1024 / 1024
+| eval limit=min(home_limit + cold_limit, max_limit)
+| eval percentage=round(ratedUsage * 100 / limit, 1)
+| eval diskTotalinMB=sizeOnDiskMB
+| `_fb_get_comp_ratio`
+| `_fb_get_comp_percent`
+| `_fb_mbytes_pretty(sizeOnDiskMB)`
+| `_fb_bytes_pretty(rawSize)`
+| `_fb_mbytes_pretty(maxTotalDataSizeMB)`
+| `_fb_mbytes_pretty(ballast)`
+| table host, rawSize, comp_ratio, comp_percent, ballast, sizeOnDiskMB, percentage, limit
+| rename
+  host AS Host
+  sizeOnDiskMB AS "Total Usage"
+  ballast AS "Ballast Usage"
+  rawSize AS "Total Raw Usage"
+  limit AS "Disk Usage Limit"
+  comp_ratio AS "Compression Ratio"
+  comp_percent AS "Comp. (% of Raw)"
+  percentage AS "% of Capacity"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+	<title>Comparison of Journal and TSIDX (When RF != SF)</title>
+	<search>
+	  <query>| inputlookup $dbinspect_data$
+| stats max(eval(if(rawSize!=0, sizeOnDiskMB, 0))) AS searchable,
+   max(eval(if(rawSize=0, sizeOnDiskMB, 0))) AS replica,
+   values(splunk_server) AS splunk_server,
+   max(rawSize) AS raw by bucketId 
+| search replica!=0 
+| eval tsidx=searchable - replica,
+  raw_mb=raw / 1024 / 1024 
+| search splunk_server=$host$
+| eval splunk_server=mvfilter(splunk_server="$host$")
+| stats sum(raw_mb) AS raw_mb, sum(replica) AS replica, sum(tsidx) AS tsidx by splunk_server
+| eval tsidx_pct=round(tsidx/raw_mb * 100, 2),  
+       replica_pct=round(replica/raw_mb * 100, 2)
+| table splunk_server index raw_mb replica replica_pct tsidx tsidx_pct
+| rename splunk_server AS Host raw_mb AS "Cumulative Raw (MB)" replica AS "Journal Size (MB)" tsidx AS "TSIDX Size (MB)" replica_pct AS "Journal As %age of Raw" tsidx_pct AS "TSIDX As %age of Raw"
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+</form>

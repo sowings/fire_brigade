@@ -1,0 +1,192 @@
+<form class="formsearch">
+  <!-- The label here indicates a minimum requirement for either Simple XML
+       options, OR REST API endpoints, OR BOTH -->
+  <label>Data Model Acceleration Summary (6.3+)</label>
+
+  <search id="no_detail">
+    <query>
+| rest /services/admin/summarization/tstats:$dm_full_name$ splunk_server=$srv$
+    </query>
+  </search>
+  <search id="yes_detail">
+    <query>
+| rest /services/admin/summarization/tstats:$dm_full_name$/details splunk_server=$srv$
+    </query>
+  </search>
+
+  <search id="summary_dma_model_selector">
+    <query>| rest /servicesNS/-/-/data/models | search
+	acceleration=1 | stats count by splunk_server, eai:acl.app, title | eval
+	app_model_name='eai:acl.app' .  " / " . title | eval
+	dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
+  </search>
+    
+  <fieldset>
+    <input type="dropdown" token="srv" searchWhenChanged="true">
+      <label>Search Head</label>
+      <fieldForValue>splunk_server</fieldForValue>
+      <fieldForLabel>splunk_server</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_model_selector"/>
+    </input>
+      
+    <input type="dropdown" token="dm_full_name" searchWhenChanged="true">
+      <label>Data Model</label>
+      <fieldForValue>dm_full_name</fieldForValue>
+      <fieldForLabel>app_model_name</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_model_selector">
+	<query>search splunk_server="$srv$"</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+The data model acceleration feature of Splunk caches data from an
+event-based search to provide faster results for the model's
+data. This view is intended to provide visibility into the size of
+this data and where it is located on disk. <b>Note:</b> Retention of
+data model acceleration data is managed separately, and this usage
+does not impact the retention of the regular indexed data.
+<p/>
+The selector builds up a list of the accelerated models. The label is
+a combination of the app containing the model and the name of the
+model itself. Data model acceleration data is tightly bound to the
+search head on which the model is contained, so this will only produce
+results on search heads where the model is accelerated.
+<p/>
+Shown below in the first row are some summary numbers about the state
+of the model's acceleration. Data model acceleration works in parallel
+with the raw data <i>buckets</i>, and the first quantity shown in this
+row indicates the number of buckets touched (read: containing
+applicable data) by the model. In the second panel, titled <em>Source
+Data Size</em>, the total volume of data stored in the <i>raw</i> data
+buckets counted in the leftmost panel. To the right of center, the
+panel titled <em>Summary Size</em> contains a total of the size of the
+summarized data. Only the relevant fields for the model are saved in
+the summary store, so it's likely that the summary size is
+significantly smaller than the raw size. Finally, on the right, is a
+percentage representation of the <i>completion</i> of the model's
+acceleration. It shows the percentage of the number of buckets already
+summarized out of the total number matching the model's search.
+<p/>
+On the second row, the three panels break out the usage of the summary
+across the environment. The first panel <em>Summary Usage, Count by
+Indexer</em> can help spot data imbalance by showing which indexers
+are particpating in the model the most. The middle panel, titled
+<em>Summary Usage, Count by Index</em> shows which indexes contain
+data matching the model. Finally, the pie chart indicates the
+<i>summary state</i> of the buckets, by count.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+        <title>Source Bucket Count</title>
+        <option name="link.visible">false</option>
+        <option name="field">summary.buckets</option>
+        <search base="no_detail">
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Source Data Size</title>
+        <option name="link.visible">false</option>
+        <option name="field">size</option>
+        <search base="no_detail">
+	  <query>rename summary.buckets_size AS size | `_fb_mbytes_pretty(size)`</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Summary Size</title>
+        <option name="link.visible">false</option>
+        <option name="field">size</option>
+        <search base="no_detail">
+	  <query>rename summary.size AS size | `_fb_bytes_pretty(size)`</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Summary Completion (%)</title>
+        <option name="link.visible">false</option>
+        <option name="field">percent</option>
+        <search base="no_detail">
+	  <query>eval percent=round('summary.complete' * 100, 2)</query>
+        </search>
+      </single>
+    </panel>
+
+  </row>
+      
+<!--
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+-->
+
+  <row>
+    <panel>
+      <chart>
+	<title>Summary Usage, Count by Indexer</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
+	<search base="yes_detail">
+	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
+| stats count, sum(summary_size) AS summary_size by Indexer]]></query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Summary Usage, Count by Index</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
+	<search base="yes_detail">
+	  <query><![CDATA[| rex field=title "^details_(?<Indexer>[^:]+)\:(?<Index>[^:]+)\:(?<primary_guid>[^:]+)$"
+| stats count, sum(summary_size) AS summary_size by Index
+]]></query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>States</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">pie</option>
+	<search base="yes_detail">
+	  <query>| eval state=case(summary_complete=1, "Done", summary_hot_done=1, "Hot Done", bucket_is_hot=1, "Hot (Pending)", 1=1, "Pending")
+| stats count by state</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+</form>

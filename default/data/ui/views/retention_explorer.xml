@@ -1,0 +1,153 @@
+<form>
+  <label>Data Retention Explorer</label>
+
+  <fieldset>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>title</fieldForLabel>
+      <search>
+	<query>| rest /services/data/indexes search="totalEventCount!=0"
+| stats count by title</query>
+      </search>
+    </input>
+    <input type="dropdown" token="st">
+      <label>Sourcetype</label>
+      <choice value="*">All Sourcetypes</choice>
+      <default>All Sourcetypes</default>
+      <fieldForLabel>sourcetype</fieldForLabel>
+      <fieldForValue>sourcetype</fieldForValue>
+      <search>
+	<query>| metadata type=sourcetypes index=$index$ | stats count by sourcetype</query>
+      </search>
+      <change>
+        <condition label="All Sourcetypes">
+	  <unset token="selected_sourcetype"/>
+	</condition>
+	<condition value="*">
+	  <set token="selected_sourcetype">$value$</set>
+	</condition>
+      </change>
+    </input>
+  </fieldset>
+  
+  <row>
+    <panel>
+      <single>
+	<title>This is how long we want the data to last</title>
+	<option name="field">frozenTimePeriodInSecs</option>
+        <search>
+	  <query>| rest /services/data/indexes/$index$
+| fields frozenTimePeriodInSecs
+| eval frozenTimePeriodInSecs=tostring(frozenTimePeriodInSecs, "duration")
+	  </query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>This is how long we're getting</title>
+	<search>
+	  <query>| rest /services/data/indexes/$index$ search="totalEventCount!=0"
+| eval minTime=round(strptime(minTime, "%Y-%m-%dT%H:%M:%S%z"))
+| eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
+| stats min(*Time) AS *Time
+| eval span=tostring(round(maxTime - minTime), "duration")
+	  </query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>This is a chart of space used over time (fromdbinspect) (last 30 days)</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">area</option>
+	<option name="charting.chart.stackMode">stacked</option>
+        <search>
+	  <query>`_fb_summary_recs($index|s$)`
+	  | timechart minspan=1d sum(sizeOnDiskMB) by splunk_server
+	  </query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row depends="$selected_sourcetype$">
+    <panel>
+      <chart>
+	<title>This is a chart of space over time (for a single	sourcetype) from metasearch</title>
+	<option name="charting.chart">area</option>
+	<option name="charting.chart.stackMode">stacked</option>
+	<search>
+	  <query>| metasearch index=$index$
+	  sourcetype=$selected_sourcetype|s$
+	  | timechart minspan=1d count by splunk_server</query>
+	  <earliest>-30d@d</earliest>
+	  <latest>now</latest>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+	<title>This is all about volume participation</title>
+	<search>
+	  <query><![CDATA[| rest /services/data/indexes/$index$ search="totalEventCount!=0"
+| stats values(title) AS index count by homePath coldPath
+| search homePath=volume:* OR coldPath=volume:*
+| rename homePath AS home coldPath AS cold
+| foreach home cold [ eval volume_membership=mvappend(volume_membership, if(match(<<FIELD>>, "^volume:"), "<<FIELD>>", null())) ]
+| eval volume_membership=mvjoin(volume_membership, ",")]]></query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is how full the volume is</title>
+	<search>
+	  <query>| rest /services/data/indexes-extended/$index$
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>These are volume-based bucket expulsion events</title>
+	<search>
+	  <query>eventtype=bucket_volume_chill OR eventtype=bucket_volume_freeze
+`_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`
+	  </query>
+	  <earliest>-30d@d</earliest>
+	  <latest>now</latest>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>This is about the trending of the capacity for this index</title>
+      </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is for more questions from Yanpei's email</title>
+      </table>
+    </panel>
+  </row>
+	 
+</form>

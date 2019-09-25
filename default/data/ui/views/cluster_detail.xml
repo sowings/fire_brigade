@@ -1,7 +1,18 @@
-<form class="formsearch">
+<form class="formsearch" script="cluster_detail.js">
   <label>Replicated Index Detail</label>
 
+  <search id="summary_bucket_info">
+    <query><![CDATA[
+`fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| bucket _time span=1d
+| eval bucket_type=if(guId=bid_guid, "db", "rb"), bucket_primary_guid=bid_guid
+| fields _time, sizeOnDiskMB, path, bucket_type, bucket_primary_guid, guId]]>
+    </query>
+  </search>
+
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p />
@@ -12,12 +23,13 @@ in versions of Splunk starting with 5.0.
 <strong>Note: Environments not making use of clustering will simply not have any
 replicated data shown on the graphs.</strong>
 <p />
-The first two rows of panels represent configuration data. Most
-promiment is the mode of the selected host. For the field
-<code>repFactor</code>, a value of <i>auto</i> indicates that the
+The first row of panels represents configuration data. Most
+promiment is the mode of the selected host. In the <i>Replication
+Settings</i> panel, a value of <i>auto</i> in the "This Index" position
+indicates that the
 system-wide setting should be honored.
 <p />
-Numerical data on the third row is broken out to give show the amount
+Numerical data on the second row is broken out to give show the amount
 of disk space consumed by index <i>buckets</i> arising locally (that
 is, data indexed natively by <em>this</em> host), vs buckets which are
 replicated from other nodes in the cluster. In this way, it's possible
@@ -34,112 +46,165 @@ to the amount of data being replicated <i>to</i> this indexer from
 other members of the cluster.
 </div>
     </html>
+    </panel>
   </row>
 
-
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
+    <panel>
     <single>
       <title>Clustering Mode for This Host</title>
+      <option name="link.visible">false</option>
       <option name="field">mode</option>
-      <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
+      <search id="rest_server_clustering">
+	<query>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</query>
+      </search>
     </single>
-  </row>
-
-  <row>
-    <single>
-      <title>Global Replication Factor</title>
+    </panel>
+    <panel>
+    <single id="cluster_detail_replication_label">
+<!--      <title>Global Replication Factor</title> -->
+      <option name="link.visible">false</option>
       <option name="field">replication_factor</option>
-      <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
+      <option name="underLabel">Global Copies</option>
+      <search base="rest_server_clustering">
+      </search>
     </single>
     <single>
-      <title>Replication Factor for This Index</title>
+<!--      <title>Replication Factor for This Index</title> -->
+      <option name="link.visible">false</option>
+      <option name="underLabel">This index</option>
       <option name="field">repFactor</option>
-      <searchString>| `_fb_rest_index_config($index$)`</searchString>
+      <search>
+	<query>| `_fb_rest_index_config($index$)`
+| replace 0 with "NO" in repFactor
+	| replace auto with "YES" in repFactor</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Search Factor for This Index</title>
+      <option name="link.visible">false</option>
       <option name="field">search_factor</option>
-      <searchString>| `_fb_rest_file_config("server", "clustering")` splunk_server=$host$</searchString>
+      <option name="underLabel">Global Searchable Copies</option>
+      <search base="rest_server_clustering"/>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Locally Indexed Data</title>
+      <option name="link.visible">false</option>
       <option name="field">indexed</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
+      <search base="summary_bucket_info">
+	<query>`_fb_where_today`
 | search NOT bucket_type="rb"
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
-| stats sum(sizeOnDiskMB) AS indexed
+| stats count, sum(sizeOnDiskMB) AS indexed | fillnull value=0 indexed
 | `_fb_mbytes_pretty(indexed)`
-      </searchString>
+	</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Replicated Data</title>
+      <option name="link.visible">false</option>
       <option name="field">replicated</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
+      <search base="summary_bucket_info">
+	<query>`_fb_where_today`
 | search bucket_type="rb"
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
-| stats sum(sizeOnDiskMB) AS replicated
+| stats count, sum(sizeOnDiskMB) AS replicated | fillnull value=0 replicated
 | `_fb_mbytes_pretty(replicated)`
-      </searchString>
+	</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Total (Local + Replicated)</title>
+      <option name="link.visible">false</option>
       <option name="field">Total</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <search base="summary_bucket_info">
+	<query>`_fb_where_today`
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
 | stats sum(sizeOnDiskMB) AS Total
 | `_fb_mbytes_pretty(Total)`
-      </searchString>
+	</query>
+      </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
-      <title>Source of Indexed Data</title>
+      <title>Indexer of Origin</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">pie</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
+      <search base="summary_bucket_info">
+	<query>`_fb_where_today`
 | extract auto=f fb_extract_hot_bucket
-| eval guid=bucket_primary_guid
-| join type=left guid [ | rest /services/server/info | rename splunk_server AS host ]
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by path, host
+| eval guid=coalesce(bucket_primary_guid, guId)
+| lookup fb_services_server_info_cache guid OUTPUT splunk_server AS host
+| fillnull value="Missing Indexer" host
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by host, path
 | stats sum(sizeOnDiskMB) AS MBytes by host
-      </searchString>
+	</query>
+      </search>
     </chart>
+    </panel>
+    <panel>
     <chart>
       <title>Local vs. Replicated Data Over Time (last 30 days)</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <earliestTime>-30d@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
+      <search>
+	<query>
+`_fb_summary_recs($host$, $index$)`
 | extract auto=f fb_extract_bucket_type_time_source
-| extract auto=f fb_extract_hot_bucket
+| fields _time, sizeOnDiskMB, path, bucket_type, guId
 | bucket _time span=1d
+| extract auto=f fb_extract_hot_bucket
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type
 | eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
-      </searchString>
+	</query>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+      </search>
     </chart>
+    </panel>
   </row>
 </form>

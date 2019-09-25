@@ -1,0 +1,44 @@
+<panel>
+  <title>Snapshot: Volume Headroom by Host</title>
+  <input type="dropdown" token="volume_title" searchWhenChanged="true">
+    <label>Volume</label>
+    <populatingSearch fieldForValue="title" fieldForLabel="title">| `_fb_rest_file_config("indexes")` | search title=volume:* | stats count by title</populatingSearch>
+  </input>
+  <chart>
+    <option name="link.visible">false</option>
+    <option name="charting.chart">column</option>
+    <option name="charting.chart.stackMode">stacked</option>
+    <option name="charting.fieldColors">{"AVAILABLE": 0x999999}</option>
+    <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+    <search>
+      <query>
+earliest=@d
+[| rest /services/data/indexes splunk_server=*
+| search coldPath="$volume_title$*" OR homePath="$volume_title$*"
+| rename title AS orig_index | fields orig_index | dedup orig_index ]
+state!="thawed" `_fb_summary_recs_host(*)`
+| bucket span=1d _time
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, host, state, index
+| eval bookkeeping="$volume_title$"
+| join type=left bookkeeping
+[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=*
+  | fields title, path, maxVolumeDataSizeMB
+  | rename title AS bookkeeping, path AS wanted_path]
+| rename comment AS "Set state to null for rows we don't want, stats will ignore."
+| eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
+| stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
+    sum(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot_usage,
+    sum(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm_usage,
+    sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold_usage
+    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
+    by _time, host index
+| eventstats sum(sizeOnDiskMB) AS daily_usage by _time
+| appendpipe [ stats sum(sizeOnDiskMB) AS MB, max(maxVolumeDataSizeMB) AS mvs by host
+| eval maxVolumeDataSizeMB=if(isnull(maxVolumeDataSizeMB), mvs, maxVolumeDataSizeMB)
+| eval sizeOnDiskMB=if(isnull(sizeOnDiskMB), maxVolumeDataSizeMB - MB, sizeOnDiskMB)
+| eval index="AVAILABLE" | fields - MB mvs ]
+| chart limit=50 sum(sizeOnDiskMB) over host by index
+      </query>
+    </search>
+  </chart>
+</panel>

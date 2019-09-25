@@ -1,0 +1,184 @@
+<form>
+  <label>Data Hygiene Explorer</label>
+
+  <fieldset>
+    <input type="dropdown" token="index">
+      <label>Index</label>
+      <fieldForLabel>title</fieldForLabel>
+      <fieldForValue>title</fieldForValue>
+      <search>
+	<query>| rest /services/data/indexes | search totalEventCount!=0 | stats count by title</query>
+      </search>
+    </input>
+    <input type="dropdown" token="st">
+      <label>Sourcetype</label>
+      <choice value="*">All Sourcetypes</choice>
+      <default>All Sourcetypes</default>
+      <fieldForLabel>sourcetype</fieldForLabel>
+      <fieldForValue>sourcetype</fieldForValue>
+      <search>
+	<query>| metadata type=sourcetypes index=$index$ | stats count by sourcetype</query>
+      </search>
+    </input>
+    <input type="time">
+      <label>Time Range</label>
+      <default>Last 24 hours</default>
+    </input>
+  </fieldset>
+
+  <search id="hygiene_metadata">
+    <query>| metadata type=sourcetypes index=$index$ | eval index="$index$"
+| eventstats dc(sourcetype) AS sourcetypes, dc(eval(if(match(sourcetype, "-\d+$$"), sourcetype, null()))) AS numbered_st dc(eval(if(match(sourcetype, "-too_small$$"), sourcetype, null()))) AS too_small_st
+| eval bad_pct=round(numbered_st / sourcetypes * 100) + round(too_small_st / sourcetypes * 100)</query>
+    <done>
+      <set token="metadata_sid">$job.sid$</set>
+    </done>
+  </search>
+
+  <row>
+    <panel>
+      <single>
+	<title>This is your score</title>
+	<search base="hygiene_metadata">
+	  <option name="field">bad_pct"</option>
+	  <query>| rangemap field=bad_pct low=0-0 medium=1-10 elevated=11-25 severe=26-100
+| fieldformat bad_pct=tostring(bad_pct) + "%"</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+	<title>These are sourcetype scores</title>
+      </single>
+    </panel>
+  </row>
+  
+  <row>
+    <panel>
+      <table>
+	<title>This is Metadata</title>
+	<search base="hygiene_metadata">
+	  <query>convert ctime(*Time) AS *
+| table index, sourcetype, totalCount, firstTime, first, lastTime, last, recent
+| sort - totalCount
+| rename index AS Index, sourcetype AS Sourcetype, totalCount AS "Event Count", firstTime AS "Earliest Event (epoch)", lastTime AS "Latest Event (epoch)", recent AS "Data Last Ingested", first AS "Earliest Event", last AS "Latest Event"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+	<title>Sourcetypes Found</title>
+	<option name="link.visible">false</option>
+	<option name="field">sourcetypes</option>
+	<search base="hygiene_metadata"/>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Numbered Sourcetypes Found</title>
+	<option name="link.visible">false</option>
+	<option name="field">numbered_st</option>
+	<search base="hygiene_metadata"/>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>"Too Small" Sourcetypes Found</title>
+	<option name="link.visible">false</option>
+	<option name="field">too_small_st</option>
+	<search base="hygiene_metadata"/>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is parsing errors - AggregatorMiningProcessor</title>
+	<search>
+	  <query>index=_internal sourcetype=splunkd source=*/splunkd.log* 
+component=AggregatorMiningProcessor
+[| loadjob $metadata_sid$ | search sourcetype=$st$
+    | fields sourcetype
+    | rename sourcetype AS data_sourcetype ]
+	  </query>
+	  <done>
+	    <set token="hygiene_aggregator_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is parsing errors - DateParserVerbose</title>
+	<search>
+	  <query>index=_internal sourcetype=splunkd source=*/splunkd.log* 
+component=DateParserVerbose
+[| loadjob $metadata_sid$ | search sourcetype=$st$
+    | fields sourcetype
+    | return $sourcetype ]
+	  </query>
+	  <done>
+	    <set token="hygiene_dateparser_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is parsing errors - LineBreakingProcessor</title>
+	<search>
+	  <query>index=_internal sourcetype=splunkd source=*/splunkd.log* 
+component=LineBreakingProcessor
+[| loadjob $metadata_sid$ | search sourcetype=$st$
+    | fields sourcetype
+    | rename sourcetype AS data_sourcetype ]
+	  </query>
+	  <done>
+	    <set token="hygiene_linebreaking_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>This is metasearch to show data distribution</title>
+	<option name="charting.chart">column</option>
+	<option name="charting.chart.stackMode">stacked</option>
+	<search>
+          <query>| metasearch index=$index$ sourcetype=$st$
+| chart count OVER splunk_server BY sourcetype</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+  
+  <row depends="$clicked_props$">
+    <panel>
+      <table>
+	<title>This is props when you drill down</title>
+	<search>
+	  <query>| rest /services/configs/conf-props/$st$
+| fields splunk_server title eai:acl.sharing eai:acl.app TIME_PREFIX TIME_FORMAT MAX_TIMESTAMP_LOOKAHEAD SHOULD_LINEMERGE LINE_BREAKER TRUNCATE DATETIME_CONFIG
+</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+  
+</form>

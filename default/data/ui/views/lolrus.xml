@@ -2,13 +2,23 @@
   <label>Where is my Bucket?</label>
 
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
-    <input type="dropdown" token="index">
+    <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
     <input type="text" token="bucket_id" searchWhenChanged="true">
       <label>Bucket ID</label>
@@ -16,6 +26,7 @@
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 <p/>
@@ -37,73 +48,87 @@ events are stored) is only 30 days, so these panels may be empty for
 old buckets.
 </div>
     </html>
+    </panel>
   </row>
 
-<!-- Do a time chart with the state and size of the bucket -->
+<!--
   <row>
+    <single>
+      <title>Search This Bucket</title>
+      <searchString>| stats count | eval label=$host$ . " / " . $index$ . " / " . $bucket_id$</searchString>
+      <drilldown>
+	<link>
+	  bucket_search=
+	</link>
+      </drilldown>
+    </single>
+  </row>
+-->
+  <row>
+    <panel>
     <chart>
       <title>Bucket State and Size Over Time</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">column</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">Size (MB)</option>
-      <searchString>
-id=$bucket_id$ `_fb_summary_recs($host$, $index$)`
+      <search>
+	<query>
+`_fb_summary_recs($host$, $index$, $bucket_id$)`
 | extract auto=f fb_extract_bucket_type_time_source
 | extract auto=f fb_extract_hot_bucket
 | search bucket_type!="rb"
 | bucket _time span=1d
+| fillnull tsidxState value="full"
 | stats max(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot,
-    max(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm,
-    max(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold,
+     max(eval(if(state="warm" AND tsidxState="full", sizeOnDiskMB, 0))) AS warm,
+     max(eval(if(state="warm" AND tsidxState="mini", sizeOnDiskMB, 0))) AS warm_minified,
+     max(eval(if(state="cold" AND tsidxState="full", sizeOnDiskMB, 0))) AS cold,
+     max(eval(if(state="cold" AND tsidxState="mini", sizeOnDiskMB, 0))) AS cold_minified,
     max(eval(if(state="thawed", sizeOnDiskMB, 0))) AS thawed,
     by _time
-      </searchString>
+	</query>
+      </search>
 
-<!-- Do some finagling to give colors, in order -->
-      <option name="charting.seriesColors">[0xA04558,0xE0A93B,0x5479AF,0x6B8930]</option>
-<!-- What if I only capture a bucket in-flight, already warm? look up
-     series order -->
+      <option name="charting.seriesColors">[0xA04558,0xC07749,0xE0A93B,0x6B8930,0x5479AF,0xB000B0]</option>
 
     </chart>
+    </panel>
   </row>
 
 
   <!-- This will drive the table and the event set -->
-<!--
-  <searchTemplate>
+  <search id="lolrus_lifecycle">
+    <query>
 `fb_bucket_transitions($host$, *)`
+| `_fb_bucket_lifecycle_required_fields`
+| `_fb_figure_idx_name_from_home_or_cold_path`
 | search idx=$index$ bucket_id=$bucket_id$
 | `fb_bucket_transition_pp`
-| sort - time
-  </searchTemplate>
--->
-<!-- Table with bucket log event summary -->
+    </query>
+  </search>
+
   <row>
+    <panel>
     <table>
       <title>Bucket State Transitions</title>
-      <searchString>
-`fb_bucket_transitions($host$, *)`
-| `_fb_figure_idx_name_from_home_or_cold_path`
-| search idx=$index$ bucket_id=$bucket_id$
-| `fb_bucket_transition_pp`
-| sort _time
-      </searchString>
+      <option name="link.visible">false</option>
+      <search base="lolrus_lifecycle">
+      </search>
     </table>
+    </panel>
   </row>
 
-<!-- Log events -->
   <row>
+    <panel>
     <event>
       <title>Bucket Transition Events</title>
-      <searchString>
-`fb_bucket_transitions($host$, *)`
-| `_fb_figure_idx_name_from_home_or_cold_path`
-| search idx=$index$ bucket_id=$bucket_id$
-| `fb_bucket_transition_pp`
-| sort _time
-      </searchString>
+      <option name="link.visible">false</option>
+      <search base="lolrus_lifecycle">
+      </search>
     </event>
+    </panel>
   </row>
 
 </form>

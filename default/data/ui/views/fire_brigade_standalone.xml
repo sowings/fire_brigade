@@ -1,0 +1,80 @@
+<dashboard>
+  <label>Troubleshoot Fire Brigade (Standalone)</label>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+	<title>Search Peers Found</title>
+        <!-- splunk_server=* to get around default search groups in
+	     case we're on a DMC host -->
+	<search id="rest_count">
+	  <query>| rest /services/server/info splunk_server=* | stats count</query>
+	</search>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+	<title>Configuration Mode</title>
+	<option name="field">mode</option>
+	<search base="rest_count">
+	  <query>eval mode=if(count > 1, "Distributed", "Standalone")</query>
+	</search>
+	<!-- drilldown from here to the right dash? -->
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+	<title>TA installed?</title>
+	<option name="field">nope</option>
+	<search>
+	  <query>| rest /services/apps/local | search title="TA-fire_brigade"
+| stats count
+| eval nope=if(count > 0, "Yes", "No")</query>
+	</search>
+      </single>	    
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+	<title>"DB inspection" Events Found</title>
+	<option name="field">totalCount</option>
+	<search id="metadata">
+	  <query>| metadata type=sources index=summary |search source="DB inspection"</query>
+	</search>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+	<title>Most Recent "DB inspection" Event</title>
+	<option name="field">last</option>
+	<option name="underlabel">Local Time</option>
+	<search base="metadata">
+	  <query>| convert ctime(*Time) AS *</query>
+	</search>
+      </single>
+    </panel>
+
+    <panel>
+      <single>
+	<title>Events Found Since "Today"</title>
+	<search>
+	  <query>index=summary source="DB inspection"
+	  </query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+</dashboard>

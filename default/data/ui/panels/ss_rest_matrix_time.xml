@@ -1,0 +1,21 @@
+<panel>
+  <title>Snapshot: Index Retention Time vs. Target (REST)</title>
+  <table>
+    <option name="link.visible">false</option>
+    <option name="drilldown">row</option>
+    <searchString>
+| rest /services/data/indexes search="totalEventCount!=0"
+| eval minTime=round(strptime(minTime, "%Y-%m-%dT%H:%M:%S%z"))
+| eval maxTime=round(strptime(maxTime, "%Y-%m-%dT%H:%M:%S%z"))
+| eval span=tostring(maxTime-minTime, "duration") + " / " +
+    tostring(frozenTimePeriodInSecs, "duration")
+| chart useother=f usenull=f limit=50 first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+    </searchString>
+
+    <drilldown>
+      <link field="Indexer"><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]></link>
+      <link><![CDATA[/app/fire_brigade/retention_age?form.host=$row.Indexer$&form.index=$click.name2$]]></link>
+    </drilldown>
+  </table>
+</panel>

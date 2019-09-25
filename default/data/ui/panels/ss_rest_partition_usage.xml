@@ -1,0 +1,19 @@
+<panel>
+  <title>Snapshot: Disk Usage Information</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
+  <table>
+    <option name="link.visible">false</option>
+    <searchString>| rest /services/server/status/partitions-space splunk_server=$host$*
+| fields mount_point, available, capacity
+| eval UsePct=round((capacity - available) * 100 / capacity, 1)
+| rename capacity AS Size, available AS Avail
+| `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
+| rename mount_point AS MountedOn
+| table MountedOn, Size, Avail, UsePct
+| sort MountedOn
+    </searchString>
+  </table>
+</panel>

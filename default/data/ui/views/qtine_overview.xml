@@ -2,17 +2,28 @@
   <label>Troubleshooting Quarantined Events</label>
 
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This view is focused on identifying buckets which are <i>quarantine</i>
@@ -41,31 +52,42 @@ types of buckets are created. The <code>timestamped</code> field is in epoch
 time format, and can be made easier to read with <code>convert</code> or 
 </div>
     </html>
+    </panel>
   </row>
 
   <!-- Quarantine settings -->
   <row>
+    <panel>
     <single>
       <title>Quarantine Past Seconds</title>
+      <option name="link.visible">false</option>
       <option name="field">quarantinePastSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-      </searchString>
+      <search id="qtine_overview_rest">
+	<query>| `_fb_rest_index_config($host$, $index$)`
+	</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Quarantine Future Seconds</title>
+      <option name="link.visible">false</option>
       <option name="field">quarantineFutureSecs</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-      </searchString>
+      <search base="qtine_overview_rest">
+      </search>
     </single>
+    </panel>
   </row>
 
   <!-- Buckets that were quarantine buckets -->
   <!-- Show span, number of events, etc -->
   <row>
+    <panel>
     <table>
       <title>Buckets Originally Created As Quarantine</title>
-      <earliestTime>@d</earliestTime>
-      <searchString>
+      <option name="link.visible">false</option>
+      <search>
+	<query>
 [ search earliest=0 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
     | fields host, idx, bucket_id
     | rename idx AS orig_index, bucket_id AS id
@@ -79,19 +101,28 @@ index=summary search_name="DB inspection"
    latestTime AS "Latest Time",
    eventCount AS "Event Count"
 | table host Index "Bucket ID" "Bucket State" "Event Count" "Earliest Time" "Latest Time" rawSize sourceCount sourceTypeCount hostCount sizeOnDiskMB 
-      </searchString>
+	</query>
+        <earliest>@d</earliest>
+	<latest>now</latest>
+      </search>
     </table>
+    </panel>
   </row>
 
   <!-- Quarantine events generating new hot buckets -->
   <!-- Highlight sourcetypes with bad time stamp parsing? -->
   <row>
+    <panel>
     <event>
       <title>Quarantine Bucket Creation Events</title>
-      <searchString>
+      <option name="link.visible">false</option>
+      <search>
+	<query>
 eventtype=bucket_quarantine_kindle idx=$index$ host=$host$
-      </searchString>
+	</query>
+      </search>
     </event>
+    </panel>
   </row>
 
 

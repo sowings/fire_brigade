@@ -1,0 +1,24 @@
+<panel>
+  <title>Snapshot: Bucket Span vs. Event Count by Index</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
+  <input type="dropdown" token="index" searchWhenChanged="true">
+    <label>Index</label>
+    <choice value="*">All indexes</choice>
+    <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_hostname_index_cache | search orig_host="$host$" | dedup orig_index | sort orig_index</populatingSearch>
+  </input>
+  <chart>
+    <searchString>earliest=@d `_fb_summary_recs($host$, $index$)`
+| fields index, id, endEpoch, startEpoch, eventCount
+| eval span=endEpoch-startEpoch
+| table index, eventCount, span, id
+    </searchString>
+    <option name="link.visible">false</option>
+    <option name="charting.axisTitleX.text">Number of Events</option>
+    <option name="charting.axisTitleY.text">Bucket Span (sec)</option>
+    <option name="charting.chart">bubble</option>
+    <option name="charting.legend.placement">right</option>
+  </chart>
+</panel>

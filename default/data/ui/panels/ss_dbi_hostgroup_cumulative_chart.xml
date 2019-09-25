@@ -1,0 +1,32 @@
+<panel>
+  <title>Snapshot: Host Group Index Size by Host</title>
+  <input type="dropdown" token="host_group" searchWhenChanged="true">
+    <label>Host Group</label>
+    <fieldForValue>host_group</fieldForValue>
+    <fieldForLabel>host_group</fieldForLabel>
+    <search>
+	<query>| inputlookup fb_host_groups | stats count by host_group</query>
+    </search>
+  </input>
+  <chart>
+    <option name="link.visible">false</option>
+    <option name="charting.chart">column</option>
+    <option name="charting.chart.stackMode">stacked</option>
+    <option name="charting.axisTitleX.text">Host</option>
+    <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+    <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+    <option name="charting.axisTitleY.text">MBytes</option>
+    <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+    <search>
+      <query>earliest=@d host_group="$host_group$" `_fb_summary_recs(*)`
+| bucket _time span=1d
+| fields _time, orig_host, index, sizeOnDiskMB
+| chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
+      </query>
+      <earliest>@d</earliest>
+    </search>
+    <drilldown>
+      <link><![CDATA[/app/fire_brigade/index_detail?form.host=$click.value$&form.index=$click.name2$]]></link>
+    </drilldown>
+  </chart>
+</panel>

@@ -1,0 +1,96 @@
+<dashboard>
+  <label>Cache Manager Overview</label>
+
+  <search id="cachemgr_overview_rest_cacheman">
+    <query><![CDATA[| rest /services/admin/cacheman
+| rex field=title "^(?<cache_type>[^\|]+)\|(?<index>[^~]+)~"
+| sistats count, sum(cm:bucket.estimated_size), max(cm:bucket.latest_time), min(cm:bucket.earliest_time) by splunk_server, cache_type, index, cm:bucket.status]]></query>
+  </search>
+
+  <row>
+    <panel>
+      <html>
+<div id="fire_brigade_help"/>
+      </html>
+    </panel>
+  </row>
+  
+    
+  <row>
+    <panel>
+      <single>
+	<title>Buckets Managed in Cache</title>
+        <option name="link.visible">false</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats count by index | stats sum(count) AS count</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Disk Space Managed in Cache</title>
+        <option name="link.visible">false</option>
+	<option name="underLabel">Approximate</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS est_size
+| `_fb_bytes_pretty(est_size)`</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Cache Usage by Cache Type</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">pie</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS size by cache_type
+| replace "bid" WITH "Data Bucket" IN cache_type
+| replace "dma" WITH "Data Model Acceleration" IN cache_type</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Cache Usage by State</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">pie</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS size by cm:bucket.status</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+	<title>Cache Usage by Host</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+	<option name="charting.chart.stackMode">stacked</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS size by splunk_server, cm:bucket.status
+| chart sum(size) over splunk_server by cm:bucket.status
+| rename splunk_server AS Indexer</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Cache Usage by Index, State</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+	<option name="charting.chart.stackMode">stacked</option>
+	<search base="cachemgr_overview_rest_cacheman">
+	  <query>| stats sum(cm:bucket.estimated_size) AS size by index, cm:bucket.status
+| chart sum(size) over index by cm:bucket.status
+| rename index AS Index</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+</dashboard>
+  

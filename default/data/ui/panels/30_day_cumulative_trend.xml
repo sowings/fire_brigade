@@ -1,0 +1,20 @@
+<panel>
+  <title>Monitored Indexing Space Over Time (last 30 days)</title>
+  <chart>
+    <option name="link.visible">false</option>
+    <option name="charting.chart">area</option>
+    <option name="charting.chart.nullValueMode">connect</option>
+    <option name="charting.legend.placement">none</option>
+    <option name="charting.axisTitleX.text">Time</option>
+    <option name="charting.axisTitleY.text">MBytes</option>
+    <option name="charting.seriesColors">[0x70A65C]</option>
+    <search>
+      <query>`_fb_summary_recs(*)` | timechart sum(sizeOnDiskMB) AS MBytes</query>
+      <earliest>-30d@d</earliest>
+    </search>
+      
+    <drilldown>
+      <link>/app/fire_brigade/retention_size</link>
+    </drilldown>
+  </chart>
+</panel>

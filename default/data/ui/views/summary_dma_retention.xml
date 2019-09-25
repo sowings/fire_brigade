@@ -1,0 +1,231 @@
+<form>
+  <label>DMA Summary Retention Overview</label>
+
+  <search id="summary_dma_retention_selector">
+    <query>| rest /services/data/summaries data_model_acceleration=1
+| stats count by search_head_guid, name
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
+| lookup fb_services_server_info_cache captain AS search_head_guid OUTPUT serverName AS shc_peer
+| eval server_alt=case(isnotnull(shc_peer), mvindex(shc_peer, 0) . " (SHC)", isnull(serverName), "Unpeered", 1=1, serverName)
+| eval shead=search_head_guid . " (" . server_alt . ")"</query>
+    <done>
+      <set token="selector_sid">$job.sid$</set>
+    </done>
+  </search>
+
+  <fieldset>
+    <input type="dropdown" token="srv" searchWhenChanged="true">
+      <label>Search Head</label>
+      <fieldForValue>search_head_guid</fieldForValue>
+      <fieldForLabel>shead</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_retention_selector">
+	<query>| stats count values(search_head_guid) AS search_head_guid by shead</query>
+      </search>
+    </input>
+      
+    <input type="dropdown" token="dm_full_name" searchWhenChanged="true">
+      <label>Data Model</label>
+      <fieldForValue>name</fieldForValue>
+      <fieldForLabel>name</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search base="summary_dma_retention_selector">
+	<query>search search_head_guid=$srv$ | stats count by name</query>
+      </search>
+    </input>
+  </fieldset>
+  
+  <search id="sdr_data_summaries">
+    <query>| rest /services/data/summaries data_model_acceleration=1
+| search search_head_guid=$srv$ title=$dm_full_name$
+| eval related=split(related_indexes, ",")
+    </query>
+    <done>
+      <set token="data_summaries_sid">$job.sid$</set>
+    </done>
+  </search>
+
+  <search id="sdr_admin_summarization">
+    <query>| rest /services/admin/summarization/tstats:$dm_full_name$ splunk_server=$srv_name$
+| fields - search
+    </query>
+    <done>
+      <set token="admin_summarization_sid">$job.sid$</set>
+    </done>
+  </search>
+
+  <row>
+    <panel>
+      <single>
+	<title>GUID mapped to serverName (wants GUID)</title>
+	<search>
+	  <query>| loadjob $selector_sid$ | search search_head_guid=$srv|s$
+| eval serverName=if(isnotnull(shc_peer), mvindex(shc_peer, random() % mvcount(shc_peer)), serverName)
+| fields serverName</query>
+          <done>
+            <eval token="srv_name">if($result.serverName$!="Unpeered", $result.serverName$, null())</eval>
+	  </done>
+	</search>
+      </single>
+    </panel>
+  </row>
+  
+  <row depends="$srv_name$">
+    <panel>
+      <single>
+	<title>Acceleration Range</title>
+	<option name="link.visible">false</option>
+	<option name="field">acceleration.earliest_time</option>
+	<search id="sdr_data_models">
+	  <query>| rest /servicesNS/-/-/data/models splunk_server=$srv_name$
+| eval full_name="DM_" . 'eai:acl.app' . "_" . title
+| search full_name=$dm_full_name$</query>
+	  <eval token="different_backfill">if($result.acceleration.backfill_time$ != "0", '$result.acceleration.backfill_time$', null())</eval>
+	</search>
+      </single>
+    </panel>
+    <panel depends="$different_backfill$">
+      <single>
+	<title>Acceleration Backfill Range</title>
+	<option name="link.visible">false</option>
+	<option name="field">acceleration.backfill_time</option>
+	<search base="sdr_data_models"/>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Acceleration Range (sec)</title>
+	<option name="link.visible">false</option>
+	<option name="field">acceleration_secs</option>
+	<search base="sdr_data_models">
+	  <query>eval now=now(), atime=if('acceleration.earliest_time' = 0, 0, relative_time(now(), 'acceleration.earliest_time'))
+| eval acceleration_secs=now - atime</query>
+	</search>
+      </single>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>Indexes Used by This Model</title>
+	<search base="sdr_data_summaries">
+	  <query>stats count by related, splunk_server
+| lookup fb_services_data_indexes_cache splunk_server, title AS related OUTPUT frozenTimePeriodInSecs
+| stats max(frozenTimePeriodInSecs) AS frozenTimePeriodInSecs by related
+| rename related AS "Indexes", frozenTimePeriodInSecs AS "Freeze Cutoff (sec)"</query>
+	</search>
+      </table>
+    </panel>
+    <panel>
+      <chart>
+	<title>Disk Usage / Bucket Count by Indexer</title>
+	<option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (Mbytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
+	<search base="sdr_data_summaries">
+	  <query>stats sum(total_bucket_count) AS count, sum(total_size) AS size by splunk_server
+| rename splunk_server AS Indexer</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <single>
+	<title>Earliest Summary Time</title>
+	<option name="link.visible">false</option>
+	<option name="field">summary.earliest_time</option>
+	<search base="sdr_admin_summarization">
+	  <query>convert ctime(summary.earliest_time)</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Latest Summary Time</title>
+	<option name="link.visible">false</option>
+	<option name="field">summary.latest_time</option>
+	<search base="sdr_admin_summarization">
+	  <query>convert ctime(summary.latest_time)</query>
+	</search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Summary Size</title>
+        <option name="link.vislble">false</option>
+        <option name="field">summary.size</option>
+        <search base="sdr_admin_summarization">
+          <query>`_fb_bytes_pretty(summary.size)`</query>
+        </search>
+      </single>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <table>
+	<title>These are the volumes identified by tstatsHomePath
+	(wants serverName)</title>
+	<search>
+	  <query>| loadjob $data_summaries_sid$
+| stats count by related
+| fields related
+| rename related AS title
+| join type=left title [| rest /services/data/indexes splunk_server=$srv_name$
+    | rex field=tstatsHomePath "volume:(?&lt;volume_name&gt;[^/\\\\]+)"
+    | stats count by volume_name, title
+]
+| table title, volume_name
+| rename title AS "Related Index", volume_name AS "Volume Used"</query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row depends="$srv_name$">
+    <panel>
+      <table>
+	<title>This is the output from index-volumes (wants serverName)</title>
+        <search>
+	  <query>| rest /services/data/index-volumes splunk_server=$srv_name$
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is /server/status/partitions-space</title>
+	<search>
+	  <query>| rest /services/server/status/partitions-space splunk_server=*
+| search [| loadjob $data_summaries_sid$ | fields splunk_server ]
+| fields splunk_server, mount_point, available, capacity
+| eval UsePct=round((capacity - available) * 100 / capacity, 1)
+| rename capacity AS Size, available AS Avail
+| `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
+| rename mount_point AS MountedOn
+| table splunk_server, MountedOn, Size, Avail, UsePct
+	  | sort MountedOn</query>
+	  <done>
+	    <set token="partitions_space_sid">$job.sid$</set>
+	  </done>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+</form>

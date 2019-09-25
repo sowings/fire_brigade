@@ -1,0 +1,33 @@
+       <format type="sparkline" field="sparkline">
+          <option name="lineColor">#5379af</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineWidth">1</option>
+          <option name="maxSpotColor">#A2FFA2</option>
+          <option name="spotRadius">3</option>
+          <option name="height">25px</option>
+        </format>
+        <format field="sparkline" type="sparkline">
+          <option name="maxSpotColor">#A2FFA2</option>
+          <option name="spotRadius">3</option>
+          <option name="lineWidth">1</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineColor">#5379af</option>
+          <option name="height">25px</option>
+        </format>
+        <format field="sparkline" type="sparkline">
+          <option name="maxSpotColor">#A2FFA2</option>
+          <option name="spotRadius">3</option>
+          <option name="lineWidth">1</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineColor">#5379af</option>
+          <option name="height">25px</option>
+        </format>
+        <format field="sparkline" type="sparkline">
+          <option name="maxSpotColor">#A2FFA2</option>
+          <option name="spotRadius">3</option>
+          <option name="lineWidth">1</option>
+          <option name="fillColor">#CCDDFF</option>
+          <option name="lineColor">#5379af</option>
+          <option name="height">25px</option>
+        </format>
+ 

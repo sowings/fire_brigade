@@ -1,154 +1,273 @@
-<form class="formsearch">
+<form class="formsearch" script="retention_size.js">
   <label>Usage vs. Size Limit(s)</label>
 
+  <search id="retention_size_summary">
+    <query>
+`fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB
+| bucket _time span=1d
+| dedup _time, path
+    </query>
+  </search>
+
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 The family of views in the Retention menu is aimed at helping
 administrators visualize and thereby tune various retention parameters
 for their indexed data. General information about retention settings
 can be found in the Splunk documentation for <a
-href="http://docs.splunk.com/Documentation/Splunk/4.3.6/Admin/Setaretirementandarchivingpolicy">version
-4.3.x here</a> or <a
 href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/Setaretirementandarchivingpolicy">version
-5.0.x here</a>.
+6.0.x here</a>.
 <p />
 This particular dashboard shows both index usage, as well as retention
 polices based on <strong>size</strong>. This is a very common means of
 constraining the overall disk usage of a Splunk index by setting a
 limit on how much space it can use.
 <p />
-The first row of values show the current usage of the index in its
-three main storage locations. The <em>Home Path Usage</em> panel
-reflects the amount of space used by buckets in both the <i>hot</i>
-and <i>warm</i> states. The space limitation set for this path group
+The leftmost panel (<em>Home (Hot + Warm) Path</em>) shows the
+combined usage in the "home path", which contains both <i>hot</i> and
+<i>warm</i> buckets. The space limitation set for this path group
 is optional, and is referenced as <code>homePath.maxDataSizeMB</code>
-in <code>indexes.conf</code>. Similar to the the <i>Home Path</i>, the
+in <code>indexes.conf</code>. The configured value, if any, is shown
+in the field labeled "Limit".
+Similar to the the <i>Home Path</i>, the
 <em>Cold Path Usage</em> reflects the usage for buckets in the
-<i>cold</i> state. The corresponding limit is
-<code>coldPath.maxDataSizeMB</code>. In the right-hand column is
+<i>cold</i> state. The corresponding "Limit" is
+<code>coldPath.maxDataSizeMB</code>.
+In the third panel, titled <em>Configured Total Space Limit</em>, the
+setting
+for the combined disk usage of buckets in all states (except
+<i>thawed</i>) is shown.
+This corresponds to the <code>maxTotalDataSizeMB</code> parameter in
+<code>indexes.conf</code>.
+Finally, in the right-hand panel is
 displayed the <em>Thawed Path Usage</em>; this location is for index
 buckets which have been restored from the archive path. These
 <strong>are not</strong> subject to any retention policy, and must be
 managed manually.
 <p />
-In the second row, the right-hand panel reflects the configured limit
-for the combined disk usage of buckets in all states (except <i>thawed</i>).
-This corresponds to the <code>maxTotalDataSizeMB</code> parameter in
-<code>indexes.conf</code>.
-<p />
+The next row of panels are visual representations of various states of
+the data. If there are ballast buckets (buckets with future time
+stamps) within the home path, the amount of that path usage (as a
+percentage) appears in a filler gauge titled <em>Ballast in Home Path
+(Hot + Warm)</em>. To the right is a similar representation of any
+ballast found in the cold path. The time chart showing <em>Usage
+vs. Configured Maximum Size</em> will display usage for the home path, cold
+path, and the limits for each. If ballast is present in either state,
+it will be shown as a line in the time trend as well.
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
-    <single>
-      <title>Home Path Usage</title>
+    <panel>
+    <single id="retention_size_home_label">
+<!--      <title>Home Path Usage</title> -->
+      <option name="link.visible">false</option>
       <option name="field">homeUsage</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>state="hot" OR state="warm" `_fb_summary_recs($host$, $index$)`
-| dedup path | stats sum(sizeOnDiskMB) AS homeUsage
+      <option name="underLabel">Usage</option>
+      <search base="retention_size_summary">
+	<query>`_fb_where_today` AND (state="hot" OR state="warm")
+| stats count, sum(sizeOnDiskMB) AS homeUsage
+| fillnull homeUsage value=0
 | `_fb_mbytes_pretty(homeUsage)`
-      </searchString>
+	</query>
+      </search>
     </single>
     <single>
-      <title>Cold Path Usage</title>
-      <option name="field">coldUsage</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>state="cold" `_fb_summary_recs($host$, $index$)`
-| dedup path
-| stats sum(sizeOnDiskMB) AS coldUsage
-| `_fb_mbytes_pretty(coldUsage)`
-      </searchString>
-    </single>
-    <single>
-      <title>Thawed Path Usage</title>
-      <option name="field">thawedUsage</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>state="thawed" `_fb_summary_recs($host$, $index$)`
-| dedup path
-| stats sum(sizeOnDiskMB) AS thawedUsage
-| `_fb_mbytes_pretty(thawedUsage)`
-      </searchString>
-    </single>
-  </row>
-
-  <row>
-    <single>
-      <title>Configured Home Space Limit</title>
+<!--      <title>Configured Home Space Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">homeMax</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| rename homePath.maxDataSizeMB AS homeMax
+      <option name="underLabel">Limit</option>
+      <search id="retention_size_rest">
+	<query>
+| `_fb_rest_index_config($host$, $index$)`
+| rename homePath.maxDataSizeMB AS homeMax, coldPath.maxDataSizeMB AS coldMax
 | `_fb_mbytes_pretty(homeMax)`
-      </searchString>
+| `_fb_mbytes_pretty(coldMax)`
+| `_fb_mbytes_pretty(maxTotalDataSizeMB)`
+	</query>
+      </search>
+    </single>
+    </panel>
+    <panel>
+    <single id="retention_size_cold_label">
+<!--      <title>Cold Path Usage</title> -->
+      <option name="link.visible">false</option>
+      <option name="field">coldUsage</option>
+      <option name="underLabel">Usage</option>
+      <search base="retention_size_summary">
+	<query>`_fb_where_today` AND state="cold"
+| stats count, sum(sizeOnDiskMB) AS coldUsage
+| fillnull coldUsage value=0
+| `_fb_mbytes_pretty(coldUsage)`
+	</query>
+      </search>
     </single>
     <single>
-      <title>Configured Cold Space Limit</title>
+<!--      <title>Configured Cold Space Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">coldMax</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| rename coldPath.maxDataSizeMB AS coldMax
-| `_fb_mbytes_pretty(coldMax)`
-      </searchString>
+      <option name="underLabel">Limit</option>
+      <search base="retention_size_rest">
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Configured Total Space Limit</title>
+      <option name="link.visible">false</option>
       <option name="field">maxTotalDataSizeMB</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| `_fb_mbytes_pretty(maxTotalDataSizeMB)`
-      </searchString>
+      <search base="retention_size_rest">
+      </search>
     </single>
+    </panel>
+    <panel>
+    <single>
+      <title>Thawed Path Usage</title>
+      <option name="link.visible">false</option>
+      <option name="field">thawedUsage</option>
+      <search base="retention_size_summary">
+	<query>`_fb_where_today` AND state="thawed"
+| stats count, sum(sizeOnDiskMB) AS thawedUsage
+| fillnull thawedUsage value=0
+| `_fb_mbytes_pretty(thawedUsage)`
+	</query>
+      </search>
+    </single>
+    </panel>
   </row>
 
   <row>
-    <chart>
+    <panel>
+    <chart id="retention_size_home_ballast_gauge">
+      <title>Ballast in Home Path (Hot + Warm)</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">fillerGauge</option>
+      <search>
+	<query>state="hot" OR state="warm" `fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB, endEpoch
+| bucket _time span=1d
+| dedup _time, path
+| eval title="$index$", state=if(endEpoch > now(), "ballast", "home")
+| search state="ballast"
+| lookup fb_services_data_indexes_cache splunk_server AS orig_host, title AS index OUTPUT homePath.maxDataSizeMB maxTotalDataSizeMB
+| eval limit=if('homePath.maxDataSizeMB' = 0, maxTotalDataSizeMB, 'homePath.maxDataSizeMB')
+| stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
+| fillnull value=0 limit, size
+| eval percent=if(limit=0, 0, round(size / limit * 100, 2))
+| gauge percent 0 20 40 60 80 100</query>
+      </search>
+    </chart>
+    </panel>
+    <panel>
+    <chart id="retention_size_cold_ballast_gauge">
+      <title>Ballast in Cold Path</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">fillerGauge</option>
+      <search>
+	<query>state="cold" `fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB, endEpoch
+| bucket _time span=1d
+| dedup _time, path
+| eval title="$index$", state=if(endEpoch > now(), "ballast", "cold")
+| search state="ballast"
+| lookup fb_services_data_indexes_cache splunk_server AS orig_host, title AS index OUTPUT homePath.maxDataSizeMB maxTotalDataSizeMB
+| eval limit=if('homePath.maxDataSizeMB' = 0, maxTotalDataSizeMB, 'homePath.maxDataSizeMB')
+| stats count, first(limit) AS limit, sum(sizeOnDiskMB) AS size
+| fillnull value=0 limit, size
+| eval percent=if(limit=0, 0, round(size / limit * 100, 2))
+| gauge percent 0 20 40 60 80 100</query>
+      </search>
+    </chart>
+    </panel>
+    <panel>
+    <chart id="retention_size_usage_vs_max">
       <title>Usage vs. Configured Maximum Size</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <earliestTime>-30d@d</earliestTime>
-      <searchString>
-`_fb_summary_recs($host$, $index$)`
-| eval state=if(state=="hot" OR state=="warm", "homePath", if(state=="cold", "coldPath", state))
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
+      <search>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+	<query>state!="thawed" `_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB, endEpoch
 | bucket _time span=1d
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
-| join type=left index
- [ | `_fb_rest_index_config($host$, $index$)` ]
-| eval limit=if(state=="homePath", coalesce(homePath.maxDataSizeMB, maxTotalDataSizeMB), if(state=="cold", coalesce(coldPath.maxDataSizeMB, maxTotalDataSizeMB), 0))
+| dedup _time, path
+| eval state=if(state=="hot" OR state=="warm", "homePath", if(state=="cold", "coldPath", state))
+| eval state=mvappend(state, if(endEpoch > now(), "ballast", null()))
+| lookup fb_services_data_indexes_cache splunk_server AS orig_host, title AS index OUTPUT homePath.maxDataSizeMB coldPath.maxDataSizeMB maxTotalDataSizeMB
+| eval limit=if(state=="homePath", coalesce('homePath.maxDataSizeMB', maxTotalDataSizeMB), if(state=="coldPath", coalesce('coldPath.maxDataSizeMB', maxTotalDataSizeMB), 0))
 | timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage", first(limit) AS Limit by state
-
-      </searchString>
+| fields - "Limit*ballast"
+	</query>
+      </search>
     </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Day-on-Day Index Growth (Last 30 Days)</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">line</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-      <earliestTime>-30d@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| bucket span=1d _time
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, id, path
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
+      <search>
+        <earliest>-30d@d</earliest>
+        <latest>now</latest>
+	<query>
+`_fb_summary_recs($host$, $index$)`
+| fields _time, index, path, state, sizeOnDiskMB
+| bucket _time span=1d
+| dedup _time, path
 | stats sum(sizeOnDiskMB) AS Usage by _time
 | delta Usage AS Growth
 | eventstats avg(Growth) AS avg
 | timechart span=1d first(Growth) AS "Daily Growth", first(avg) AS "Average Daily Growth"
-      </searchString>
+	</query>
+      </search>
     </chart>
+    </panel>
   </row>
 
 </form>

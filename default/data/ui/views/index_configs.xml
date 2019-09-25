@@ -1,18 +1,27 @@
 <form>
   <label>Troubleshooting Index Configuration</label>
 
-  <searchTemplate>
+  <search id="index_configs_rest">
+    <query>
 | rest /services/data/indexes count=0 | search disabled=0
-| stats values(maxTotalDataSizeMB) AS maxTotalDataSizeMB, mode(maxTotalDataSizeMB) AS pop_max,
-   values(homePath.maxDataSizeMB) AS home_max, mode(homePath.maxDataSizeMB) AS pop_home,
-   values(coldPath.maxDataSizeMB) AS cold_max, mode(coldPath.maxDataSizeMB) AS pop_cold,
-   values(coldPath_expanded) AS cold_paths, values(homePath_expanded) AS home_paths,
-   values(repFactor) AS repFactor,
-   values(splunk_server) AS indexers, dc(splunk_server) AS idx_count
+| stats `values_or_list($choice$, maxTotalDataSizeMB)` AS maxTotalDataSizeMB,
+   mode(maxTotalDataSizeMB) AS pop_max,
+   `values_or_list($choice$, homePath.maxDataSizeMB)` AS home_max,
+   mode(homePath.maxDataSizeMB) AS pop_home,
+   `values_or_list($choice$, coldPath.maxDataSizeMB)` AS cold_max,
+   mode(coldPath.maxDataSizeMB) AS pop_cold,
+   `values_or_list($choice$, coldPath_expanded)` AS cold_paths,
+   `values_or_list($choice$, homePath_expanded)` AS home_paths,
+   `values_or_list($choice$, repFactor)` AS repFactor,
+   `values_or_list($choice$, splunk_server)` AS indexers,
+   dc(splunk_server) AS idx_count
  by title
-  </searchTemplate>
+| eventstats max(idx_count) AS all_idx_all_server
+    </query>
+  </search>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 Occasionally, when managing multiple indexers (particularly if doing
@@ -28,55 +37,91 @@ list of "Indexers w/ This Index" should include the search head, and
 all of the search peers.
 </div>
     </html>
+    </panel>
   </row>
 
+  <fieldset submitButton="false">
+    <input type="radio" token="choice" searchWhenChanged="true">
+      <label>Collapse Distinct Values</label>
+      <default>Yes</default>
+      <choice value="values">Yes</choice>
+      <choice value="list">No</choice>
+    </input>
+  </fieldset>
+
   <row>
+    <panel>
     <single>
       <title>Count of Indexers</title>
+      <option name="link.visible">false</option>
       <option name="field">indexers</option>
-      <searchPostProcess>stats dc(indexers) AS indexers</searchPostProcess>
+      <search base="index_configs_rest">
+        <query>stats dc(indexers) AS indexers</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Count of Indexes</title>
+      <option name="link.visible">false</option>
       <option name="field">indexes</option>
-      <searchPostProcess>stats dc(title) AS indexes</searchPostProcess>
+      <search base="index_configs_rest">
+        <query>stats dc(title) AS indexes</query>
+      </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <single>
       <title>Number of "Missing" Indexes</title>
+      <option name="link.visible">false</option>
       <option name="field">missing</option>
-      <searchPostProcess>eventstats max(idx_count) AS all_idx_all_server
+      <search base="index_configs_rest">
+        <query>
 | where idx_count &lt; all_idx_all_server
 | stats dc(title) AS missing
 | rangemap field=missing foo=0-0 default=severe
-      </searchPostProcess>
+        </query>
+      </search>
       <option name="classField">range</option>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Number of Indexes with Mis-Matched Size</title>
+      <option name="link.visible">false</option>
       <option name="field">mismatch</option>
-      <searchPostProcess>where mvcount(maxTotalDataSizeMB) &gt; 1
+      <search base="index_configs_rest">
+        <query>where mvcount(mvdedup(maxTotalDataSizeMB)) &gt; 1
 | stats dc(title) AS mismatch
 | rangemap field=mismatch foo=0-0 default=severe
-      </searchPostProcess>
+        </query>
+      </search>
       <option name="classField">range</option>
     </single>
+    </panel>
   </row>
 
   <row>
-    <table>
+    <panel>
+    <table id="index_configs_table">
       <title>Index Configuration Summary</title>
-      <searchPostProcess>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths
-| rename title AS Index, maxTotalDataSizeMB AS "Max Total Size(s)", pop_max AS "Common Max Size(s)"
+      <option name="link.visible">false</option>
+      <search base="index_configs_rest">
+        <query>table title, repFactor, indexers, maxTotalDataSizeMB, pop_max, home_max, pop_home, cold_max, pop_cold, cold_paths, home_paths, all_idx_all_server
+| rename title AS Index, pop_max AS "Common Max Size(s)"
     repFactor AS "Rep. Factor",
-    home_max AS "Home Path Max Size(s)", pop_home AS "Common Home Size(s)",
-    cold_max AS "Cold Path Max Size(s)", pop_cold AS "Common Cold Size(s)",
-    cold_paths AS "Cold Path Directory", home_paths AS "Home Path Directory",
+    pop_home AS "Common Home Size(s)",
+    pop_cold AS "Common Cold Size(s)",
     indexers AS "Indexers w/ this Index"
-      </searchPostProcess>
+    all_idx_all_server AS "Target Count"
+| `_fb_index_configs_renames_list_only($choice$)`
+        </query>
+      </search>
     </table>
+    </panel>
   </row>
 
 </form>

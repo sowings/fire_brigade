@@ -1,0 +1,160 @@
+<form class="formsearch">
+  <label>Clustered Bucket Lifecycle</label>
+
+  <search id="lifecycle_events">
+    <query>`fb_cluster_bucket_transitions($host$, $stage$)` | `_fb_s2_field_extractions` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</query>
+  </search>
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Host</label>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
+    </input>
+    <input type="dropdown" token="stage" searchWhenChanged="true">
+      <label>State Transition</label>
+      <default>New Hot Buckets</default>
+      <choice value="kindle">New Hot Buckets</choice>
+      <choice value="cool">Hot -> Warm</choice>
+      <choice value="freeze">Cold -> Frozen</choice>
+      <choice value="s2_up">Remote Storage Upload</choice>
+      <choice value="s2_remove">Remote Storage Cleanup</choice>
+      <choice value="*">All State Transitions</choice>
+    </input>
+    <input type="time" />
+  </fieldset>
+
+  <row>
+    <panel>
+    <html>
+<div id="fire_brigade_help">
+During the normal course of operation, Splunk will transition index
+buckets through several states. New buckets start out in the "hot"
+state, and are transitioned through "warm" to "cold" and ultimately
+the "freeze" transition (which in the default case, is deletion).
+Each bucket transition emits a signature log event to the
+<code>splunkd.log</code> written into the <code>_internal</code>
+index.
+<p/>
+This dashboard shows a summary of, as well as the raw form of the
+events themselves. Selecting "All State Transitions" from the pulldown
+menu will show all states, while the other menu items focus on a
+particular transition.
+<p/>
+<h3>New Hot Buckets</h3>
+Buckets are first created in the "hot" state. This bucket state is
+writable, and is where all new events arrive. When possible, the event
+time of the newly arrived event (the one which prompted creation of
+the new hot bucket) is displayed. This can help spot time parsing
+issues, particularly if the bucket is a "quarantine hot" bucket.
+<p/>
+<h3>Hot -> Warm</h3>
+When buckets change state from hot to warm, they are no longer being
+written to. These are still searchable (like any bucket bar those
+which are frozen), but their contents are now static. This can occur
+for a number of reasons; this dashboard attempts to iterate some of
+those possibilities.
+<ul>
+  <li>
+  Too Many Hot Buckets - There are more than the
+  configured maximum of hot buckets presently open. If events are
+  arriving from disparate time frames, such as environments without
+  time synchronization, or when a new forwarder is provisioned and its
+  historical data is indexed, this can cause multiple hot buckets to
+  be open at once. Too many, and Splunk will close one of the least
+  recently used.
+  </li>
+  <li>
+  Bucket Hit Max Size - This is the case when a bucket
+  tops out at its configured max size.
+  </li>
+  <li>
+  (Cluster) Restart - When Splunk restarts, whether the rolling
+  restart of a cluster, or a simple restart of an individual indexer,
+  all hot buckets are automatically rolled to the warm state when
+  Splunk comes back up.
+  </li>
+  <li>
+  Bucket Idle Too Long - If a hot bucket sits idle with no new
+  events for too long, it will automatically be rolled from hot to warm.
+  </li>
+</ul>
+<p/>
+<h3>Warm -> Cold</h3>
+The "cold" bucket state is the same as warm--the bucket is static, and
+searchable--but it's the first opportunity to change the storage
+location of the bucket. Hot and warm buckets live in the same
+directory (the <code>homePath</code>), but cold buckets are stored in
+the <code>coldPath</code>. This distinction allows for changing the
+storage medium, to a collection of "big, slow disks", for example.
+Transitions from warm to cold will typically take place based on a
+<i>count</i> basis. That is, the default parameters make it most
+likely for a bucket to be moved from warm to cold simply because there
+are too many warm buckets.
+<p/>
+<h3>Cold -> Frozen</h3>
+This state transition renders a bucket unsearchable. With default
+parameters, the bucket is simply deleted. If a script
+(<code>coldToFrozenScript</code>) or a target directory
+(<code>coldToFrozenDir</code>) is provided, buckets will transition
+from cold to frozen gracefully, rather than being deleted. In the case
+of a directory target, the index files are removed from the bucket,
+leaving behind only the journaled raw data. This raw data allows the
+bucket to be rebuilt if needed, see the Splunk Documentation <a
+href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/RestoreArchivedData">here</a>
+for more info.
+<p/>
+<h3>Minify</h3>
+This state transition relates to new features provided in the 6.4 release of
+Splunk. This feature, called <a href="docs.splunk.com/Documentation/Splunk/latest/Indexer/Reducetsidxdiskusage">TSIDX reduction</a>, replaces the TSIDX files
+in indexing buckets with "minified" versions that provide space savings in
+exchange for reduced performance. This enables Splunk administrators to make
+better use of their storage for long-term search access. Either	<i>warm</i> or
+<i>cold</i> buckets are eligible to be reduced in this way.
+</div>
+    </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+    <table>
+      <title>Summary of Bucket Events</title>
+      <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <search base="lifecycle_events">
+      </search>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
+	</link>
+      </drilldown>
+    </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+    <event>
+      <title>Matching Raw Events</title>
+      <option name="link.visible">false</option>
+      <option name="type">raw</option>
+      <search base="lifecycle_events">
+      </search>
+    </event>
+    </panel>
+  </row>
+
+</form>

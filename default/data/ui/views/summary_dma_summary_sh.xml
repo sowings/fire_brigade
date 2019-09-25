@@ -1,0 +1,107 @@
+<form class="formsearch">
+  <label>Data Model Acceleration Search Head View (6.4+)</label>
+
+  <search id="summary_dma_overview">
+    <query>| rest /services/data/summaries data_model_acceleration=1
+| search title=$dm_full_name$
+| sistats sum(total_bucket_count) sum(total_size)
+  by search_head_guid splunk_server</query>
+  </search>
+
+  <fieldset>
+    <input type="dropdown" token="dm_full_name" searchWhenChanged="true">
+      <label>Data Model</label>
+      <fieldForValue>dm_full_name</fieldForValue>
+      <fieldForLabel>app_model_name</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+        <query>| rest /servicesNS/-/-/data/models | search
+	acceleration=1 | stats count by eai:acl.app, title | eval
+	app_model_name='eai:acl.app' .  " / " . title | eval
+	dm_full_name="DM_" . 'eai:acl.app' . "_" . title</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <html>
+<div id="fire_brigade_help"/>
+      </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <single>
+        <title>Source Bucket Count</title>
+        <option name="link.visible">false</option>
+        <option name="field">summary.buckets</option>
+        <search base="summary_dma_overview">
+	  <query>stats sum(total_bucket_count) AS summary.buckets</query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Summary Size</title>
+        <option name="link.visible">false</option>
+        <option name="field">size</option>
+        <search base="summary_dma_overview">
+	  <query>stats sum(total_size) AS size | `_fb_mbytes_pretty(size)`</query>
+        </search>
+      </single>
+    </panel>
+
+  </row>
+      
+<!--
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
+      </drilldown>
+-->
+
+  <row>
+    <panel>
+      <chart>
+	<title>Summary Usage, Count by Search Head (Cluster)</title>
+        <option name="link.visible">false</option>
+	<option name="charting.chart">column</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
+	<search base="summary_dma_overview">
+	  <query>stats sum(total_size) by search_head_guid</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Summary Usage, Count by Index</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.chart.overlayFields">count</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">1</option>
+        <option name="charting.axisY2.minimumNumber">0</option>
+        <option name="charting.axisY2.scale">linear</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleY.text">Summary Usage (bytes)</option>
+        <option name="charting.axisTitleY2.text">Bucket Count</option>
+	<search base="summary_dma_overview">
+	  <query>stats sum(total_size) by splunk_server</query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+
+</form>

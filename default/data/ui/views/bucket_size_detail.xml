@@ -1,119 +1,142 @@
-<form>
+<form script="bucket_size_detail.js">
   <label>Bucket Size Detail</label>
 
+  <search id="size_detail">
+    <query>
+`fb_data_from_today`
+`_fb_summary_recs($host$, $index$)`
+| fields id, sizeOnDiskMB, path, index
+    </query>
+  </search>
+
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard shows the size of buckets within an index. More
 information about indexes and buckets in general can be found <a
 href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>.
-<p /> The field called <em>Configured Max Bucket Size</em> reflects
+<p/>
+Within the panel titled <em>Maximum Bucket Size</em>, two values are shown.
+The first, labeled "Setting" is the value that appears as
 the configuration setting <code>maxDataSize</code> within indexes.conf
 for this index. It is quite common to use a value of either
 <code>auto</code> or <code>auto_high_volume</code> for this
 parameter. These values scale depending upon the number of bits in the
 host's underlying operating system. To understand the actual
-<i>applied</i> value of the setting for this system, look to the
-<em>Applied Max Bucket Size</em> field.  <p />
+applied value of the setting for this system, look to the
+value labeled "Applied".
+<p/>
 </div>
     </html>
+    </panel>
   </row>
 
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
+    <panel>
     <single>
       <title>Bucket Count for This Index</title>
+      <option name="link.visible">false</option>
       <option name="field">count</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)` | stats count</searchString>
+      <search base="size_detail">
+	<query>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path | stats count</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Average Bucket Size</title>
+      <option name="link.visible">false</option>
       <option name="field">average</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
+      <search base="size_detail">
+	<query>stats max(sizeOnDiskMB) AS sizeOnDiskMB by path
 | stats avg(sizeOnDiskMB) AS average
 | `_fb_mbytes_pretty(average)`
-      </searchString>
+        </query>
+      </search>
     </single>
-  </row>
-
-  <row>
-    <single>
-      <title>Configured Max Bucket Size</title>
+    </panel>
+    <panel>
+    <single id="bucket_size_detail_max_size_label">
+<!--      <title>Configured Max Bucket Size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxDataSize</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <option name="underLabel">Setting</option>
+      <search base="rest_bucket_config">
+      </search>
     </single>
     <single>
-      <title>Applied Max Bucket Size</title>
+<!--      <title>Applied Max Bucket Size</title> -->
+      <option name="link.visible">false</option>
       <option name="field">bucket_max</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`
-| join type=left splunk_server
-   [ | rest /services/server/info splunk_server=$host$ ]
+      <option name="underLabel">Applied</option>
+<!-- I think I can do better with that logic -->
+      <search id="rest_bucket_config">
+	<query>| `_fb_rest_index_config($host$, $index$)`
+| lookup fb_services_server_info_cache splunk_server OUTPUT cpu_arch
 | eval bucket_max=if(maxDataSize=="auto", 750,
     if(maxDataSize=="auto_high_volume",
         case(cpu_arch=="x86_64", 10000, cpu_arch=="x64", 10000, 1==1, 1000), maxDataSize))
 | `_fb_mbytes_pretty(bucket_max)`
-</searchString>
+        </query>
+      </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Bucket Sizes with Overlay, Local Buckets Only</title>
-      <option name="charting.chart">column</option>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">line</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">MBytes</option>
 
-      <option name="charting.data1">view</option>
-      <option name="charting.data1.table">@data</option>
-      <option name="charting.data1.columns">[0,1]</option>
-      <option name="charting.chart.data">@data1</option>
+      <option name="charting.seriesColors">[0x6BB7C8,0x999999,0xD85E3D]</option>
 
-      <option name="charting.chart2">line</option>
-
-      <option name="charting.data2">view</option>
-      <option name="charting.data2.table">@data</option>
-      <option name="charting.data2.columns">[0,2]</option>
-      <option name="charting.chart2.data">@data2</option>
-
-
-      <option name="charting.chart3">line</option>
-
-      <option name="charting.data3">view</option>
-      <option name="charting.data3.table">@data</option>
-      <option name="charting.data3.columns">[0,3]</option>
-      <option name="charting.chart3.data">@data3</option>
-
-      <option name="charting.layout.charts">[@chart,@chart2,@chart3]</option>
-      <option name="charting.layout.axisTitles">[@axisTitleX,@axisTitleY]</option>
-
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
+      <search base="size_detail">
+	<query>
+extract auto=f fb_extract_bucket_type_time_source
 | search NOT bucket_type="rb"
 | eventstats avg(sizeOnDiskMB) AS average
 | sort 0 id
-| join type=left index
-  [ | `_fb_rest_index_config($host$, $index$)` ]
-| join type=left splunk_server
-  [ | rest /services/server/info | fields - id ]
+| lookup fb_services_data_indexes_cache splunk_server, title AS index
+| lookup fb_services_server_info_cache splunk_server OUTPUT cpu_arch
 | eval bucket_max=case(isint(maxDataSize), maxDataSize, maxDataSize=="auto", 750, cpu_arch="x86_64", 10000, cpu_arch="x64", 10000, 1==1, 1000)
 | table id, sizeOnDiskMB, average, bucket_max
 | rename sizeOnDiskMB AS "Bucket Size", average AS "Average Size",
 bucket_max AS "Size Limit"
-      </searchString>
+        </query>
+      </search>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$form.index$&form.bucket_id=$click.value$]]>
+	</link>
+      </drilldown>
     </chart>
+    </panel>
   </row>
 
 </form>

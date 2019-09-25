@@ -1,133 +1,276 @@
-<form class="formsearch">
+<form class="formsearch" script="retention_volume.js">
   <label>Volume-Based Retention</label>
 
-  <searchTemplate>earliest=-30d@d
+<!--
+| appendpipe [ stats sum(sizeOnDiskMB) AS MB, max(maxVolumeDataSizeMB) AS mvs by orig_host
+| eval maxVolumeDataSizeMB=if(isnull(maxVolumeDataSizeMB), mvs, maxVolumeDataSizeMB)
+| eval sizeOnDiskMB=if(isnull(sizeOnDiskMB), maxVolumeDataSizeMB - MB, sizeOnDiskMB)
+| eval index="AVAILABLE" | fields - MB mvs ]
+| chart limit=50 sum(sizeOnDiskMB) over orig_host by index
+-->
+
+  <search id="retention_volume_summary">
+    <query>`fb_data_from_today`
 [| rest /services/data/indexes splunk_server=$host$*
 | search coldPath=$volume_title$* OR homePath=$volume_title$*
 | rename title AS orig_index | fields orig_index | dedup orig_index ]
-`_fb_summary_recs(*)`
+state!="thawed" `_fb_summary_recs_host($host$)`
+| bucket span=1d _time
+| rex field=path mode=sed "s/\\\\/\\//g"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
+| eval bookkeeping="$volume_title$", splunk_server="$host$"
+| lookup fb_services_data_indexes_cache title AS bookkeeping, splunk_server OUTPUT path AS wanted_path maxVolumeDataSizeMB
+| rex field=wanted_path mode=sed "s/\\\\/\\//g" 
+| appendcols [| rest /services/server/settings splunk_server=$host$* | fields SPLUNK_DB SPLUNK_HOME ]
+| filldown SPLUNK_DB SPLUNK_HOME
+| eval wanted_path=replace(wanted_path, "^\$SPLUNK_DB(.*)", SPLUNK_DB . "\1")
+| eval wanted_path=replace(wanted_path, "^\$SPLUNK_HOME(.*)", SPLUNK_HOME . "\1")
+| rename comment AS "Set state to null for rows we don't want, stats will ignore."
+| eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
+| stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
+    sum(eval(if(state="hot", sizeOnDiskMB, 0))) AS hot_usage,
+    sum(eval(if(state="warm", sizeOnDiskMB, 0))) AS warm_usage,
+    sum(eval(if(state="cold", sizeOnDiskMB, 0))) AS cold_usage
+    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
+    by _time, index
+| eventstats sum(sizeOnDiskMB) AS daily_usage by _time
+| eventstats dc(index) AS idx_count, max(_time) AS latest
+    </query>
+  </search>
+
+  <search id="retention_volume_thirty">
+    <earliest>-30d@d</earliest>
+    <latest>now</latest>
+    <query>[| rest /services/data/indexes splunk_server=$host$*
+| search coldPath=$volume_title$* OR homePath=$volume_title$*
+| rename title AS orig_index | fields orig_index | dedup orig_index ]
+state!="thawed" `_fb_summary_recs_host($host$)`
 | bucket span=1d _time
 | stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, state, index
 | eval bookkeeping="$volume_title$"
 | join type=left bookkeeping
-[ | rest /services/configs/conf-indexes/$volume_title$ | rename title AS bookkeeping]
-| stats sum(sizeOnDiskMB) AS sizeOnDiskMB,
-    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB,
-    first(rotatePeriodInSecs) AS rotatePeriodInSecs
-    by _time, state, index
-| eventstats sum(sizeOnDiskMB) AS daily_usage by _time
-| eventstats dc(index) AS idx_count, max(_time) AS latest
-  </searchTemplate>
+[ | rest /servicesNS/-/-/configs/conf-indexes/$volume_title$ splunk_server=$host$*
+  | fields title, path, maxVolumeDataSizeMB
+  | rename title AS bookkeeping, path AS wanted_path ]
+| appendcols [| rest /services/server/settings splunk_server=$host$* | fields SPLUNK_DB SPLUNK_HOME ]
+| filldown SPLUNK_DB SPLUNK_HOME
+| eval wanted_path=replace(wanted_path, "^\$SPLUNK_DB(.*)", SPLUNK_DB . "\1")
+| eval wanted_path=replace(wanted_path, "^\$SPLUNK_HOME(.*)", SPLUNK_HOME . "\1")
+| rename comment AS "Set state to null for rows we don't want, stats will ignore."
+| eval state=if(match(path, "^" . wanted_path . ".*"), state, null())
+| stats sum(eval(if(isnotnull(state), sizeOnDiskMB, 0))) AS sizeOnDiskMB,
+    first(maxVolumeDataSizeMB) AS maxVolumeDataSizeMB
+    by _time, index</query>
+  </search>
 
   <fieldset>
     <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="volume_title" searchWhenChanged="true">
       <label>Volume</label>
-      <populatingSearch fieldForValue="title" fieldForLabel="title">| `_fb_rest_file_config("indexes")` | search title=volume:* | fields title | dedup title | sort title</populatingSearch>
+      <fieldForValue>title</fieldForValue>
+      <fieldForLabel>title</fieldForLabel>
+      <search>
+        <query>| `_fb_rest_file_config("indexes")` splunk_server=$host$* | search title=volume:* | stats count by title</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
-A <i>volume</i> definition in Splunk is used to set a cap on the total
-amount of disk space used by several distinct indexes. Rather than
-being a per-index cutoff, it represents a restriction which spans
-several indexes at once. Think of it as a "per-partition" limit.
+A <i>volume</i> definition in Splunk is used to set a cap on the total amount
+of disk space used by several grouped indexes. Rather than being a per-index
+cutoff, it represents a restriction which spans several indexes at once. It's
+common to think of it as a "per-partition" limit, but it can group any number
+of indexes together.
 <p/>
 The dashboard presented here aims to demonstrate how much of a
 volume's defined space is being used. In order to determine whether an
-index lives within a volume, the <code>indexes.conf</code> <em>on the system
-running the search</em> is examined for <code>volume:</code> tags. If
+index lives within a volume, the <code>indexes.conf</code> 
+is examined for <code>volume:</code> tags. If
 any are found, the list of indexes is examined for any which are using
 the same disk path. The usage of the indexes found are then totted up
-and displayed in the table below.
+and displayed in the table titled <em>Indexes Utilizing This Volume, by Data
+State</em>.
 <p/>
-<b>Note:</b> Because it is the <code>indexes.conf</code> of the local
-system which is examined for any <code>volume:</code> space limit
-specifications, this might result in a blank value for the
-"Volume-Wide Retention Limit" panel.
+The single value panels across the top of the page show some quick metrics
+about the volume and the indexes contained therein. In the leftmost panel, the
+value tagged as <em>Disk Space Limits</em> (with the tag
+<code>maxVolumeDataSizeMB</code> beneath) is the configured maximum limit for
+the tagged volume. To the right of that panel (tagged as <em>Filesystem</em>),
+is shown the filesystem limit for the partition containing the volume. The
+center panel in the top row shows the combined size of the indexes contained
+within the volume. Note that if the <i>volume</i> limit has been breached, the
+oldest data from any of the contained indexes will be expelled
+<em>regardless</em> of whether or not that index's own limit has been
+exceeded. The rightmost panel shows two quantities: the number of indexes
+participating in that volume, and the amount of space those are currently
+using (combined).
+<p/>
+The table on the left-hand side of the second row, titled <em>Indexes
+Utilizing This Volume, by Data State</em> lays out the usage of the indexes
+participating by volume. Having the data sizes broken out by state can
+illustrate situations where a shared volume finds its usage. Naturally,
+installations where the <code>homePath</code> and <code>coldPath</code>
+utilize separate volumes, can expect a lot of zeroes for the opposite data
+state (e.g. home data in the coldPath). The pie chart will show the relative
+usage of the participating volumes. In addition, it has a slice called
+"AVAILABLE" which illustrates the amount of space remaining (free) in the
+total volume allocation.
+<p/>
+The time-trend plots in the bottom row break out the index usage trend over
+the past thirty days. On the left, the plot is broken out by index. On the
+right, the index usage is cumulative, and plotted against the size limit of
+the volume.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
-    <single>
-      <title>Volume-Wide Retention Limit</title>
+    <panel>
+    <single id="retention_volume_limits">
+      <option name="link.visible">false</option>
       <option name="field">maxVolumeDataSizeMB</option>
-      <searchPostProcess>`_fb_mbytes_pretty(maxVolumeDataSizeMB)`</searchPostProcess>
+      <option name="underLabel">maxVolumeDataSizeMB</option>
+      <search base="retention_volume_summary">
+	<query>head 1 |	`_fb_mbytes_pretty(maxVolumeDataSizeMB)`</query>
+      </search>
     </single>
-
     <single>
-      <title>Volume-Wide Rotation Interval</title>
-      <option name="afterLabel">seconds</option>
-      <option name="field">rotatePeriodInSecs</option>
+      <option name="link.visible">false</option>
+      <option name="field">capacity</option>
+      <option name="underLabel">Filesystem</option>
+      <search>
+	<query>| rest /servicesNS/-/-/configs/conf-indexes/$volume_title$
+| fields splunk_server, title, path
+| join type=left [| rest /services/server/status/partitions-space | fields splunk_server, mount_point, capacity]
+| eval volume_mount=if(match(path, "^" . mount_point . ".*"), mount_point, "Unknown")
+| eval capacity=round(capacity)
+| `_fb_mbytes_pretty(capacity)`
+| fields splunk_server, title, path, volume_mount, capacity</query>
+      </search>
     </single>
-  </row>
-
-  <row>
-    <single>
-      <title>Count of Monitored Indexes Using This Volume</title>
+    </panel>
+    <panel>
+    <single id="retention_volume_subscription">
+      <title>Subscribed Usage</title>
+      <option name="link.visible">false</option>
+      <option name="field">volume_sum</option>
+      <search>
+	<query>| rest /services/data/indexes splunk_server=$host$*
+| search coldPath=$volume_title$* OR homePath=$volume_title$*
+| fields title, maxTotalDataSizeMB, homePath.maxDataSizeMB, coldPath.maxDataSizeMB, homePath, coldPath
+| eval vol_hot=if(match(homePath, "^" . "$volume_title$" . ".*"), "home", null())
+| eval vol_cold=if(match(coldPath, "^" . "$volume_title$" . ".*"), "cold", null())
+| eval neat=mvappend(neat, vol_hot, vol_cold)
+| fields - vol_hot, vol_cold
+| `_fb_null_hot_cold_max`
+| eval vol_usage=case(neat="home" AND neat="cold", min(('homePath.maxDataSizeMB' + 'coldPath.maxDataSizeMB'), maxTotalDataSizeMB),
+  neat="home", min('homePath.maxDataSizeMB', maxTotalDataSizeMB),
+  neat="cold", min('coldPath.maxDataSizeMB', maxTotalDataSizeMB),
+  1=1, "Unknown")
+| stats sum(vol_usage) AS volume_sum
+| `_fb_mbytes_pretty(volume_sum)`</query>
+      </search>
+    </single>
+    </panel>
+    <panel>
+    <single id="retention_volume_current_usage_panel">
+      <option name="link.visible">false</option>
       <option name="field">idx_count</option>
+      <option name="underLabel">Indexes</option>
+      <option name="showSparkline">false</option>
+      <option name="showTrendIndicator">false</option>
+      <search base="retention_volume_summary"/>
     </single>
     <single>
-      <title>Total Monitored Space on This Volume</title>
+      <option name="link.visible">false</option>
       <option name="field">daily_usage</option>
-      <searchPostProcess>`_fb_mbytes_pretty(daily_usage)`</searchPostProcess>
+      <option name="underLabel">Disk Space</option>
+      <search base="retention_volume_summary">
+	<query>`_fb_where_today` | `_fb_mbytes_pretty(daily_usage)`</query>
+      </search>
     </single>
+    </panel>
   </row>
 
   <row>
-    <table>
+    <panel>
+    <table id="retention_volume_index_table">
       <title>Indexes Utilizing This Volume, by Data State</title>
+      <option name="link.visible">false</option>
       <option name="entityName">results</option>
-      <!-- Lame; have to repeat the search to get an accurate pager -->
-      <searchPostProcess>where _time>=relative_time(now(), "@d")
-| rename index AS Index, state AS "Bucket State", sizeOnDiskMB AS "Index Usage" | table Index, "Bucket State", "Index Usage"</searchPostProcess>
+      <search base="retention_volume_summary">
+	<query>
+`_fb_where_today`
+| sort 0 - sizeOnDiskMB
+| rename index AS Index,
+    hot_usage AS "Hot Usage",
+    warm_usage AS "Warm Usage",
+    cold_usage AS "Cold Usage",   
+    sizeOnDiskMB AS "Index Usage"
+| table Index, "Hot Usage", "Warm Usage", "Cold Usage", "Index Usage"
+	</query>
+      </search>
     </table>
+    </panel>
+    <panel>
+    <chart id="retention_volume_fullness_pie">
+      <title>Utilization of Indexes vs. Volume Limit</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">pie</option>
+      <option name="charting.fieldColors">{"AVAILABLE": 0x999999}</option>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+      <search base="retention_volume_summary">
+	<query>`_fb_where_today`
+| append [| makeresults | eval index="AVAILABLE" | fields index]
+| filldown daily_usage, maxVolumeDataSizeMB
+| eval sizeOnDiskMB=if(index=="AVAILABLE", maxVolumeDataSizeMB-daily_usage, sizeOnDiskMB)
+| fields index, sizeOnDiskMB
+	</query>
+      </search>  
+    </chart>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Combined Volume Usage by Index Over Time</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">area</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.chart.stackMode">stacked</option>
-      <option name="charting.axisTitleX.text">Time</option>
+      <option name="charting.axisTitleX.text">Date</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-
-      <searchPostProcess>
-timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</searchPostProcess>
+      <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+      <search base="retention_volume_thirty">
+	<query>timechart span=1d sum(sizeOnDiskMB) AS "Index Usage" by index</query>
+      </search>
     </chart>
-
+    </panel>
+    <panel>
     <chart>
       <title>Combined Data Usage vs. Limit Over Time</title>
-      <option name="charting.chart">line</option>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">area</option>
+      <option name="charting.chart.overlayFields">Limit</option>
       <option name="charting.chart.nullValueMode">connect</option>
       <option name="charting.axisTitleX.text">Time</option>
       <option name="charting.axisTitleY.text">MBytes</option>
-
-      <option name="charting.data1">view</option>
-      <option name="charting.data1.table">@data</option>
-      <option name="charting.data1.columns">[0,1]</option>
-      <option name="charting.chart.data">@data1</option>
-
-      <option name="charting.chart2">area</option>
-      <option name="charting.axixTitleY.text">Usage</option>
-
-      <option name="charting.data2">view</option>
-      <option name="charting.data2.table">@data</option>
-      <option name="charting.data2.columns">[0,2]</option>
-      <option name="charting.chart2.data">@data2</option>
-
-      <option name="charting.layout.charts">[@chart,@chart2]</option>
-      <option name="charting.layout.axisTitles">[@axisTitleX,@axisTitleY]</option>
-
-      <searchPostProcess>
-timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS "Index Usage"</searchPostProcess>
+      <search base="retention_volume_thirty">
+        <query>timechart span=1d first(maxVolumeDataSizeMB) AS Limit, sum(sizeOnDiskMB) AS Usage</query>
+      </search>
     </chart>
+    </panel>
   </row>
 </form>

@@ -1,0 +1,63 @@
+<form>
+  <label>Data Movement Summary</label>
+
+  <row>
+    <panel>
+    <html>
+<div id="fire_brigade_help">
+This dashboard provides visibility into the flow of data through the
+system. As documented <a href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/HowSplunkstoresindexes">here</a>, data indexed by Splunk moves through
+several distinct phases of its life cycle. Administrators may wish to
+track these transitions more closely to understand which retention
+constraints are being applied to the data. Further, it can be useful
+to understand if the system is in a steady state, where the influx
+matches the data being archived out of Splunk, or whether that balance
+tips in another direction.
+<p/>
+The size values given in the table below (in the columns identified as 
+<em>Current</em>) are for the current day (values collected at
+midnight). The <em>Delta</em> columns reflect the change from the
+prior 24h period. A negative value represents a decline from the prior
+day, and can signal archival or state transition (hot to warm, warm to
+cold, etc).
+</div>
+    </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+    <table>
+      <title>Data Movement Per-Host</title>
+      <option name="link.visible">false</option>
+      <searchString><![CDATA[
+earliest=-1d@d `_fb_summary_recs_host("*")`
+| bucket _time span=1d
+| rename comment AS "This is just to get the deduped size of each bucket"
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, id, state, host, index, path
+| eval marker=case(relative_time(now(), "@d") > _time, "yesterday", 1==1, "today")
+| stats 
+  sum(eval(if(state="hot" AND marker="today", sizeOnDiskMB, 0))) AS hot_today
+  sum(eval(if(state="hot" AND marker="yesterday", sizeOnDiskMB, 0))) AS hot_yesterday
+  sum(eval(if(state="warm" AND marker="today", sizeOnDiskMB, 0))) AS warm_today
+  sum(eval(if(state="warm" AND marker="yesterday", sizeOnDiskMB, 0))) AS warm_yesterday
+  sum(eval(if(state="cold" AND marker="today", sizeOnDiskMB, 0))) AS cold_today
+  sum(eval(if(state="cold" AND marker="yesterday", sizeOnDiskMB, 0))) AS cold_yesterday
+  by host
+| eval cold_delta=cold_today - cold_yesterday
+| eval warm_delta=warm_today - warm_yesterday
+| eval hot_delta=hot_today - hot_yesterday
+| table host, hot_today, hot_delta, warm_today, warm_delta, cold_today, cold_delta
+| foreach hot_*, warm_*, cold_* [ `_fb_mbytes_pretty(<<FIELD>>)` ]
+| rename host AS Indexer
+  hot_today AS "Current Hot Usage"
+  hot_delta AS "Hot Delta"
+  warm_today AS "Current Warm Usage"
+  warm_delta AS "Warm Delta"
+  cold_today AS "Current Cold Usage"
+  cold_delta AS "Cold Delta"]]></searchString>
+    </table>
+    </panel>
+  </row>
+
+</form>

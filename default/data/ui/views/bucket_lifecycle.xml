@@ -1,11 +1,27 @@
 <form class="formsearch">
   <label>Bucket Lifecycle</label>
 
-  <searchTemplate>`fb_bucket_transitions($host$, $stage$)` | `fb_bucket_transition_pp`</searchTemplate>
+  <search id="lifecycle_events">
+    <query>`fb_bucket_transitions($host$, $stage$)` `_fb_bucket_lifecycle_index_term($index$)` | `fb_bucket_transition_pp`</query>
+  </search>
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
+    </input>
+    <input type="dropdown" token="index" searchWhenChanged="true">
+      <label>Index</label>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
     <input type="dropdown" token="stage" searchWhenChanged="true">
       <label>State Transition</label>
@@ -14,12 +30,14 @@
       <choice value="cool">Hot -> Warm</choice>
       <choice value="chill">Warm -> Cold</choice>
       <choice value="freeze">Cold -> Frozen</choice>
+      <choice value="minify">Shrink Bucket</choice>
       <choice value="*">All State Transitions</choice>
     </input>
     <input type="time" />
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 During the normal course of operation, Splunk will transition index
@@ -97,20 +115,46 @@ leaving behind only the journaled raw data. This raw data allows the
 bucket to be rebuilt if needed, see the Splunk Documentation <a
 href="http://docs.splunk.com/Documentation/Splunk/latest/Indexer/RestoreArchivedData">here</a>
 for more info.
+<p/>
+<h3>Minify</h3>
+This state transition relates to new features provided in the 6.4 release of
+Splunk. This feature, called <a href="docs.splunk.com/Documentation/Splunk/latest/Indexer/Reducetsidxdiskusage">TSIDX reduction</a>, replaces the TSIDX files
+in indexing buckets with "minified" versions that provide space savings in
+exchange for reduced performance. This enables Splunk administrators to make
+better use of their storage for long-term search access. Either	<i>warm</i> or
+<i>cold</i> buckets are eligible to be reduced in this way.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <table>
       <title>Summary of Bucket Events</title>
+      <option name="link.visible">false</option>
+      <option name="drilldown">row</option>
+      <search base="lifecycle_events">
+      </search>
+      <drilldown>
+        <link><![CDATA[
+/app/fire_brigade/lolrus?form.host=$form.host$&form.index=$row.Index$&form.bucket_id=$row.Bucket ID$]]>
+	</link>
+      </drilldown>
     </table>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <event>
       <title>Matching Raw Events</title>
+      <option name="link.visible">false</option>
+      <option name="type">raw</option>
+      <search base="lifecycle_events">
+      </search>
     </event>
+    </panel>
   </row>
 
 </form>

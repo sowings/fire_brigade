@@ -1,0 +1,47 @@
+<dashboard>
+  <label>Retention of Data Model Summaries</label>
+
+  <!--
+      | rest /servicesNS/-/-/configs/conf-indexes 
+| search coldPath=volume:* OR homePath=volume:* OR tstatsHomePath=volume:*
+| fields title, homePath, coldPath, tstatsHomePath
+| foreach *Path [ eval foo=mvappend(foo, if(match(<<FIELD>>,
+"^volume:"), "<<MATCHSTR>>", null())) ]
+-->
+  <search id="all_dma_details">
+    <query><![CDATA[| rest /services/data/models search="acceleration=1"
+| fields eai:acl.app, title
+| rename eai:acl.app AS app, title AS model
+| map maxsearches=40 search="| rest /services/admin/summarization/tstats:DM_$$app$$_$$model$$/details | eval model_name=\"$$model$$\"
+| fields bucket_et, bucket_lt, index, bucket_id, bucket_is_hot, bucket_path, bucket_size, eai:acl.app, model_name, splunk_server, summary_complete, summary_hot_done, summary_path, summary_size, title "
+| join type=left splunk_server, index [| rest /services/data/indexes | fields splunk_server, title, tstatsHomePath, tstatsHomePath_expanded | rename title AS index ]
+| rex field=tstatsHomePath "^volume:(?<tstats_volume>[^/\\\\]+)[/\\\\]"]]>
+    </query>
+  </search>
+
+  <row>
+    <panel>
+      <table>
+	<title>Stuff</title>
+	<search>
+	  <query>| rest /servicesNS/-/-/configs/conf-indexes
+| search title=volume:*
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+	<title>Output</title>
+	<search base="all_dma_details"/>
+      </table>
+    </panel>
+  </row>
+      
+<!--
+  <fieldset>
+  </fieldset>
+  -->
+</dashboard>

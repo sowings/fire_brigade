@@ -18,13 +18,16 @@ required.
 The dbinspect command provides a listing of all of the buckets within the
 named index, and some statistics about each. This data is required by the main
 Fire Brigade application to display relevant charts and metrics about the
-monitored indexes. At the time of writing, dbinspect is not a "distributed"
-search command, meaning that this TA must be installed on all of the indexers
-in a distributed Splunk environment.
+monitored indexes. Now with version 6.0, dbinspect is a "distributed" search
+command, meaning that it will show the status of all buckets across all
+indexers when run in a distributed environment. This makes it possible to
+install only one copy of the TA, on the search head, which will collect from
+all of the peers. However, the "traditional" method of installing the TA on
+each indexing node, is still available as well.
 
-NOTE: A standalone Splunk system (all-in-one) does not need this TA; the main
-Fire Brigade app itself will collect the required data from the standalone
-system.
+NOTE: Due to a change in the way this application is packaged, a standalone
+Splunk system (all-in-one) now *needs* this TA; the main Fire Brigade app
+itself *does not* collect the required data from the standalone system.
 
 Data collected by this app is sent to the "summary" index, which exists in all
 default Splunk installations. No additional indexes need to be created.
@@ -48,5 +51,6 @@ lookup table.
 
 				Compatibility
 
-Due to a heavy dependency on the "rest" search operator, a minimum
-version of Splunk 4.3 is required for this application.
+The output from the dbinspect command changed in version 6.0. This app is
+specifically tuned for version 6.0 and higher. If you're running Splunk 4.3 or
+Splunk 5.x, use TA-fire_brigade version 1.0.

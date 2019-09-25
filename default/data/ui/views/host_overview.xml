@@ -1,14 +1,59 @@
-<form class="formsearch">
+<form class="formsearch" script="host_overview.js,host_overview_table_bars.js" stylesheet="host_overview_table_bars.css">
   <label>Indexer Host Overview</label>
 
+  <search id="host_overview_summary">
+    <query>
+`fb_data_from_today` `_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB
+   max(endEpoch) AS endEpoch
+   by _time, state, index, bucket_type, path
+    </query>
+  </search>
+
+  <search id="host_overview_time_trend">
+    <earliest>-30d@d</earliest>
+    <latest>now</latest>
+    <query>`_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| eval bucket_type=if(bid_guid!=guId, "Replicated", "Indexed")
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type, index
+    </query>
+  </search>
+
+  <search id="rest_summary_data">
+    <query>| rest /services/data/summaries splunk_server=$host$
+| fields type search_head_guid total_size
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
+| eval serverName=coalesce(serverName, search_head_guid)
+    </query>
+  </search>
+
+  <search id="host_overview_partitions_space">
+    <query>
+| rest /services/server/status/partitions-space splunk_server=$host$*
+| fields mount_point, available, capacity
+    </query>
+    <done>
+      <set token="partitions_space_sid">$job.sid$</set>
+    </done>
+  </search>
+
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 This dashboard is aimed at providing a single, holistic view of the
@@ -17,13 +62,21 @@ href="/app/fire_brigade/cumulative_overview">Quick Overview</a> page
 provides a view of the whole distributed search environment, this
 dashboard focuses instead on a single host.
 <p/>
-The top three panels reflect the total disk usage found in each of the
-three index subpaths (<code>homePath</code>, <code>coldPath</code> and
-<code>thawedPath</code>), across all indexes.
+The top left panel reflect the total disk usage found in the two index
+subpaths that are subject to retention policies
+(<code>homePath</code>--containing "hot" and "warm" buckets--and the
+<code>coldPath</code>) of all indexes on the host. The middle panel shows the
+sum of all data in the <code>thawedPath</code> location. If Report
+Acceleration is being used, the disk space taken up by this summary data
+will be represented in the third panel, titled <i>Report Acceleration
+Usage</i>.
 <p/>
 The left-hand table below, titled <em>Indexes by Size and
 Capacity</em>, shows the list of all indexes on the host, with the
-amount of disk space they are using. The "Retention Usage" column
+amount of disk space they are using. The "Ballast" column refers to
+buckets that have time stamps in the future (and therefore may not be
+migrated through the bucket lifecycle normally).
+The "Retention Usage" column
 reflects the amount of disk space in the combination of
 <code>homePath</code> and <code>coldPath</code>. Buckets that are
 "thawed" are not subject to any retention policies, but are included
@@ -44,90 +97,148 @@ is used to store "df" information, the <code>macros.conf</code> of the
 Fire Brigade application will have to be updated to name the
 appropriate index.
 <p/>
-The charts on the bottom of the view are similar to the cumulative
-versions seen elsewhere, but are restricted to the selected host.
+The two charts below the tables (identifiable by having <em>30 days</em> in
+their titles) are similar to the cumulative versions seen elsewhere, but are
+restricted to the selected host. If the indexer is not part of an indexing
+cluster, the <em>Local vs. Replicated Data Over Time (last 30 days)</em> chart
+will indicate that all of the data is "Indexed".
+<p/>
+Hosts running Splunk 6.4 or later will provide additional information in two
+pie charts at the bottom of the page. The left-hand panel is devoted to Report
+Acceleration data (these summary searches trade <i>space</i> for <i>time</i>
+by providing cached results to specially configured searches). The right
+displays information about Data Model Acceleration usage for the indexer. Both
+plots divide their usage out by the search head which implements the summary
+search (or accelerated model). If the search head requesting the summary is a
+search peer to this host, its hostname will be displayed. Else, the server
+GUID will be displayed instead.
 </div>
     </html>
+    </panel>
   </row>
 
+  <!-- Change this to 2,1,2 when it's time to restore model
+       acceleration size -->
   <row>
-    <single>
-      <title>Home Path Usage</title>
+    <panel>
+    <single id="host_overview_retention_label">
+      <option name="link.visible">false</option>
+<!--      <title>Usage Affected by Retention Policies</title> -->
       <option name="field">homeUsage</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>state="hot" OR state="warm" `_fb_summary_recs($host$, *)`
+      <option name="underLabel">Home Path</option>
+      <search base="host_overview_summary">
+	<query>`_fb_where_today` AND (state="hot" OR state="warm")
 | dedup path | stats sum(sizeOnDiskMB) AS homeUsage
 | `_fb_mbytes_pretty(homeUsage)`
-      </searchString>
+	</query>
+      </search>
     </single>
     <single>
-      <title>Cold Path Usage</title>
+      <option name="link.visible">false</option>
       <option name="field">coldUsage</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>state="cold" `_fb_summary_recs($host$, *)`
-| dedup path
-| stats sum(sizeOnDiskMB) AS coldUsage
+      <option name="underLabel">Cold Path</option>
+      <search base="host_overview_summary">
+	<query>`_fb_where_today` AND (state="cold")
+| stats count, sum(sizeOnDiskMB) AS coldUsage | fillnull value=0 coldUsage
 | `_fb_mbytes_pretty(coldUsage)`
-      </searchString>
+	</query>
+      </search>
     </single>
+    </panel>
+    <panel>
     <single>
       <title>Thawed Path Usage</title>
+      <option name="link.visible">false</option>
       <option name="field">thawedUsage</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>state="thawed" `_fb_summary_recs($host$, *)`
+      <search base="host_overview_summary">
+	<query>`_fb_where_today` AND (state="thawed")
 | dedup path
-| stats sum(sizeOnDiskMB) AS thawedUsage
+| stats count, sum(sizeOnDiskMB) AS thawedUsage | fillnull value=0 thawedUsage
 | `_fb_mbytes_pretty(thawedUsage)`
-      </searchString>
+	</query>
+      </search>
     </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Total Index Subcription for Host</title>
+	<search>
+	  <query>| rest /services/data/indexes splunk_server=$host$*
+
+	    | append [| loadjob $partitions_space_sid$ ]
+	  </query>
+	</search>
+      </single>
+    </panel>
   </row>
 
   <row>
-    <table>
+    <panel>
+    <table id="host_overview_index_table">
       <title>Indexes by Size and Capacity</title>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, *)`
-| dedup path
-| join type=left index
-[ | rest /services/data/indexes splunk_server=$host$* count=0
-  | rename title AS index ]
-  | stats
-    first(maxTotalDataSizeMB) AS limit,
+      <option name="link.visible">false</option>
+      <search base="host_overview_summary">
+	<query>`_fb_where_today`
+| stats
     sum(sizeOnDiskMB) AS diskTotalinMB
+    max(endEpoch) AS endEpoch
     by index, state
+| lookup fb_services_data_indexes_cache splunk_server, title AS index
+| `_fb_null_hot_cold_max`
 | stats sum(eval(if(state!="thawed", diskTotalinMB, 0))) AS ratedUsage,
+    sum(eval(if(endEpoch>now(), diskTotalinMB, 0))) AS Ballast
     sum(diskTotalinMB) AS totalUsage
-    first(limit) AS limit
+    first(maxTotalDataSizeMB) AS max_limit
+    first(homePath.maxDataSizeMB) AS home_limit
+    first(coldPath.maxDataSizeMB) AS cold_limit
     by index
+| rename comment AS "No coalesce because a home / cold limit alone results in max taking over"
+| eval limit=min(home_limit + cold_limit, max_limit)
 | eval percentage=round(ratedUsage * 100 / limit, 1)
 | sort - ratedUsage
+| eventstats max(totalUsage) AS top_total
+| eval rel_size=round(totalUsage * 100 / top_total, 1)
+| eval ratedUsage=round(ratedUsage, 2)
+| eval totalUsage=round(totalUsage, 2)
+| eval Ballast=round(Ballast, 2)
 | rename ratedUsage AS "\"Retention\" Usage"
     totalUsage AS "Total Usage" 
+    rel_size AS "Relative Size"
     percentage AS "% of Capacity"
     index AS Index
-| table Index, "\"Retention\" Usage", "Total Usage", "% of Capacity"
-      </searchString>
+| table "Relative Size", Index, Ballast, "\"Retention\" Usage", "Total Usage", "% of Capacity"
+	</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/index_detail?form.host=$form.host$&form.index=$row.Index$]]></link>
       </drilldown>
 
     </table>
-
-    <table>
-      <title>Disk Usage Information From 'df'</title>
-      <earliestTime>@d</earliestTime>
-      <searchString>index=`os_index` sourcetype="df" host=$host$ | head 1
-| multikv fields Filesystem, Size, Avail, UsePct, MountedOn
-| table Filesystem, Size, Avail, UsePct, MountedOn
-      </searchString>
+    </panel>
+    <panel>
+    <table id="host_overview_disk_table">
+      <title>Disk Usage Information</title>
+      <option name="link.visible">false</option>
+      <search base="host_overview_partitions_space">
+	<query>
+| eval UsePct=round((capacity - available) * 100 / capacity, 1)
+| rename capacity AS Size, available AS Avail
+| `_fb_mbytes_pretty(Size)` | `_fb_mbytes_pretty(Avail)`
+| rename mount_point AS MountedOn
+| table MountedOn, Size, Avail, UsePct
+| sort MountedOn
+	</query>
+      </search>
     </table>
-
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Local vs. Replicated Data Over Time (last 30 days)</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">area</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.nullValueMode">connect</option>
@@ -136,23 +247,25 @@ versions seen elsewhere, but are restricted to the selected host.
 <!--
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 -->
-      <earliestTime>-30d@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, "*")`
-| extract auto=f fb_extract_bucket_type_time_source
-| extract auto=f fb_extract_hot_bucket
-| bucket _time span=1d
-| dedup _time, path
-| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
-| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type
-      </searchString>
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
+      <!-- Maybe something like this
+	   | eventstats max(rawSize) AS largestRaw by bucketId -->
+      <search base="host_overview_time_trend">
+	<query>timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type</query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/index_detail?form.host=$form.host$&form.index=$click.name2$]]></link>
       </drilldown>
     </chart>
-
-    <chart>
+    </panel>
+    <panel>
+    <chart id="host_overview_space_trend">
       <title>Monitored Indexing Space Over Time (last 30 days)</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">area</option>
       <option name="charting.chart.stackMode">stacked</option>
       <option name="charting.chart.nullValueMode">connect</option>
@@ -164,17 +277,77 @@ versions seen elsewhere, but are restricted to the selected host.
 -->     
       <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
 
-      <earliestTime>-30d@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, "*")`
-| bucket span=1d _time
-| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, index, path
+      <!-- Plots showing long term trends don't need to worry too much
+           about the @d part; we may only get 29 days for a time-zone
+	   shifted environment, but that's still good enough to show
+	   the trend -->
+      <search base="host_overview_time_trend">
+	<query>
 | timechart sum(sizeOnDiskMB) AS MBytes by index
-</searchString>
+        </query>
+      </search>
       <drilldown>
         <link><![CDATA[
 /app/fire_brigade/cluster_detail?form.host=$form.host$]]></link>
       </drilldown>
     </chart>
+    </panel>
   </row>
 
+  <row>
+    <panel>
+      <single>
+        <title>Report Acceleration Usage</title>
+        <option name="link.visible">false</option>
+        <option name="field">RAbytes</option>
+        <search base="rest_summary_data">
+          <query>search type="report_acceleration"
+| stats count, sum(total_size) AS RAbytes
+| fillnull value=0 RAbytes
+| `_fb_mbytes_pretty(RAbytes)`
+	  </query>
+        </search>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Data Model Acceleration Usage</title>
+        <option name="link.visible">false</option>
+        <option name="field">modelUsage</option>
+        <search base="rest_summary_data">
+          <query>search type="data_model_acceleration"
+| stats sum(total_size) AS modelUsage
+| fillnull value=0 modelUsage
+| `_fb_mbytes_pretty(modelUsage)`
+	  </query>
+        </search>
+      </single>
+    </panel>
+
+  </row>
+
+  <row>
+    <panel>
+    <chart>
+      <title>Report Acceleration Usage by (Search Head) Host</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">pie</option>
+      <search base="rest_summary_data">
+	<query>search type="report_acceleration"
+| stats sum(total_size) AS total_size by serverName</query>
+      </search>
+    </chart>
+    </panel>
+    <panel>
+    <chart>
+      <title>Data Model Acceleration Usage by (Search Head) Host</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">pie</option>
+      <search base="rest_summary_data">
+	<query>search type="data_model_acceleration"
+| stats sum(total_size) AS total_size by serverName</query>
+      </search>
+    </chart>
+    </panel>
+  </row>
 </form>

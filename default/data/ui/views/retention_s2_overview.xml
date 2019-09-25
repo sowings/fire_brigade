@@ -1,0 +1,10 @@
+<dashboard>
+  <search id="retention_s2_ov_dbinspect">
+    <query>`_fb_summary_recs(*)`</query>
+  </search>
+
+  <search id="retention_s2_ov_evictions">
+  </search>
+
+  
+</dashboard>

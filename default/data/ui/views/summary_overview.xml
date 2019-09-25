@@ -1,0 +1,170 @@
+<dashboard>
+  <label>Acceleration Data Overview (6.4+)</label>
+
+  <search id="summary_overview_rest">
+    <query>| rest /services/data/summaries
+| eval related=split(related_indexes, ",")
+| stats dc(related) AS related_indexes, sum(total_bucket_count) AS total_bucket_count, sum(total_size) AS total_size by search_head_guid, name, type, splunk_server
+| lookup fb_services_server_info_cache guid AS search_head_guid OUTPUT serverName
+| eval shead=coalesce(serverName, search_head_guid)</query>
+  </search>
+
+  <row>
+    <html>
+<div id="fire_brigade_help">
+This page employs a REST endpoint introduced in version 6.4 providing
+summary information about the disk usage of <i>summaries</i> in the
+Splunk environment. These are broken out into two types:
+<em>data_model_acceleration</em> summaries, which represent the
+artifacts built to "accelerate" a Data Model. The other type are
+called <em>report_acceleration</em> summaries, and these represent
+accelerated reports. While the underlying data store is different,
+both types of artifacts take up space, and may play into retention
+policy questions.
+<p />
+Within the panel titled <em>Datamodel Summary Usage by Model Title</em>, the
+column titled <i>Model Title</i> may be a bit cryptic. It is a combination of
+the string "DM" (for Data Model), the name of the app in which the model is
+defined, and the model's name, all joined with an underscore character. For
+example, a Model Name like "DM_Splunk_SA_CIM_Authentication" refers to the
+<i>Authentication</i> data model contained within the <i>Splunk_SA_CIM</i>
+application.
+<p />
+Continuing down the left column, accelerated model usage is broken out
+per indexer (in the panel <em>Datamodel Summary Usage by Indexer
+Host</em> and by search head in <em>Datamodel Summary Usage by Search
+Head</em>. As a reminder, the model acceleration is bound to the GUID
+of the search head (or search head cluster).
+<p />
+The panels down the right coumn are aimed at report acceleration
+summaries. The names of these are even more cryptic than those of data
+models! The first part of the name represents the app containing the
+report, similar to how a data model is defined. The next section
+contains the name of the user who scheduled the acceleration. Finally,
+the last piece is the <i>Normalized Summary ID</i> of the search. All
+of these are combined with underscores.
+<p />
+As with the Data Model Acceleration panels, the right column breaks
+out the acceleration usage by indexer, and then by search head.
+</div>
+    </html>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+        <title>Datamodel Summary Usage by Model Title</title>
+        <option name="link.visible">false</option>
+	<search base="summary_overview_rest">
+          <query>search type=data_model_acceleration
+| sort 0 - total_size
+| table shead, name, related_indexes, total_bucket_count, total_size
+| rename shead AS "Search Head", name AS "Model Title", related_indexes AS "Related Indexes", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage (MB)"</query>
+	</search>
+	<drilldown>
+	  <link><![CDATA[
+/app/fire_brigade/summary_dma_summary_overview?form.srv=$row.Search Head$&form.dm_full_name=$row.Model Title$]]>
+	  </link>
+	</drilldown>
+      </table>     
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Datamodel Summary Usage by Indexer Host</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <search base="summary_overview_rest">
+          <query>search type=data_model_acceleration
+| stats sum(total_size) AS Usage by splunk_server
+| rename splunk_server AS Indexer</query>
+	</search>
+      </chart>
+      
+    </panel>
+    <panel>
+      <chart>
+	<title>Datamodel Summary Usage by Search Head</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Search Head</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <search base="summary_overview_rest">
+          <query>search type=data_model_acceleration
+| stats sum(total_size) AS Usage by shead
+| rename shead AS "Search Head"
+| fields "Search Head", Usage</query>
+	</search>
+      </chart>
+      
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <html>
+	<hr/>
+      </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <table>
+        <title>Report Acceleration Usage by Search Name</title>
+        <option name="link.visible">false</option>
+	<search base="summary_overview_rest">
+          <query>search type=report_acceleration
+| fields shead, name, total_bucket_count, total_size
+| sort 0 - total_size
+| rename shead AS "Search Head", name AS "Search Name", total_bucket_count AS "Bucket Count", total_size AS "Cumulative Usage"</query>
+	</search>
+      </table>     
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+	<title>Report Acceleration Summary Usage by Indexer Host</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <search base="summary_overview_rest">
+          <query>search type=report_acceleration
+| stats sum(total_size) AS Usage by splunk_server
+| rename splunk_server AS Indexer</query>
+	</search>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+	<title>Report Acceleration Summary Usage by Search Head</title>
+        <option name="link.visible">false</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.axisTitleX.text">Search Head</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <search base="summary_overview_rest">
+          <query>search type=report_acceleration
+| stats sum(total_size) AS Usage by shead
+| rename shead AS "Search Head"
+| fields "Search Head", Usage</query>
+	</search>
+      </chart>
+      
+    </panel>
+  </row>
+</dashboard>

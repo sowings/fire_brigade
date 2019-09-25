@@ -1,0 +1,22 @@
+<panel>
+  <title>Snapshot: Bucket Count by State</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
+  <table>
+    <option name="link.visible">false</option>
+    <searchString>| rest /services/data/indexes-extended splunk_server=$host$
+| fillnull value=0 bucket_dirs.home.hot_bucket_count, bucket_dirs.home.warm_bucket_count, bucket_dirs.cold.bucket_count, bucket_dirs.thawed.bucket_count
+| table title, bucket_dirs.home.hot_bucket_count, bucket_dirs.home.warm_bucket_count, bucket_dirs.cold.bucket_count, bucket_dirs.thawed.bucket_count
+| rename title AS Index
+  bucket_dirs.home.hot_bucket_count AS "Hot Buckets"
+  bucket_dirs.home.warm_bucket_count AS "Warm Buckets"
+  bucket_dirs.cold.bucket_count AS "Cold Buckets"
+  bucket_dirs.thawed.bucket_count AS "Thawed Buckets"
+    </searchString>
+    <drilldown>
+      <link><![CDATA[/app/fire_brigade/index_detail?form.host=$click.value$&form.index=$click.name2$]]></link>
+    </drilldown>
+  </table>
+</panel>

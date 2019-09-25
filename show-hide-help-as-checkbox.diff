@@ -1,0 +1,17 @@
+diff --git a/default/data/ui/views/retention_overview.xml b/default/data/ui/views/retention_overview.xml
+index cb9f8f4..d0627ff 100644
+--- a/default/data/ui/views/retention_overview.xml
++++ b/default/data/ui/views/retention_overview.xml
+@@ -135,6 +135,12 @@ Note: As always the <i>most restrictive</i> retention policy wins!
+     <input type="text" token="volume_host" searchWhenChanged="true" />
+     <input type="text" token="volume_title" searchWhenChanged="true" />
+     <input type="text" token="time_host" searchWhenChanged="true" />
++<!--
++    <input type="checkbox" token="help_clicky">
++      <label>Show / Hide Help</label>
++      <choice value="show">Yes / No</choice>
++    </input>
++-->
+   </fieldset>
+ 
+   <searchTemplate>

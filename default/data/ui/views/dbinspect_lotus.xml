@@ -1,0 +1,244 @@
+<form class="formsearch">
+  <label>The flower of unfolding - dbinspect</label>
+
+  <row>
+    <panel>
+    <single id="dbinspect_lotus_current_state">
+      <option name="link.visible">false</option>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <search>
+	<query>| stats count | eval label="Current State"</query>
+      </search>
+      <drilldown>
+        <set token="current">yes</set>
+        <unset token="thirty_day"/>
+        <unset token="sixty_day"/>
+	</drilldown>
+    </single>
+    </panel>
+    <panel>
+    <single>
+      <option name="link.visible">false</option>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <search>
+	<query>| stats count | eval label="Thirty Day Trend"</query>
+      </search>
+      <drilldown>
+        <unset token="current"/>
+        <set token="thirty_day">yes</set>
+        <unset token="sixty_day"/>
+      </drilldown>
+    </single>
+    <single>
+      <option name="link.visible">false</option>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <search>
+	<query>| stats count | eval label="Sixty Day Trend"</query>
+      </search>
+      <drilldown>
+        <unset token="current"/>
+        <unset token="thirty_day"/>
+        <set token="sixty_day">yes</set>
+      </drilldown>
+    </single>
+    </panel>
+    <panel>
+    <single>
+      <option name="link.visible">false</option>
+      <option name="field">label</option>
+      <option name="underLabel">click here</option>
+      <search>
+	<query>| stats count | eval label="Reset"</query>
+      </search>
+      <drilldown>
+        <unset token="current"/>
+        <unset token="thirty_day"/>
+        <unset token="sixty_day"/>
+      </drilldown>
+    </single>
+    </panel>
+  </row>
+
+
+  <row>
+    <panel>
+      <table depends="$current$">
+        <title>Select a Host</title>
+        <search>
+	  <query>| inputlookup fb_hostname_index_cache | dedup orig_host
+| sort orig_host | fields orig_host</query>
+	</search>
+	<drilldown>
+          <set token="server_host">$row.orig_host$</set>
+	</drilldown>
+      </table>
+      <table depends="$thirty_day$">
+        <title>Select a Host</title>
+        <search>
+	  <query>| inputlookup fb_hostname_index_cache | dedup orig_host
+	  | sort orig_host | fields orig_host</query>
+	</search>
+	<drilldown>
+          <set token="server_host">$row.orig_host$</set>
+	</drilldown>
+      </table>
+      <table depends="$sixty_day$">
+        <title>Select a Host</title>
+        <search>
+	  <query>| inputlookup fb_hostname_index_cache | dedup orig_host
+| sort orig_host | fields orig_host</query>
+	</search>
+	<drilldown>
+          <set token="server_host">$row.orig_host$</set>
+	</drilldown>
+      </table>
+      <table depends="$count_based$">
+        <title>Select a Host</title>
+        <search>
+	  <query>| inputlookup fb_hostname_index_cache | dedup orig_host
+| sort orig_host | fields orig_host</query>
+	</search>
+	<drilldown>
+          <set token="server_host">$row.orig_host$</set>
+	</drilldown>
+      </table>
+    </panel>
+    <panel>
+      <table depends="$server_host$">
+        <title>Select an Index</title>
+        <search>
+	  <query>| inputlookup fb_hostname_index_cache | search orig_host=$server_host$
+| dedup orig_index | sort orig_index | table orig_index</query>
+	</search>
+        <drilldown>
+          <set token="index_index">$row.orig_index$</set>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+
+<!--
+
+  <row>
+    <panel>
+      <table id="current_server_index_state" depends="$current$,$server_host$,$index_index$">
+        <title>Current Retention State for Host / Index ($server_host$ / $index_index$)</title>
+        <search>
+<query>
+| rest /services/data/indexes/$index_index$ splunk_server=$server_host$
+| `_fb_null_hot_cold_max`
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
+                maxTotalDataSizeMB)
+| eval span=tostring(currentDBSizeMB) + " / " +
+    tostring(roof) + " MB (" +
+    tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
+| chart useother=f limit=50 first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+</query>
+</search>
+      </table>
+    </panel>
+    <panel>
+      <table id="indexer_based_retention" depends="$index_index$">
+        <title>Current retention state by index</title>
+        <search>
+<query>
+| rest /services/data/indexes/$index_index$
+| `_fb_null_hot_cold_max`
+| eval roof=min((coalesce('homePath.maxDataSizeMB', 4294967295) +
+                 coalesce('coldPath.maxDataSizeMB', 4294967295)),
+                maxTotalDataSizeMB)
+| eval span=tostring(currentDBSizeMB) + " / " +
+    tostring(roof) + " MB (" +
+    tostring(round(currentDBSizeMB * 100 / roof)) + "%)"
+| chart useother=f limit=50 first(span) over splunk_server by title
+| rename splunk_server AS Indexer
+</query>
+</search>
+        <drilldown>
+          <set token="index_host">$row.Indexer$</set>
+</drilldown>
+      </table>
+    </panel>
+  </row>
+-->
+
+
+  <row>
+    <panel>
+      <chart id="current_site_overview" depends="$current$" rejects="$thirty_day$,$sixty_day$">
+        <title>Deployment Overview</title>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+        <search>
+<query>
+`fb_data_from_today` `_fb_summary_recs(*)`
+| chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
+</query>
+</search>
+      </chart>
+
+<!--
+        <title>Deep Dive on Host ($server_host$) / Index ($index_index$)</title>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.axisTitleX.text">Host</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">-45</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <option name="charting.seriesColors">[0x416E79,0x967711,0x823825,0x59425A,0x94571A,0x5C7424,0x5C5433,0x85516A,0x324969,0x866523,0x40521D,0x602935,0xA7D4DF,0xFCDD77,0xE89E8B,0xBFA8C0,0xFABD80,0xC2DA8A,0xC2BA99,0xEBB7D0,0x98AFCF,0xECCB89,0xA6B883,0xC68F9B]</option>
+        <search>
+<query>
+`fb_data_from_today` `_fb_summary_recs($server_host$, $index_index$)`
+| chart sum(sizeOnDiskMB) AS MBytes OVER orig_host BY index
+</query>
+</search>
+      </chart>
+-->
+      <chart id="thirty_day_overview" depends="$thirty_day$" rejects="$current$,$sixty_day$">
+        <title>Thirty Day Trend of Usage Across the Deployment</title>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <search>
+<query>
+earliest=-30d@d `_fb_summary_recs(*)`
+| timechart span=1d sum(sizeOnDiskMB) AS MBytes by orig_host
+</query>
+</search>
+      </chart>
+      <chart id="sixty_day_overview" depends="$sixty_day$" rejects="$current$,$thirty_day$">
+        <title>Sixty Day Trend of Usage Across the Deployment</title>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">connect</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.axisTitleX.text">Time</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisTitleY.text">MBytes</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <search>
+<query>
+earliest=-60d@d `_fb_summary_recs(*)`
+| timechart span=1d sum(sizeOnDiskMB) AS MBytes by orig_host
+</query>
+</search>
+      </chart>
+    </panel>
+  </row>        
+
+
+</form>
+

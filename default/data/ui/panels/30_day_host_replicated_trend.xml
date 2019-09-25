@@ -1,0 +1,29 @@
+<panel>
+  <title>Local vs. Replicated Data Over Time (last 30 days)</title>
+  <chart>
+    <option name="link.visible">false</option>
+    <option name="charting.chart">area</option>
+    <option name="charting.chart.stackMode">stacked</option>
+    <option name="charting.chart.nullValueMode">connect</option>
+    <option name="charting.axisTitleX.text">Time</option>
+    <option name="charting.axisTitleY.text">MBytes</option>
+    <search>
+      <query>`_fb_summary_recs($host$, "*")`
+| bucket _time span=1d
+| extract auto=f fb_extract_bucket_type_time_source
+| extract auto=f fb_extract_hot_bucket
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, state, index, bucket_type, path
+| eval bucket_type=if(bucket_type=="rb", "Replicated", "Indexed")
+| stats max(sizeOnDiskMB) AS sizeOnDiskMB by _time, path, bucket_type
+| timechart span=1d sum(sizeOnDiskMB) AS "Disk Usage" by bucket_type</query>
+      <earliest>-30d@d</earliest>
+      <latest>now</latest>
+    </search>
+    <drilldown>
+      <link>
+        <![CDATA[
+/app/fire_brigade/index_detail?form.host=$form.host$&form.index=$click.name2$]]>
+      </link>
+    </drilldown>
+  </chart>
+</panel>

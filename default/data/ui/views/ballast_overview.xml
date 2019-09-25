@@ -1,0 +1,139 @@
+<dashboard>
+  <label>Index "Ballast" Overview</label>
+
+  <search id="ballast_cumulative">
+    <query>
+`fb_data_from_today` `_fb_summary_recs(*)`
+| eval state=case(state="hot", "home", state="warm", "home", 1=1, state)
+|  stats sum(sizeOnDiskMB) AS total, sum(eval(if(endEpoch>now(), sizeOnDiskMB, 0))) AS ballast by state, splunk_server, index 
+| fillnull value=0 ballast | eval live=total-ballast
+    </query>
+  </search>
+
+  <row>
+    <panel>
+    <html>
+<div id="fire_brigade_help">
+As described in the help for the <a
+href="/app/fire_brigade/bucket_lifecycle">Bucket Lifecycle</a> dashboard,
+indexing buckets typically move through several phases in their life span. The
+mechanisms which work to tranition these buckets do so based upon the age of
+the events in the bucket (as measured by the most recent <em>event
+time</em>). This is true even for size-based retention rules.
+<p />
+The concept of index ballast is a bucket or set of buckets that have events
+from the future. Since Splunk is not a time machine, the origin of these
+"future" events typically lies in misconfiguration. Time stamps may be
+incorrectly parsed, or time zones improperly identified. When retention rules
+require that a bucket be moved, these "ballast" buckets won't be selected,
+since they are not the oldest buckets in the collection (unless of course
+<em>all</em> of the buckets in the index have future time stamps). For
+space-based rules, these buckets become more problematic, since they're taking
+up room that might be recycled for use by other (newly arrived) data. The
+impact of these buckets is greater the further into the future their events
+occur.
+<p />
+Another source of "ballast" is buckets in the thawed state. These arise from
+administrative action (deliberately restoring frozen buckets into a searchable
+state) and further, <em>require</em> adminstrative action to remove them once
+they're no longer needed. They do not count against the index's space
+allocation (as far as Splunk is concerned), but they do take up space on the
+partition.
+<p />
+This dashboard attempts to call out the amount of disk space occupied by
+ballast buckets of either kind. The Home path (hot and warm states) is shown
+separately from the Cold path. This is for sites that may be making use of
+mixed media for index storage. A separate tally appears for buckets in the
+thawed state, and finally a combined tally across all indexers.
+<p />
+The two charts in the bottom section of the page break out the ballast
+sums. The first, <em>Ballast by Indexer</em>, is divided by splunk_sever
+(indexing host). On the right is a split by index name in the chart titled
+<em>Ballast by Index</em>. Each of these provide drilldown functionality to
+pages that will provide more detail.
+</div>
+    </html>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+    <single>
+      <title>Home Path (Hot + Warm) Ballast</title>
+      <option name="link.visible">false</option>
+      <search base="ballast_cumulative">
+	<query>search state="home" | stats sum(ballast) AS ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+    </panel>
+    <panel>
+    <single>
+      <title>Cold Path Ballast</title>
+      <option name="link.visible">false</option>
+      <option name="field">ballast</option>
+      <search base="ballast_cumulative">
+	<query>search state="cold" | stats count, sum(ballast) AS ballast
+| fillnull value=0 ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+    </panel>
+    <panel>
+    <single>
+      <title>Thawed Data</title>
+      <option name="link.visible">false</option>
+      <search base="ballast_cumulative">
+	<query>search state="thawed" | stats sum(ballast) AS ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+    </panel>
+    <panel>
+    <single>
+      <title>Total Burden</title>
+      <option name="link.visible">false</option>
+      <option name="underLabel">Ballast + Thawed</option>
+      <search base="ballast_cumulative">
+	<query>stats sum(eval(if(state="thawed", total, ballast))) AS ballast
+| `_fb_mbytes_pretty(ballast)`</query>
+      </search>
+    </single>
+    </panel>
+  </row>
+
+  <!-- slice and dice -->
+  <row>
+    <panel>
+    <chart>
+      <title>Ballast by Indexer</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">column</option>
+      <option name="charting.legend.placement">none</option>
+      <search base="ballast_cumulative">
+	<query>stats sum(ballast) AS ballast by splunk_server</query>
+      </search>
+      <drilldown>
+	<link><![CDATA[/app/fire_brigade/host_overview?form.host=$click.value$]]>
+	</link>
+      </drilldown>
+    </chart>
+    </panel>
+    <panel>
+    <chart>
+      <title>Ballast by Index</title>
+      <option name="link.visible">false</option>
+      <option name="charting.chart">column</option>
+      <option name="charting.legend.placement">none</option>
+      <search base="ballast_cumulative">
+	<query>stats sum(ballast) AS ballast by index</query>
+      </search>
+      <drilldown>
+	<link><![CDATA[/app/fire_brigade/index_overview?form.index=$click.value$]]>  
+	</link>
+      </drilldown>
+    </chart>
+    </panel>
+  </row>
+
+</dashboard>

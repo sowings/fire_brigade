@@ -1,18 +1,41 @@
-<form>
+<form script="bucket_span_detail.js">
   <label>Bucket Span Detail</label>
 
+  <search id="summary_bucket_detail">
+    <query>
+      `fb_data_from_today`
+      `_fb_summary_recs($host$, $index$)`
+      | extract auto=f fb_extract_bucket_type_time_source
+      | search NOT bucket_type="rb"
+      | dedup path
+      | fields id, eventCount, startEpoch, endEpoch, bucket_et, bucket_lt
+      | eval bucket_span=endEpoch - startEpoch
+    </query>
+  </search>
+
   <fieldset>
-    <input type="dropdown" token="host">
+    <input type="dropdown" token="host" searchWhenChanged="true">
       <label>Host</label>
-      <populatingSearch fieldForValue="host" fieldForLabel="host">| inputlookup fb_collected_hostnames</populatingSearch>
+      <fieldForValue>orig_host</fieldForValue>
+      <fieldForLabel>orig_host</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache | stats count by orig_host</query>
+      </search>
     </input>
     <input type="dropdown" token="index" searchWhenChanged="true">
       <label>Index</label>
-      <populatingSearch fieldForValue="orig_index" fieldForLabel="orig_index">| inputlookup fb_collected_indexes</populatingSearch>
+      <choice value="*">All indexes</choice>
+      <default>*</default>
+      <fieldForValue>orig_index</fieldForValue>
+      <fieldForLabel>orig_index</fieldForLabel>
+      <search>
+	<query>| inputlookup fb_hostname_index_cache where orig_host=$host$ | stats count by orig_index</query>
+      </search>
     </input>
   </fieldset>
 
   <row>
+    <panel>
     <html>
 <div id="fire_brigade_help">
 The purpose of this view is to provide a high-level estimate of the
@@ -29,82 +52,112 @@ another clustered indexer are not included. The purpose of this
 restriction is to provide insight to the data <i>as it is
 indexed</i>.
 <p/>
-The "Configured Hot Span Limit" and "Configured Hot Idle Limit"
-reflect the current values of the respective settings for the
-index. Tuning these can change the behavior of Splunk with respect to
+The panel titled <em>Host Time Limits</em> shows the configuration
+values from indexes.conf for this index. The first is
+<code>maxHotSpanSecs</code> indicating the longest amount of time that
+a bucket will be allowed to span. The second value shown here is
+<code>maxHotIdleSecs</code>, governing how long a bucket will sit idle
+(not receiving new events) before being rolled to warm.
+Tuning these can change the behavior of Splunk with respect to
 creating index buckets. Please be careful when changing these
 parameters.
+<p/>
+More information about index configuration can be found <a href="http://docs.splunk.com/Documentation/Splunk/latest/Admin/indexesconf">here</a>.
 </div>
     </html>
+    </panel>
   </row>
 
   <row>
-    <single>
+    <panel>
+    <single id="bucket_span_detail_count_label">
       <title>Local Bucket Count</title>
+      <option name="link.visible">false</option>
       <option name="field">count</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)` | extract auto=f fb_extract_bucket_type_time_source | search NOT bucket_type="rb" | dedup path | stats count</searchString>
+      <search base="summary_bucket_detail">
+	<query>stats count</query>
+      </search>
     </single>
-    <single>
-      <title>Average Local Bucket Span</title>
+    </panel>
+    <panel>
+    <single id="bucket_span_detail_avg_span_label">
+<!--      <title>Average Local Bucket Span</title> -->
+      <option name="link.visible">false</option>
       <option name="field">average</option>
-      <option name="afterLabel">seconds</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
-| search NOT bucket_type="rb"
-| dedup path
-| eval bucket_span=bucket_lt - bucket_et
-| stats avg(bucket_span) AS average | eval average=round(average, 0)
-      </searchString>
+      <option name="underLabel">seconds</option>
+      <search base="summary_bucket_detail">
+	<query>
+	  | stats avg(bucket_span) AS average | eval average=round(average, 0)
+	</query>
+      </search>
     </single>
     <single>
-      <title>Average Local Bucket Span (Human-Readable)</title>
+<!--      <title>Average Local Bucket Span (Human-Readable)</title> -->
+      <option name="link.visible">false</option>
       <option name="field">average</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
-| search NOT bucket_type="rb"
-| dedup path
-| eval bucket_span=bucket_lt - bucket_et
-| stats avg(bucket_span) AS average
-| eval average=tostring(round(average, 0), "duration")
-      </searchString>
+      <option name="underLabel">Human-Readable</option>
+      <search base="summary_bucket_detail">
+	<query>
+	  | stats avg(bucket_span) AS average
+	  | eval average=tostring(round(average, 0), "duration")
+	</query>
+      </search>
     </single>
-  </row>
-
-  <row>
-    <single>
-      <title>Configured Hot Span Limit</title>
+    </panel>
+    <panel>
+    <single id="bucket_span_detail_hot_limits_label">
+<!--      <title>Configured Hot Span Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxHotSpanSecs</option>
-      <option name="afterLabel">seconds</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <option name="underLabel">maxHotSpanSecs</option>
+      <search id="rest_index_config">
+	<query>| `_fb_rest_index_config($host$, $index$)`</query>
+      </search>
     </single>
     <single>
-      <title>Configured Hot Idle Limit</title>
+<!--      <title>Configured Hot Idle Limit</title> -->
+      <option name="link.visible">false</option>
       <option name="field">maxHotIdleSecs</option>
-      <option name="afterLabel">seconds</option>
-      <searchString>| `_fb_rest_index_config($host$, $index$)`</searchString>
+      <option name="underLabel">maxHotIdleSecs</option>
+      <search base="rest_index_config">
+      </search>
     </single>
+    </panel>
   </row>
 
   <row>
+    <panel>
     <chart>
       <title>Local Bucket Span In Hours</title>
+      <option name="link.visible">false</option>
       <option name="charting.chart">column</option>
       <option name="charting.axisTitleX.text">Bucket ID</option>
       <option name="charting.axisTitleY.text">Hours</option>
       <option name="charting.legend.placement">none</option>
-      <earliestTime>@d</earliestTime>
-      <searchString>`_fb_summary_recs($host$, $index$)`
-| extract auto=f fb_extract_bucket_type_time_source
-| search NOT bucket_type="rb"
-| dedup path
-| sort 0 id
-| eval bucket_span=round((bucket_lt - bucket_et) / 3600, 1)
+      <search base="summary_bucket_detail">
+	<query>sort 0 id
+| rename comment AS "This was in seconds, convert to hours for display"
+| eval bucket_span=bucket_span / 3600 
 | chart max(bucket_span) by id
-      </searchString>
+	</query>
+      </search>
     </chart>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <chart>
+        <title>Bucket Event Count vs. Time Span</title>
+        <search base="summary_bucket_detail">
+	  <query>sort 0 id | table id, eventCount, bucket_span</query>
+	</search>
+        <option name="charting.chart">scatter</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.axisTitleX.text">Events</option>
+        <option name="charting.axisTitleY.text">Span in Seconds</option>
+      </chart>
+    </panel>
   </row>
 
 </form>

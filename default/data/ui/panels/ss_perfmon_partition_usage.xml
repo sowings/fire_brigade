@@ -1,0 +1,23 @@
+<panel>
+  <title>Snapshot: Windows Disk Usage Information</title>
+  <input type="dropdown" token="host" searchWhenChanged="true">
+    <label>Host</label>
+    <populatingSearch fieldForValue="orig_host" fieldForLabel="orig_host">| inputlookup fb_hostname_index_cache | dedup orig_host | sort orig_host</populatingSearch>
+  </input>
+  <table>
+    <option name="link.visible">false</option>
+    <searchString>host=$host$
+source="Perfmon:Windows__LogicalDisk"
+counter="Free Megabytes" OR counter="% Free Space"
+instance!="_Total"
+| stats last(eval(if(counter="Free Megabytes", Value, null()))) AS Avail
+        last(eval(if(counter="% Free Space", Value, null()))) AS UsePct
+  by instance  
+| eval UsePct=round(UsePct, 2)
+| rename instance AS MountedOn
+| `_fb_mbytes_pretty(Avail)`
+| table MountedOn, Avail, UsePct
+| sort MountedOn
+    </searchString>
+  </table>
+</panel>

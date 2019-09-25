@@ -1,5 +1,6 @@
 []
 access = read : [ * ], write : [ admin ]
+import = TA-fire_brigade, search, Splunk_TA_nix
 
 [views]
 
@@ -19,3 +20,6 @@ export = none
 
 [transforms]
 export = none
+
+[checklist]
+export = system

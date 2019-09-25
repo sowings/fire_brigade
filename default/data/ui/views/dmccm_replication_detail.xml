@@ -1,0 +1,51 @@
+<form>
+  <label>Replication Activity Detail</label>
+  <fieldset>
+    <input type="text" token="bid">
+      <label>(Optional) Bucket ID</label>
+      <default>*</default>
+    </input>
+    <input type="time">
+      <label>Time</label>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <table>
+	<title>This is the pretty form</title>
+        <search id="dmccm_replication_detail">
+	  <query>
+	    index=_internal OR index=splbee_internal
+bid=$bid$
+sourcetype=splunkd source=*splunkd.log*
+(component=CMSlave (addTargetinProgress=false OR event=addBucket)) OR
+(component=DatabaseDirectoryManager) OR
+(component=S2SFileReceiver) OR
+(component=BucketReplicator) OR
+(component=CMMaster) OR
+(component=CMPeer)
+| fields _time host component bid event peer_name status searchable bucketType response ss replicationType message src from to
+| eval action=case(
+component="CMSlave", (case(status="StreamingSource", "New Hot to be Replicated", status="StreamingTarget", "Receiving " . ss . " Copy of Hot Bucket", match(message, "addTargetDone"), "Peer Reporting Receipt of Replica")), 
+component="DatabaseDirectoryManager", "DDM", 
+component="CMMaster", (case(event="addBucket" AND isnotnull(response), "Master Directing Replica Placement", event="addTarget" AND status="StreamingTarget" AND searchable="yes", "Master Reporting on Searchable Hot Copy", match(message, "making bucket serviceable"), "Minimum Bucket Safety Achieved")),
+component="BucketReplicator", (case(event="startBucketReplication", "Starting Replication")),
+component="S2SFileReceiver", (case(event="onFileOpened" AND replicationType="eJournalReplication" AND bucketType="hot" AND searchable="true", "Starting Replication of journal.gz (Searchable Copy)")))
+| rename host AS Host component AS Component, action AS Action, bid AS "Bucket ID"
+| table _time Host Component Action *
+	  </query>
+	</search>
+      </table>
+    </panel>
+  </row>
+
+  <row>
+    <panel>
+      <event>
+	<title>This is Events</title>
+	<search base="dmccm_replication_detail"/>
+      </event>
+    </panel>
+  </row>
+</form>

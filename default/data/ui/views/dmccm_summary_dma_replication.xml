@@ -1,0 +1,81 @@
+<form>
+  <label>DMA Replication Status (DMC or CM only)</label>
+  <search id="cluster_master_config">
+    <query><![CDATA[| rest /services/cluster/config splunk_server=$host$
+| rex field=site_search_factor "total:\s*(?<ms_search_factor>\d+)"]]></query>
+    <done>
+      <set token="ms_search_factor">$result.ms_search_factor$</set>
+      <set token="ss_search_factor">$result.search_factor$</set>
+    </done>
+  </search>
+  <search id="cluster_master_summaries">
+    <query><![CDATA[| rest /services/cluster/master/buckets summaries=true splunk_server=ubuntu-cm | eval title=constrain_to_origin_site . ";" . frozen . ";" . title | fields title peers.*.summaries_*.state |  untable title thingy value | rex field=thingy "^peers\.(?<idx_guid>[-A-F0-9]+)\.summaries_(?<summ_type>[^\.]+)\.(?<sh_guid>[-A-F0-9]+)_(?<summ_id>[^\.]+)\.state"]]> | eval ss_search_copies=$ss_search_factor$, ms_search_copies=$ms_search_factor$</query>
+  </search>
+  
+  <fieldset>
+    <input type="dropdown" token="host" searchWhenChanged="true">
+      <label>Cluster Master</label>
+      <fieldForValue>splunk_server</fieldForValue>
+      <fieldForLabel>host</fieldForLabel>
+      <selectFirstChoice>true</selectFirstChoice>
+      <search>
+	<query>| rest /services/server/info splunk_server=* | search server_roles=cluster_master</query>
+      </search>
+    </input>
+  </fieldset>
+
+  <row>
+    <panel>
+      <single>
+	<title>Multisite mode?</title>
+	<search base="cluster_master_config"/>
+	<option name="field">multisite</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Single-Site SF</title>
+	<search base="cluster_master_config"/>
+	<option name="field">search_factor</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Multi-Site SF</title>
+	<search base="cluster_master_config"/>
+	<option name="field">ms_search_factor</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+	<title>Replicate Summaries?</title>
+	<search base="cluster_master_config">
+	  <query>eval sr=if(summary_replication=""), 2, summary_replication)
+| rangemap field=sr low=1-1 None=0-0 elevated=2-2
+| eval sr_string=case(sr=2, "N/A", sr=1, "yes", sr=0, "no")</query>
+	</search>
+	<option name="field">sr_string</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+	<title>Fucko</title>
+	<option name="charting.chart">column</option>
+	<search base="cluster_master_summaries">
+	  <query></query>
+	</search>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <table>
+	<title>Full set</title>
+	<search base="cluster_master_summaries"/>
+      </table>
+    </panel>
+  </row>
+    
+</form>
