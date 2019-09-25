@@ -8,8 +8,8 @@ TA_PACKAGE_NAME=${TA_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.tar.gz
 APP_PACKAGE_BASE=splunk_app_${APP_NAME}
 APP_PACKAGE_NAME=${APP_PACKAGE_BASE}-${APP_VERSION}-${BUILD}.spl
 # This has the 'v' in front of it per the tags laid down in git.
-PRIOR_VERSION_TAG=v2.1.0
-APP_VERSION=2.1.1
+PRIOR_VERSION_TAG=
+APP_VERSION=3.0.0
 
 TA_FILES = default/macros.conf default/savedsearches.conf default/app.conf default/transforms.conf default/inputs.conf bin/ftr_update_list.py
 
